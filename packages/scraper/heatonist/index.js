@@ -25,7 +25,8 @@ function getProductUrls(document) {
 		if (lowerTitle.endsWith('socks')) continue;
 		if (lowerTitle.match(/\b(monthly|subscription)\b/)) continue;
 		if (lowerTitle.endsWith(' challenge')) continue;
-		if (lowerTitle.endsWith('collection')) continue;
+		if (lowerTitle.includes('collection')) continue;
+		if (lowerTitle.includes('sauce box')) continue;
 
 		/** @type {HTMLAnchorElement | null} */
 		const anchor = product.querySelector('a:first-child');

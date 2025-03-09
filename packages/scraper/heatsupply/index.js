@@ -37,11 +37,12 @@ async function getSauceUrls(url, options) {
 			const name = el.querySelector('h3')?.textContent?.trim();
 			if (!name) continue;
 
+			const lowerName = name.toLowerCase();
+
 			if (
-				name.toLowerCase().endsWith(' pack') ||
-				name.toLowerCase().includes('3 pack') ||
-				name.toLowerCase().endsWith(' subscription box') ||
-				name.toLowerCase().includes('giftset')
+				lowerName.match(/\b\d+(?:-|\s)?pack\b/) || // "pack" "3 pack" "3-pack" etc.
+				lowerName.endsWith(' subscription box') ||
+				lowerName.includes('giftset')
 			) {
 				console.info('Skipping bundle', name);
 				continue;
