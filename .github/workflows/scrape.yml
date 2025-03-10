@@ -47,9 +47,9 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
             # Run all scrapers on dev branch
-            pnpm scrapers scrape trex --dbInsert
-            pnpm scrapers scrape heatsupply --dbInsert
-            pnpm scrapers scrape heatonist --dbInsert
+            pnpm scrapers scrape trex --dbInsert --dev
+            pnpm scrapers scrape heatsupply --dbInsert --dev
+            pnpm scrapers scrape heatonist --dbInsert --dev
           else
             # Run single scraper on manual trigger
             pnpm scrapers scrape ${{ github.event.inputs.store }} --dbInsert

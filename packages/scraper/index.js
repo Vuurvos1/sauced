@@ -34,11 +34,17 @@ async function main() {
 	/** @type {import('./index.d').ScrapeSauceOptions} */
 	const options = {
 		cache: !flags.noCache,
-		dbInsert: flags.dbInsert
+		dbInsert: flags.dbInsert,
+		dev: flags.dev
 	};
 
 	console.info(`Running scraper - ${scraper.name} - ${scraper.url}`);
-	const urls = await scraper.getSauceUrls(scraper.url, options);
+	let urls = await scraper.getSauceUrls(scraper.url, options);
+
+	// limit to 12 random urls
+	if (options.dev) {
+		urls = urls.sort(() => Math.random() - 0.5).slice(0, 12);
+	}
 
 	/** @type {import('./index.d').Sauce[]} */
 	const data = [];
