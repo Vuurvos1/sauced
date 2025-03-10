@@ -3,7 +3,8 @@ name: Migrate db
 on:
   push:
     branches:
-      - main # or your desired branch name
+      - main
+      - dev
     paths:
       - '.github/workflows/migrate.yml'
       - 'packages/db/**'
@@ -17,7 +18,7 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    environment: Production
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
 
     steps:
       - name: Checkout
