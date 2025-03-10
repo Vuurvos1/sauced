@@ -43,6 +43,8 @@ export function slugifyName(name) {
 export function isSimilarName(existingName, newName, threshold = 0.6) {
 	const name1 = normalizeName(existingName);
 	const name2 = normalizeName(newName);
-	const result = fuzzysort.single(name1, name2);
-	return result ? result.score > threshold : false;
+	const result1 = fuzzysort.single(name1, name2);
+	const result2 = fuzzysort.single(name2, name1);
+	const bestScore = Math.max(result1?.score ?? -Infinity, result2?.score ?? -Infinity);
+	return bestScore > threshold;
 }

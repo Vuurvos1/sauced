@@ -32,7 +32,14 @@ describe('isSimilarName', () => {
 		expect(isSimilarName('The Last Dab: Apollo', 'Hot Ones The Last Dab Apollo Hot Sauce')).toBe(
 			true
 		);
+		expect(isSimilarName('Hot Ones The Last Dab Apollo Hot Sauce', 'The Last Dab: Apollo')).toBe(
+			true
+		);
+
 		expect(isSimilarName('The Last Dab XXX Hot Sauce', 'Hot Ones The Last Dab XXX Hot Sauce')).toBe(
+			true
+		);
+		expect(isSimilarName('Hot Ones The Last Dab XXX Hot Sauce', 'The Last Dab XXX Hot Sauce')).toBe(
 			true
 		);
 	});
@@ -40,7 +47,7 @@ describe('isSimilarName', () => {
 	it('should return false if the names are not similar', () => {
 		expect(isSimilarName('foo', 'bar')).toBe(false);
 		expect(isSimilarName('hello', 'world')).toBe(false);
-		expect(isSimilarName('foo bar', 'hello world')).toBe(false);
+		expect(isSimilarName('hello', '')).toBe(false);
 		expect(
 			isSimilarName('El Jefe Primo Salsa Barbacoa Cherry Hot Sauce', 'Fiya! Fiya! Hot Sauce')
 		).toBe(false);
