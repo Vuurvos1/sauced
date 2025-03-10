@@ -41,8 +41,8 @@ async function getSauceUrls(url, options) {
 
 			if (
 				lowerName.match(/\b\d+(?:-|\s)?pack\b/) || // "pack" "3 pack" "3-pack" etc.
-				lowerName.endsWith(' subscription box') ||
-				lowerName.includes('giftset')
+				lowerName.includes('giftset') ||
+				lowerName.match(/\b(monthly|subscription|challenge|collection)\b/)
 			) {
 				console.info('Skipping bundle', name);
 				continue;
