@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils.js';
+import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://heatonist.com';
 const cachePath = './cache/heatonist';
