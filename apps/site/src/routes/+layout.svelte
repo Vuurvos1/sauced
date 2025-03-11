@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>Spiced</title>
+	<title>Sauced</title>
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
