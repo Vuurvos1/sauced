@@ -1,11 +1,11 @@
 services:
   db:
     image: postgres:16
-    container_name: spiced_postgres
+    container_name: sauced_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: sauce
+      POSTGRES_DB: sauced
     ports:
       - '5433:5432'
     healthcheck:
