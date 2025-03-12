@@ -1,4 +1,4 @@
 export * from './clickOutside';
-export * from './teleport';
+export * from './portal';
 export * from './focusTrap';
 export * from './escapeKeydown';

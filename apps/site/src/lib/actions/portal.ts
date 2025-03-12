@@ -1,7 +1,7 @@
 /**
  * Teleport a node to another element
  */
-export function teleport(node: HTMLElement, element: string) {
+export function portal(node: HTMLElement, element: string) {
 	const teleportElement = document.querySelector(element);
 
 	// TODO: maybe add a fallback to create the element if it doesn't exist?
