@@ -4,7 +4,7 @@
 
 	let { data } = $props();
 
-	let { recentSauces, topSauces } = $derived(data);
+	let { recentSauces, topSauces, user } = $derived(data);
 </script>
 
 <div class="space-y-12">
@@ -32,22 +32,23 @@
 		</div>
 	</section>
 
-	<section class="py-6">
-		<div class="container">
-			<!-- TODO: add some sort of user following system with a timeline -->
-			<h2 class="h2">Recent Activity</h2>
+	{#if user}
+		<section class="py-6">
+			<div class="container">
+				<!-- TODO: add some sort of user following system with a timeline -->
+				<h2 class="h2">Recent Activity</h2>
 
-			<p>Not implemented yet :(</p>
-		</div>
-	</section>
+				<p>Not implemented yet :(</p>
+			</div>
+		</section>
 
-	<section>
-		<div class="container">
-			<form method="post" action="/?/logout" use:enhance>
-				<button>Logout</button>
-			</form>
-		</div>
-	</section>
+		<section>
+			<div class="container">
+				<form method="post" action="/?/logout" use:enhance>
+					<button>Logout</button>
+				</form>
+			</div>
+		</section>
+		<!-- Or do like a category browse thing, and trending sauces -->
+	{/if}
 </div>
-
-<!-- Or do like a category browse thing, and trending sauces -->
