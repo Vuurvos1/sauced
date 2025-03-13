@@ -1,20 +1,129 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
-	import { Search, UserRound } from '@o7/icon/lucide';
-
-	let search = $state(page.url.searchParams.get('search') || '');
+	import { Search, UserRound, Flame, Store } from '@o7/icon/lucide';
+	import {
+		autoUpdate,
+		flip,
+		offset,
+		useDismiss,
+		useFloating,
+		useInteractions,
+		useRole
+	} from '@skeletonlabs/floating-ui-svelte';
+	import { fade } from 'svelte/transition';
+	import { debounce } from '$lib/utils/debounce.svelte';
+	import type { SearchResponse } from '$lib/types/api';
+	import { portal } from '$lib/actions';
 
 	let {
 		data: { session }
 	} = $derived(page);
+
+	let search = $state(page.url.searchParams.get('q') || '');
+
+	let open = $state(false);
+
+	let isLoading = $state(false);
+	let searchResults = $state<SearchResponse>({
+		makers: [],
+		stores: [],
+		sauces: []
+	});
+	let loadingTimeout: ReturnType<typeof setTimeout>;
+
+	async function getSearchResults(search: string) {
+		if (search.length < 2) return;
+
+		// Set a timeout to show loading state only if the query takes longer than 300ms
+		loadingTimeout = setTimeout(() => {
+			isLoading = true;
+		}, 500);
+
+		const response = await fetch(`/api/v1/search?q=${search}`);
+		const data = await response.json();
+		searchResults = data;
+
+		clearTimeout(loadingTimeout);
+		isLoading = false;
+	}
+
+	$effect(() => {
+		if (search.length > 0) {
+			open = true;
+		}
+	});
+
+	// debounced search
+	const update = debounce((v: string) => getSearchResults(v), 250);
+	$effect(() => {
+		update(search);
+	});
+
+	// Use Floating
+	const floating = useFloating({
+		whileElementsMounted: autoUpdate,
+		get open() {
+			return open;
+		},
+		onOpenChange: (v) => {
+			open = v;
+		},
+		placement: 'bottom',
+		strategy: 'fixed',
+		get middleware() {
+			return [offset(10), flip()];
+		}
+	});
+
+	// Interactions
+	const role = useRole(floating.context);
+	const dismiss = useDismiss(floating.context);
+	const interactions = useInteractions([role, dismiss]);
 </script>
+
+{#snippet storeItem(store: SearchResponse['stores'][number])}
+	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+		<a
+			onclick={() => (open = false)}
+			class="flex items-center gap-2"
+			href={`/stores/${store.name}`}
+		>
+			<img
+				class="aspect-square size-12 object-contain"
+				src={`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`}
+				alt={store.name}
+			/>
+			<div>
+				<div class="font-medium">{store.name}</div>
+			</div>
+		</a>
+	</li>
+{/snippet}
+
+{#snippet sauceItem(sauce: SearchResponse['sauces'][number])}
+	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+		<a
+			onclick={() => (open = false)}
+			class="flex items-center gap-2"
+			href={`/sauces/${sauce.slug}`}
+		>
+			<img class="aspect-square size-12 object-contain" src={sauce.imageUrl} alt={sauce.name} />
+			<div>
+				<div class="font-medium">{sauce.name}</div>
+				<div class="text-sm text-gray-500">
+					{sauce.ratingCount}
+					{sauce.ratingCount === 1 ? 'review' : 'reviews'}
+				</div>
+			</div>
+		</a>
+	</li>
+{/snippet}
 
 <header class="sticky top-0">
 	<nav class="bg-neutral-950 py-4 text-white">
 		<ul class="container flex flex-row items-center gap-4 font-medium md:grid md:grid-cols-4">
 			<li>
-				<a class="font-logo flex flex-row items-center gap-2.5 text-2xl" href="/">
+				<a class="flex flex-row items-center gap-2.5 font-logo text-2xl" href="/">
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"
@@ -30,17 +139,22 @@
 			</li>
 
 			<li class="w-full md:col-span-2 md:w-auto">
-				<form method="POST" data-sveltekit-keepfocus action="/?/search" use:enhance>
+				<form data-sveltekit-keepfocus action="/sauces">
 					<label
+						bind:this={floating.elements.reference}
+						{...interactions.getReferenceProps()}
 						class="relative mx-auto flex w-full max-w-lg flex-row items-center text-base text-black"
 					>
-						<!-- TODO: empty on non sauces pages -->
 						<input
 							bind:value={search}
 							class="w-full rounded-full bg-white py-1.5 pl-4 pr-12 focus:outline-none"
 							placeholder="Search sauces"
-							name="search"
+							autocomplete="off"
+							name="q"
 							type="text"
+							onfocus={() => {
+								if (search.length > 2) open = true;
+							}}
 						/>
 						<button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-4">
 							<span class="sr-only">Search</span>
@@ -48,6 +162,75 @@
 						</button>
 					</label>
 				</form>
+
+				<div>
+					<!-- Floating Element -->
+					{#if open}
+						<div
+							bind:this={floating.elements.floating}
+							use:portal={'body'}
+							style={floating.floatingStyles}
+							{...interactions.getFloatingProps()}
+							class="absolute z-50 max-h-[50vh] w-full max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg"
+							transition:fade={{ duration: 100 }}
+						>
+							<!-- Sauces -->
+							{#if isLoading}
+								<div class="py-2 text-center">Loading...</div>
+							{:else if searchResults.sauces.length > 0}
+								<div>
+									<div class="flex items-center gap-2">
+										<Flame class="text-red-600" size={20}></Flame>
+										<h3 class="text-lg font-medium">Sauces</h3>
+									</div>
+
+									<ul>
+										{#each searchResults.sauces as sauce}
+											{@render sauceItem(sauce)}
+										{/each}
+									</ul>
+									<div class="mt-2 flex pb-2">
+										<a
+											href={`/sauces?q=${encodeURIComponent(search)}`}
+											class="ml-auto text-gray-600 hover:underline"
+											onclick={() => (open = false)}
+										>
+											View all results
+										</a>
+									</div>
+								</div>
+							{:else if search.length >= 2}
+								<p class="py-2">No sauces found matching "{search}"</p>
+							{:else}
+								<p class="py-2">Type at least 2 characters to search</p>
+							{/if}
+
+							{#if !isLoading && searchResults.stores.length > 0}
+								<div>
+									<div class="mt-4 flex items-center gap-2">
+										<Store class="text-green-600" size={20}></Store>
+										<h3 class="text-lg font-medium">Stores</h3>
+									</div>
+
+									<ul>
+										{#each searchResults.stores as store}
+											{@render storeItem(store)}
+										{/each}
+									</ul>
+									<div class="mt-2 flex pb-2">
+										<a
+											href={`/stores?q=${encodeURIComponent(search)}`}
+											class="ml-auto text-gray-600 hover:underline"
+											onclick={() => (open = false)}
+										>
+											View all results
+										</a>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
 			</li>
 
 			<li class="md:ml-auto">

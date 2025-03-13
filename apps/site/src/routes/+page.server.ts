@@ -5,12 +5,7 @@ import { db } from '$lib/db';
 import { checkins, hotSauces } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 
-export const load: PageServerLoad = async (event) => {
-	if (!event.locals.user) {
-		return redirect(302, '/sauces'); // TODO: maybe change when I have thought of a way to structure the routes
-		// return redirect(302, '/login'); // or to some type of home page that shows timeline
-	}
-
+export const load: PageServerLoad = async () => {
 	const recentSauces = await db
 		.select()
 		.from(hotSauces)
@@ -46,15 +41,5 @@ export const actions: Actions = {
 		deleteSessionTokenCookie(cookies);
 
 		return redirect(302, '/login');
-	},
-	search: async ({ request, url }) => {
-		const formData = await request.formData();
-		const search: string = (formData.get('search') as string) ?? '';
-
-		url.pathname = '/sauces';
-		if (search) url.searchParams.set('search', search);
-		url.searchParams.delete('/search'); // Remove the search action from the URL
-
-		return redirect(303, url.toString());
 	}
 };

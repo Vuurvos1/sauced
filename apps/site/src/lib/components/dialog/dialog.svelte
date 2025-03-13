@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { teleport, clickOutside, focusTrap, escapeKeydown } from '$lib/actions';
+	import { portal, clickOutside, focusTrap, escapeKeydown } from '$lib/actions';
 	import type { Snippet } from 'svelte';
 	import { X } from '@o7/icon/lucide';
 	import { fade } from 'svelte/transition';
@@ -24,7 +24,7 @@
 	Toggle modal
 </button> -->
 
-<div use:teleport={'body'}>
+<div use:portal={'body'}>
 	{#if open}
 		<div
 			class="relative z-10"
