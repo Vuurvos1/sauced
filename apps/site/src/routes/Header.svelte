@@ -11,7 +11,7 @@
 		useRole
 	} from '@skeletonlabs/floating-ui-svelte';
 	import { fade } from 'svelte/transition';
-	import { debounced } from '$lib/utils/debounce.svelte';
+	import { debounce } from '$lib/utils/debounce.svelte';
 	import type { SearchResponse } from '$lib/types/api';
 	import { portal } from '$lib/actions';
 
@@ -29,13 +29,21 @@
 		stores: [],
 		sauces: []
 	});
+	let loadingTimeout: ReturnType<typeof setTimeout>;
 
-	async function getSearchResults() {
-		isLoading = true;
+	async function getSearchResults(search: string) {
+		if (search.length < 2) return;
+
+		// Set a timeout to show loading state only if the query takes longer than 300ms
+		loadingTimeout = setTimeout(() => {
+			isLoading = true;
+		}, 500);
+
 		const response = await fetch(`/api/v1/search?q=${search}`);
-
 		const data = await response.json();
 		searchResults = data;
+
+		clearTimeout(loadingTimeout);
 		isLoading = false;
 	}
 
@@ -46,8 +54,9 @@
 	});
 
 	// debounced search
+	const update = debounce((v: string) => getSearchResults(v), 250);
 	$effect(() => {
-		debounced(() => getSearchResults(), 500);
+		update(search);
 	});
 
 	// Use Floating
@@ -101,7 +110,10 @@
 			<img class="aspect-square size-12 object-contain" src={sauce.imageUrl} alt={sauce.name} />
 			<div>
 				<div class="font-medium">{sauce.name}</div>
-				<div class="text-sm text-gray-500">({sauce.ratingCount})</div>
+				<div class="text-sm text-gray-500">
+					{sauce.ratingCount}
+					{sauce.ratingCount === 1 ? 'review' : 'reviews'}
+				</div>
 			</div>
 		</a>
 	</li>
@@ -140,6 +152,9 @@
 							autocomplete="off"
 							name="q"
 							type="text"
+							onfocus={() => {
+								if (search.length > 2) open = true;
+							}}
 						/>
 						<button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-4">
 							<span class="sr-only">Search</span>
@@ -163,19 +178,6 @@
 							{#if isLoading}
 								<div class="py-2 text-center">Loading...</div>
 							{:else if searchResults.sauces.length > 0}
-								<!-- Stores -->
-								{#if isLoading}
-									<!-- Loading state handled in Sauces section -->
-								{:else if searchResults.stores.length > 0}{:else if search.length >= 2 && !searchResults.sauces.length}
-									<!-- No results message already shown in Sauces section -->
-								{/if}
-							{:else if search.length >= 2}
-								<p class="py-2">No sauces found matching "{search}"</p>
-							{:else}
-								<p class="py-2">Type at least 2 characters to search</p>
-							{/if}
-
-							{#if searchResults.sauces.length > 0}
 								<div>
 									<div class="flex items-center gap-2">
 										<Flame class="text-red-600" size={20}></Flame>
@@ -197,9 +199,13 @@
 										</a>
 									</div>
 								</div>
+							{:else if search.length >= 2}
+								<p class="py-2">No sauces found matching "{search}"</p>
+							{:else}
+								<p class="py-2">Type at least 2 characters to search</p>
 							{/if}
 
-							{#if searchResults.stores.length > 0}
+							{#if !isLoading && searchResults.stores.length > 0}
 								<div>
 									<div class="mt-4 flex items-center gap-2">
 										<Store class="text-green-600" size={20}></Store>
