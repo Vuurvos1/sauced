@@ -15,7 +15,11 @@
 	<li>
 		<!-- TODO: make relative? -->
 		<a href="/sauces/{sauce.slug}">
-			<img class="aspect-square object-contain" src={sauce.imageUrl} alt={sauce.name} />
+			<img
+				class="mx-auto mb-3 aspect-square max-w-72 object-contain sm:max-w-full"
+				src={sauce.imageUrl}
+				alt={sauce.name}
+			/>
 			<h2 class="mb-2 text-xl font-semibold">{sauce.name}</h2>
 
 			<div class="mb-2 flex flex-row items-center gap-3">
@@ -34,7 +38,7 @@
 	</li>
 {/snippet}
 
-<ul class="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3 lg:grid-cols-4">
+<ul class="grid gap-x-4 gap-y-8 sm:grid-cols-2 sm:gap-y-6 md:grid-cols-3 lg:grid-cols-4">
 	{#each sauces as s}
 		{@render sauce(s)}
 	{:else}

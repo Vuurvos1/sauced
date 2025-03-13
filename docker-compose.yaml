@@ -1,15 +1,15 @@
 services:
   db:
     image: postgres:16
-    container_name: spiced_postgres
+    container_name: sauced_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: sauce
+      POSTGRES_DB: sauced
     ports:
       - '5433:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 1s
       timeout: 5s
       retries: 10

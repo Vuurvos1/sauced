@@ -1,9 +1,9 @@
 import parser from 'yargs-parser';
-import fuzzysort from 'fuzzysort';
 import fs from 'node:fs';
 import scrapers from './scrapers.js';
 import { getDb } from '@app/db/index.js';
 import { hotSauces, stores, storeHotSauces } from '@app/db/schema.js';
+import { normalizeName, isSimilarName } from './utils/index.js';
 import { eq } from 'drizzle-orm';
 
 import 'dotenv/config';
@@ -14,26 +14,6 @@ const flags = parser(args, {
 });
 
 const db = getDb(process.env.DATABASE_URL);
-
-/**
- * @param {string} name
- */
-function normalizeName(name) {
-	return name
-		.toLowerCase()
-		.replace(/[^a-z0-9\s]/gi, '')
-		.trim();
-}
-
-/**
- * @param {string} existingName
- * @param {string} newName
- * @param {number} threshold
- */
-function isSimilarName(existingName, newName, threshold = -50) {
-	const result = fuzzysort.single(newName, existingName);
-	return result ? result.score > threshold : false;
-}
 
 async function main() {
 	const startTime = performance.now();
@@ -54,11 +34,17 @@ async function main() {
 	/** @type {import('./index.d').ScrapeSauceOptions} */
 	const options = {
 		cache: !flags.noCache,
-		dbInsert: flags.dbInsert
+		dbInsert: flags.dbInsert,
+		dev: flags.dev
 	};
 
 	console.info(`Running scraper - ${scraper.name} - ${scraper.url}`);
-	const urls = await scraper.getSauceUrls(scraper.url, options);
+	let urls = await scraper.getSauceUrls(scraper.url, options);
+
+	// limit to 12 random urls
+	if (options.dev) {
+		urls = urls.sort(() => Math.random() - 0.5).slice(0, 12);
+	}
 
 	/** @type {import('./index.d').Sauce[]} */
 	const data = [];

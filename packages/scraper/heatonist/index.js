@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils.js';
+import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://heatonist.com';
 const cachePath = './cache/heatonist';
@@ -23,9 +23,9 @@ function getProductUrls(document) {
 
 		if (lowerTitle.match(/\b(pack|trio|duo)\b/)) continue;
 		if (lowerTitle.endsWith('socks')) continue;
-		if (lowerTitle.match(/\b(monthly|subscription)\b/)) continue;
-		if (lowerTitle.endsWith(' challenge')) continue;
-		if (lowerTitle.endsWith('collection')) continue;
+		if (lowerTitle.match(/\b(monthly|subscription|challenge|collection)\b/)) continue;
+		if (lowerTitle.includes('sauce box')) continue;
+		if (lowerTitle.includes('year of hot ones')) continue;
 
 		/** @type {HTMLAnchorElement | null} */
 		const anchor = product.querySelector('a:first-child');

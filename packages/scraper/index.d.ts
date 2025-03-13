@@ -3,6 +3,7 @@ import type { HotSauceInsert, StoreInsert } from '@app/db/types';
 export type ScrapeSauceOptions = {
 	cache: boolean;
 	dbInsert: boolean;
+	dev: boolean;
 };
 
 export type Sauce = HotSauceInsert & { url: string };

@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils.js';
+import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://heatsupply.nl';
 const cachePath = './cache/heatsupply';
@@ -37,11 +37,12 @@ async function getSauceUrls(url, options) {
 			const name = el.querySelector('h3')?.textContent?.trim();
 			if (!name) continue;
 
+			const lowerName = name.toLowerCase();
+
 			if (
-				name.toLowerCase().endsWith(' pack') ||
-				name.toLowerCase().includes('3 pack') ||
-				name.toLowerCase().endsWith(' subscription box') ||
-				name.toLowerCase().includes('giftset')
+				lowerName.match(/\b\d+(?:-|\s)?pack\b/) || // "pack" "3 pack" "3-pack" etc.
+				lowerName.includes('sauce box') ||
+				lowerName.match(/\b(monthly|subscription|giftset|challenge|collection|pack)\b/)
 			) {
 				console.info('Skipping bundle', name);
 				continue;

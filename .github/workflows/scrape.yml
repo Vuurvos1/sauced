@@ -1,6 +1,13 @@
 name: Scrape sauces
 
 on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'packages/scraper/**'
+      - 'packages/db/**'
+      - '.github/workflows/scrape.yml'
   workflow_dispatch:
     inputs:
       store:
@@ -16,7 +23,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    environment: Production
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
 
     steps:
       - name: Checkout
@@ -38,6 +45,14 @@ jobs:
 
       - name: Run scraper
         run: |
-          pnpm scrapers scrape ${{ github.event.inputs.store }} --dbInsert
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            # Run all scrapers on dev branch
+            pnpm scrapers scrape trex --dbInsert --dev
+            pnpm scrapers scrape heatsupply --dbInsert --dev
+            pnpm scrapers scrape heatonist --dbInsert --dev
+          else
+            # Run single scraper on manual trigger
+            pnpm scrapers scrape ${{ github.event.inputs.store }} --dbInsert
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
