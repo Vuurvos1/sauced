@@ -23,8 +23,10 @@ export function portal(node: HTMLElement, element: string) {
 		// },
 
 		destroy() {
+			if (!teleportElement || !node) return;
+			if (node.parentNode !== teleportElement) return;
+
 			try {
-				if (!teleportElement || !node) return;
 				teleportElement.removeChild(node);
 			} catch (e) {
 				console.error(e);
