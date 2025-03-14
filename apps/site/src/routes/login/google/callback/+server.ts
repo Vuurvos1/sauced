@@ -115,6 +115,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		});
 	}
 
+	// TODO: handle username collisions
+
 	// Create a new user and their OAuth account
 	const userId = await db.transaction(async (trx) => {
 		const [insertedUser] = await trx

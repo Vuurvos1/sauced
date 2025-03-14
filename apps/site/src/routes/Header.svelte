@@ -123,7 +123,7 @@
 	<nav class="bg-neutral-950 py-4 text-white">
 		<ul class="container flex flex-row items-center gap-4 font-medium md:grid md:grid-cols-4">
 			<li>
-				<a class="font-logo flex flex-row items-center gap-2.5 text-2xl" href="/">
+				<a class="flex flex-row items-center gap-2.5 font-logo text-2xl" href="/">
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"

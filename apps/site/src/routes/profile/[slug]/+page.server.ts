@@ -1,7 +1,7 @@
 import { db } from '$lib/db';
 import { checkins, hotSauces, userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns } from 'drizzle-orm';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -23,12 +23,12 @@ export async function load({ params }) {
 
 		const user = users[0];
 
+		const hotSauceColumns = getTableColumns(hotSauces);
 		const checkedSauces = await db
-			.select({
-				hotSauce: hotSauces
-			})
+			.select(hotSauceColumns)
 			.from(checkins)
-			.leftJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
+			.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
+			.where(eq(checkins.userId, user.id))
 			.orderBy(desc(checkins.createdAt))
 			.limit(12);
 
@@ -37,7 +37,7 @@ export async function load({ params }) {
 				id: user.id,
 				username: user.username
 			},
-			checkedSauces: checkedSauces.map((s) => s.hotSauce).filter((s) => !!s)
+			checkedSauces
 		};
 	} catch (err) {
 		console.error(err);

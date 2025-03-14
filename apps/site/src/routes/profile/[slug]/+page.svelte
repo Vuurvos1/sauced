@@ -48,7 +48,11 @@
 						</form>
 
 						<a href={`/sauces/${sauce.sauceId}`}>
-							<img src={sauce?.imageUrl} alt={sauce.name} />
+							<img
+								class="aspect-square w-full object-contain"
+								src={sauce?.imageUrl}
+								alt={sauce.name}
+							/>
 
 							<h3 class="h3">
 								{sauce.name}
