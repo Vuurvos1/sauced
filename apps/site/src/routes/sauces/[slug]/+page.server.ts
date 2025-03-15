@@ -6,7 +6,6 @@ import { and, eq, not } from 'drizzle-orm';
 // TODO: fix tensorflow issues
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as tf from '@tensorflow/tfjs';
-import * as toxicity from '@tensorflow-models/toxicity';
 
 export async function load({ params, locals: { user } }) {
 	const slug = params.slug;
@@ -85,7 +84,7 @@ export async function load({ params, locals: { user } }) {
 }
 
 export const actions = {
-	review: async ({ request, params, locals: { session, user } }) => {
+	review: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, {
 				success: false,
@@ -93,8 +92,9 @@ export const actions = {
 			});
 		}
 
-		const sauceId = params.slug;
+		const data = await request.formData();
 
+		const sauceId = data.get('id') as string | null;
 		if (!sauceId) {
 			return fail(400, {
 				success: false,
@@ -102,10 +102,7 @@ export const actions = {
 			});
 		}
 
-		const data = await request.formData();
-
 		const rating = Number(data.get('rating'));
-
 		if (rating < 1 || rating > 5) {
 			return fail(400, {
 				success: false,
@@ -116,10 +113,9 @@ export const actions = {
 		const review = String(data.get('content'));
 
 		let flagged = false;
-		// this takes 4-5 seconds
 		if (review) {
-			// TODO: only require here
-			// const toxicity = await import('@tensorflow-models/toxicity');
+			// loading this model takes around 4-5 seconds, so only load if needed
+			const toxicity = await import('@tensorflow-models/toxicity');
 			const model = await toxicity.load(0.9, ['toxicity']);
 
 			const predictions = await model.classify(review);
@@ -161,18 +157,18 @@ export const actions = {
 
 		return { success: true };
 	},
-	wishlist: async ({ params, request, locals: { session, user } }) => {
+	wishlist: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, { error: 'Unauthorized' });
 		}
 
-		const sauceId = params.slug;
+		const data = await request.formData();
 
+		const sauceId = data.get('id') as string | null;
 		if (!sauceId) {
 			return fail(400, { error: 'Invalid sauce' });
 		}
 
-		const data = await request.formData();
 		const wish = data.get('wishlist');
 
 		if (wish === 'false') {

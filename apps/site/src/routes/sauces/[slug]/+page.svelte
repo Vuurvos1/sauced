@@ -29,6 +29,8 @@
 				<div class="flex flex-row gap-6">
 					<!-- TODO: error handle -->
 					<form method="post" action="?/wishlist" use:enhance>
+						<input type="hidden" name="id" value={sauce.sauceId} />
+
 						<input type="hidden" name="wishlist" value={!wishlisted} />
 
 						<button type="submit" class="btn">
@@ -83,6 +85,8 @@
 								};
 							}}
 						>
+							<input type="hidden" name="id" value={sauce.sauceId} />
+
 							<div class="mb-5 flex flex-col gap-4">
 								<!-- rating slider -->
 								<StarRater></StarRater>

@@ -12,7 +12,10 @@ export async function load({ params }) {
 
 	try {
 		const users = await db
-			.select()
+			.select({
+				id: userTable.id,
+				username: userTable.username
+			})
 			.from(userTable)
 			.where(eq(userTable.username, username))
 			.limit(1);
@@ -25,7 +28,10 @@ export async function load({ params }) {
 
 		const hotSauceColumns = getTableColumns(hotSauces);
 		const checkedSauces = await db
-			.select(hotSauceColumns)
+			.select({
+				...hotSauceColumns,
+				rating: checkins.rating
+			})
 			.from(checkins)
 			.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
 			.where(eq(checkins.userId, user.id))

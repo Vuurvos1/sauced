@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { Trash2 } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
+	import StarRating from '$lib/components/StarRating.svelte';
 
 	let { data } = $props();
 
@@ -54,9 +55,14 @@
 								alt={sauce.name}
 							/>
 
-							<h3 class="h3">
+							<h3 class="h3 mb-2">
 								{sauce.name}
 							</h3>
+
+							<div class="flex flex-row items-center gap-2">
+								<StarRating rating={sauce.rating ?? 0} />
+								({sauce.rating?.toFixed(1) ?? 'No ratings yet'})
+							</div>
 						</a>
 					</li>
 				{/each}

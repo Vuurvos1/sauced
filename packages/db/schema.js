@@ -203,7 +203,7 @@ export const checkins = pgTable(
 		hotSauceId: uuid('hot_sauce_id')
 			.notNull()
 			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }), // TODO: change to uuid?
-		rating: integer('rating'), // .check((rating) => rating >= 1 && rating <= 5), rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+		rating: integer('rating'), // TODO: turn into a float?
 		review: text('review').default(''),
 		flagged: boolean('flagged').default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
