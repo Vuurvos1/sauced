@@ -8,11 +8,6 @@ export const hashCode = (name: string) => {
 	return Math.abs(hash);
 };
 
-// TODO: remove
-export const getModulus = (num: number, max: number) => {
-	return num % max;
-};
-
 export const getDigit = (number: number, ntn: number) => {
 	return Math.floor((number / Math.pow(10, ntn)) % 10);
 };
