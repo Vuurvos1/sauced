@@ -1,7 +1,7 @@
 import { db } from '$lib/db';
 import { checkins, hotSauces, userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
-import { and, desc, eq, getTableColumns } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -30,7 +30,9 @@ export async function load({ params }) {
 		const checkedSauces = await db
 			.select({
 				...hotSauceColumns,
-				rating: checkins.rating
+				rating: checkins.rating,
+				review: checkins.review,
+				checkedAt: checkins.createdAt
 			})
 			.from(checkins)
 			.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
@@ -38,12 +40,30 @@ export async function load({ params }) {
 			.orderBy(desc(checkins.createdAt))
 			.limit(12);
 
+		const reviewCount = await db
+			.select({
+				count: count()
+			})
+			.from(checkins)
+			.where(
+				and(eq(checkins.userId, user.id), isNotNull(checkins.review), not(eq(checkins.review, '')))
+			);
+
+		const sauceTriedCount = await db
+			.select({
+				count: count()
+			})
+			.from(checkins)
+			.where(eq(checkins.userId, user.id));
+
 		return {
 			user: {
 				id: user.id,
 				username: user.username
 			},
-			checkedSauces
+			checkedSauces,
+			reviewCount: reviewCount[0].count,
+			sauceTriedCount: sauceTriedCount[0].count
 		};
 	} catch (err) {
 		console.error(err);
