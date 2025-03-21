@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { BeamAvatar } from '@app/boring-avatars';
-	import { page } from '$app/state';
 	import { Trash2, Settings } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
 	import StarRating from '$lib/components/StarRating.svelte';
@@ -20,10 +19,6 @@
 				<h1 class="mb-3 text-2xl font-bold">{user.username}</h1>
 
 				<!-- <a href={`/profile/${page.params.slug}/wishlist`}>wishlist</a> -->
-
-				<!-- {#if session?.userId === user.id}
-
-			{/if} -->
 			</div>
 
 			{#if session?.userId === user.id}
@@ -37,12 +32,12 @@
 		<section class="card">
 			<h2 class="h2 mb-5">Stats</h2>
 
-			<div class="gap-4 space-y-4 text-center">
-				<div class="flex justify-between">
+			<div class="space-y-4">
+				<div class="flex items-center justify-between">
 					<span class=" text-sm text-gray-500">Check ins</span>
 					<span class="font-medium">{sauceTriedCount}</span>
 				</div>
-				<div class="flex justify-between">
+				<div class="flex items-center justify-between">
 					<span class=" text-sm text-gray-500">Reviews</span>
 					<span class="font-medium">{reviewCount}</span>
 				</div>

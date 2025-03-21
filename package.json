@@ -21,5 +21,10 @@
 	"packageManager": "pnpm@9.4.0",
 	"engines": {
 		"node": ">=20"
+	},
+	"pnpm": {
+		"overrides": {
+			"drizzle-orm": "^0.40.1"
+		}
 	}
 }

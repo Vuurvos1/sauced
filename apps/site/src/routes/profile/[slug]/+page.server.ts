@@ -57,10 +57,7 @@ export async function load({ params }) {
 			.where(eq(checkins.userId, user.id));
 
 		return {
-			user: {
-				id: user.id,
-				username: user.username
-			},
+			user,
 			checkedSauces,
 			reviewCount: reviewCount[0].count,
 			sauceTriedCount: sauceTriedCount[0].count
