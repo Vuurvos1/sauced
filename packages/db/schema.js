@@ -214,3 +214,15 @@ export const checkins = pgTable(
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.hotSauceId] })]
 );
+
+export const achievements = pgTable(
+	'achievements',
+	{
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => userTable.id, { onDelete: 'cascade' }),
+		achievementName: text('achievement_name').notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.userId, t.achievementName] })]
+);
