@@ -15,6 +15,13 @@
       "when": 1741346691623,
       "tag": "0001_bumpy_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744317345596,
+      "tag": "0002_shiny_dagger",
+      "breakpoints": true
     }
   ]
 }
