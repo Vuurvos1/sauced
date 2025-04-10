@@ -7,7 +7,7 @@
 
 	let { data } = $props();
 
-	let { user, session, checkedSauces, reviewCount, sauceTriedCount } = $derived(data);
+	let { user, session, checkedSauces, reviewCount, sauceTriedCount, achievements } = $derived(data);
 </script>
 
 <div class="container grid gap-6 md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
@@ -42,6 +42,19 @@
 					<span class="font-medium">{reviewCount}</span>
 				</div>
 			</div>
+		</section>
+
+		<section class="card">
+			<h2 class="h2 mb-5">Achievements</h2>
+
+			<ul>
+				{#each achievements as achievement}
+					<li>
+						<img src={achievement.icon} alt={achievement.name} />
+						{achievement.name}
+					</li>
+				{/each}
+			</ul>
 		</section>
 	</div>
 

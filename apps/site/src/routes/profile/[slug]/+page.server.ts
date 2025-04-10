@@ -1,6 +1,7 @@
 import { db } from '$lib/db';
 import { checkins, hotSauces, userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
+import { getAchievements } from '$lib/server/achievements';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
 
 export async function load({ params }) {
@@ -56,11 +57,14 @@ export async function load({ params }) {
 			.from(checkins)
 			.where(eq(checkins.userId, user.id));
 
+		const achievements = await getAchievements(user);
+
 		return {
 			user,
 			checkedSauces,
 			reviewCount: reviewCount[0].count,
-			sauceTriedCount: sauceTriedCount[0].count
+			sauceTriedCount: sauceTriedCount[0].count,
+			achievements
 		};
 	} catch (err) {
 		console.error(err);

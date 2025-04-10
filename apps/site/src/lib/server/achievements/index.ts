@@ -1,3 +1,8 @@
+import { checkinAchievement } from './checkin';
+import { reviewAchievement } from './review';
+import { daBombAchievement } from './daBomb';
+import { lastDabAchievement } from './lastDab';
+
 type User = {
 	id: string;
 };
@@ -106,11 +111,6 @@ export const achievements = [
 		icon: 'fa-sun'
 	},
 	{
-		name: 'Tears of Joy',
-		description: 'Post a photo with watery eyes',
-		icon: 'fa-face-sad-tear'
-	},
-	{
 		name: 'Double Dip',
 		description: 'Re-rate a sauce after 6 months',
 		icon: 'fa-rotate'
@@ -132,3 +132,13 @@ export type AchievementName = (typeof achievements)[number]['name'];
 export const achievementMap = new Map<AchievementName, Achievement>(
 	achievements.map((a) => [a.name, a])
 );
+
+export async function getAchievements(user: User) {
+	const results = await Promise.all([
+		checkinAchievement(user),
+		reviewAchievement(user),
+		daBombAchievement(user),
+		lastDabAchievement(user)
+	]);
+	return results.flat();
+}
