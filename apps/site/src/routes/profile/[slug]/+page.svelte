@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { BeamAvatar } from '@app/boring-avatars';
-	import { Trash2, Settings } from '@o7/icon/lucide';
+	import { Trash2, Settings, Trophy } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
 	import StarRating from '$lib/components/StarRating.svelte';
 	import { formatTimeAgo } from '$lib/utils/time.js';
@@ -34,7 +34,7 @@
 
 			<div class="space-y-4">
 				<div class="flex items-center justify-between">
-					<span class=" text-sm text-gray-500">Check ins</span>
+					<span class=" text-sm text-gray-500">Checkins</span>
 					<span class="font-medium">{sauceTriedCount}</span>
 				</div>
 				<div class="flex items-center justify-between">
@@ -47,11 +47,23 @@
 		<section class="card">
 			<h2 class="h2 mb-5">Achievements</h2>
 
-			<ul>
+			<ul class="flex flex-col gap-4">
 				{#each achievements as achievement}
-					<li>
-						<img src={achievement.icon} alt={achievement.name} />
-						{achievement.name}
+					<li class="flex items-center gap-2">
+						{#if achievement.image}
+							<img class="h-12 w-12 rounded-full" src={achievement.image} alt={achievement.name} />
+						{:else}
+							<div
+								class="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500"
+							>
+								<Trophy size={24}></Trophy>
+							</div>
+						{/if}
+
+						<div class="flex flex-col">
+							<h3 class="font-semibold">{achievement.name}</h3>
+							<p class="text-sm text-gray-500">{achievement.description}</p>
+						</div>
 					</li>
 				{/each}
 			</ul>

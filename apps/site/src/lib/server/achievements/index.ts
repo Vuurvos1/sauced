@@ -3,6 +3,12 @@ import { reviewAchievement } from './review';
 import { daBombAchievement } from './daBomb';
 import { lastDabAchievement } from './lastDab';
 
+import FirstBurn from '$lib/assets/achievements/first-burn.svg';
+import ScorchedEarth from '$lib/assets/achievements/scorched-earth.svg';
+import CapsaicinConnoisseur from '$lib/assets/achievements/capsaicin-connoisseur.svg';
+import DaBomb from '$lib/assets/achievements/da-bomb.svg';
+import TheLastDab from '$lib/assets/achievements/the-last-dab.svg';
+
 type User = {
 	id: string;
 };
@@ -10,8 +16,8 @@ type User = {
 export type Achievement = {
 	name: string;
 	description: string;
-	icon: string;
-	// condition: (user: User) => boolean;
+	icon?: string;
+	image?: string;
 };
 
 export type AchievementChecker = (user: User) => Promise<Achievement[]>;
@@ -21,17 +27,20 @@ export const achievements = [
 	{
 		name: 'First Burn',
 		description: 'Rate your first sauce',
-		icon: 'fa-fire'
+		icon: 'fa-fire',
+		image: FirstBurn
 	},
 	{
 		name: 'Scorched Earth',
 		description: 'Rate 50 sauces',
-		icon: 'fa-fire-flame-curved'
+		icon: 'fa-fire-flame-curved',
+		image: ScorchedEarth
 	},
 	{
 		name: 'Capsaicin Connoisseur',
 		description: 'Rate 100 sauces',
-		icon: 'fa-award'
+		icon: 'fa-award',
+		image: CapsaicinConnoisseur
 	},
 	{
 		name: 'Global Tongue',
@@ -118,13 +127,13 @@ export const achievements = [
 	//
 	{
 		name: 'The Last Dab',
-		description: "Rate a sauce in the 'Last Dab' category",
-		icon: 'fa-dab'
+		description: "Rate the 'Last Dab' hot sauce",
+		image: TheLastDab
 	},
 	{
 		name: 'Da Bomb',
-		description: "Rate a sauce in the 'Da Bomb' category",
-		icon: 'fa-bomb'
+		description: "Rate the 'Da Bomb' hot sauce",
+		image: DaBomb
 	}
 ] as const satisfies Achievement[];
 
