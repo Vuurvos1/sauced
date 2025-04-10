@@ -215,13 +215,26 @@ export const checkins = pgTable(
 	(t) => [primaryKey({ columns: [t.userId, t.hotSauceId] })]
 );
 
+export const achievementEnum = pgEnum('achievement', [
+	'first-burn',
+	'scorched-earth',
+	'capsaicin-connoisseur',
+	'first-review',
+	'spice-critic',
+	'capsaicin-columnist',
+	'hot-take-machine',
+	'blazing-bard',
+	'the-last-dab',
+	'da-bomb'
+]);
+
 export const achievements = pgTable(
 	'achievements',
 	{
 		userId: uuid('user_id')
 			.notNull()
 			.references(() => userTable.id, { onDelete: 'cascade' }),
-		achievementName: text('achievement_name').notNull(),
+		achievementName: achievementEnum('achievement_name').notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.achievementName] })]

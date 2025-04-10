@@ -5,7 +5,6 @@ import { eq, like, and } from 'drizzle-orm';
 import { achievementMap, type AchievementChecker } from './';
 
 export const lastDabAchievement: AchievementChecker = async (user) => {
-	// check if user has sauce named  Da Bomb Beyond Insanity
 	const sauces = await db
 		.select({
 			sauceName: hotSauces.name

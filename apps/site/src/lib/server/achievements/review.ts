@@ -5,7 +5,6 @@ import { eq, and, count, isNotNull } from 'drizzle-orm';
 import { achievementMap, type Achievement, type AchievementChecker } from './';
 
 export const reviewAchievement: AchievementChecker = async (user) => {
-	// check if user has sauce named  Da Bomb Beyond Insanity
 	const sauces = await db
 		.select({
 			count: count()

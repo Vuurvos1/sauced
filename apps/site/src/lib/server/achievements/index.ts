@@ -1,3 +1,5 @@
+import { achievementEnum } from '@app/db/schema';
+
 import { checkinAchievement } from './checkin';
 import { reviewAchievement } from './review';
 import { daBombAchievement } from './daBomb';
@@ -14,6 +16,7 @@ type User = {
 };
 
 export type Achievement = {
+	id: (typeof achievementEnum.enumValues)[number];
 	name: string;
 	description: string;
 	icon?: string;
@@ -25,33 +28,36 @@ export type AchievementChecker = (user: User) => Promise<Achievement[]>;
 export const achievements = [
 	// Tasting Achievements
 	{
+		id: 'first-burn',
 		name: 'First Burn',
 		description: 'Rate your first sauce',
 		icon: 'fa-fire',
 		image: FirstBurn
 	},
 	{
+		id: 'scorched-earth',
 		name: 'Scorched Earth',
 		description: 'Rate 50 sauces',
 		icon: 'fa-fire-flame-curved',
 		image: ScorchedEarth
 	},
 	{
+		id: 'capsaicin-connoisseur',
 		name: 'Capsaicin Connoisseur',
 		description: 'Rate 100 sauces',
 		icon: 'fa-award',
 		image: CapsaicinConnoisseur
 	},
-	{
-		name: 'Global Tongue',
-		description: 'Rate sauces from 10 different countries',
-		icon: 'fa-globe'
-	},
-	{
-		name: 'The Collector',
-		description: 'Try sauces from 20 unique brands',
-		icon: 'fa-trophy'
-	},
+	// {
+	// 	name: 'Global Tongue',
+	// 	description: 'Rate sauces from 10 different countries',
+	// 	icon: 'fa-globe'
+	// },
+	// {
+	// 	name: 'The Collector',
+	// 	description: 'Try sauces from 20 unique brands',
+	// 	icon: 'fa-trophy'
+	// },
 
 	// Heat Level Achievements
 	// {
@@ -82,55 +88,63 @@ export const achievements = [
 
 	// Social / Community Achievements
 	{
+		id: 'first-review',
 		name: 'First Review',
 		description: 'Write your first review',
 		icon: 'fa-pen'
 	},
 	{
+		id: 'spice-critic',
 		name: 'Spice Critic',
 		description: 'Write 10 reviews',
 		icon: 'fa-pen-fancy'
 	},
 	{
+		id: 'capsaicin-columnist',
 		name: 'Capsaicin Columnist',
 		description: 'Write 25 reviews',
 		icon: 'fa-pen-nib'
 	},
 	{
+		id: 'hot-take-machine',
 		name: 'Hot Take Machine',
 		description: 'Write 50 reviews',
 		icon: 'fa-pen-to-square'
 	},
 	{
+		id: 'blazing-bard',
 		name: 'Blazing Bard',
 		description: 'Write 100 reviews',
 		icon: 'fa-feather'
 	},
 
-	{
-		name: 'Firestarter',
-		description: 'Refer a friend to the app',
-		icon: 'fa-user-plus'
-	},
+	// {
+	// 	name: 'Firestarter',
+	// 	description: 'Refer a friend to the app',
+	// 	icon: 'fa-user-plus'
+	// },
 
-	// Fun / Whimsical Achievements
+	// Fun Achievements
+	// {
+	// 	name: 'Hot Sauce for Breakfast',
+	// 	description: 'Rate a sauce before 9 AM',
+	// 	icon: 'fa-sun'
+	// },
+	// {
+	// 	name: 'Double Dip',
+	// 	description: 'Re-rate a sauce after 6 months',
+	// 	icon: 'fa-rotate'
+	// },
+
+	// Hot Sauce Achievements
 	{
-		name: 'Hot Sauce for Breakfast',
-		description: 'Rate a sauce before 9 AM',
-		icon: 'fa-sun'
-	},
-	{
-		name: 'Double Dip',
-		description: 'Re-rate a sauce after 6 months',
-		icon: 'fa-rotate'
-	},
-	//
-	{
+		id: 'the-last-dab',
 		name: 'The Last Dab',
 		description: "Rate the 'Last Dab' hot sauce",
 		image: TheLastDab
 	},
 	{
+		id: 'da-bomb',
 		name: 'Da Bomb',
 		description: "Rate the 'Da Bomb' hot sauce",
 		image: DaBomb
