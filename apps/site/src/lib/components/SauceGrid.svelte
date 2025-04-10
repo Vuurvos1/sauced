@@ -38,7 +38,7 @@
 	</li>
 {/snippet}
 
-<ul class="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-x-4 gap-y-8">
+<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-x-4 gap-y-8">
 	{#each sauces as s}
 		{@render sauce(s)}
 	{:else}
