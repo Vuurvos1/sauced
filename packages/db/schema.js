@@ -203,7 +203,7 @@ export const checkins = pgTable(
 		hotSauceId: uuid('hot_sauce_id')
 			.notNull()
 			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }), // TODO: change to uuid?
-		rating: integer('rating'), // .check((rating) => rating >= 1 && rating <= 5), rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+		rating: integer('rating'), // TODO: turn into a float?
 		review: text('review').default(''),
 		flagged: boolean('flagged').default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -213,4 +213,29 @@ export const checkins = pgTable(
 			.$onUpdate(() => new Date())
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.hotSauceId] })]
+);
+
+export const achievementEnum = pgEnum('achievement', [
+	'first-burn',
+	'scorched-earth',
+	'capsaicin-connoisseur',
+	'first-review',
+	'spice-critic',
+	'capsaicin-columnist',
+	'hot-take-machine',
+	'blazing-bard',
+	'the-last-dab',
+	'da-bomb'
+]);
+
+export const achievements = pgTable(
+	'achievements',
+	{
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => userTable.id, { onDelete: 'cascade' }),
+		achievementName: achievementEnum('achievement_name').notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.userId, t.achievementName] })]
 );

@@ -42,6 +42,7 @@ export const actions: Actions = {
 				message: 'Invalid email'
 			});
 		}
+		// TODO: dissalow duplicate emails containing a plus sign, could be limited on a db level?
 
 		try {
 			const existingUser = await checkIfUserExists(email);

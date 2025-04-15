@@ -5,13 +5,13 @@ import {
 	GOOGLE_OAUTH_STATE_COOKIE_NAME
 } from '$lib/server/oauth';
 import { decodeIdToken } from 'arctic';
-
-import type { RequestEvent } from '@sveltejs/kit';
-import type { OAuth2Tokens } from 'arctic';
-
 import { db } from '$lib/db';
 import { oauthAccountTable, userTable } from '@app/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { generateRandomName } from '$lib/utils/name';
+
+import type { RequestEvent } from '@sveltejs/kit';
+import type { OAuth2Tokens } from 'arctic';
 
 type GoogleUser = {
 	sub: string;
@@ -115,12 +115,14 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		});
 	}
 
+	const username = await getValidUsername(claims.name);
+
 	// Create a new user and their OAuth account
 	const userId = await db.transaction(async (trx) => {
 		const [insertedUser] = await trx
 			.insert(userTable)
 			.values({
-				username: claims.name,
+				username: username,
 				email: claims.email,
 				emailVerified: true,
 				authMethods: ['google']
@@ -145,4 +147,30 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			Location: '/'
 		}
 	});
+}
+
+/** This should realistically never return a collision */
+async function getValidUsername(name: string) {
+	const existingUsers = await db
+		.select()
+		.from(userTable)
+		.where(eq(userTable.username, name))
+		.limit(1);
+	if (existingUsers.length === 0) {
+		return name;
+	}
+
+	for (let i = 0; i < 10; i++) {
+		const randomName = generateRandomName();
+		const existingUsers = await db
+			.select()
+			.from(userTable)
+			.where(eq(userTable.username, randomName))
+			.limit(1);
+		if (existingUsers.length === 0) {
+			return randomName;
+		}
+	}
+
+	return `${generateRandomName()}-${Math.random().toString(36).substring(2, 8)}`;
 }

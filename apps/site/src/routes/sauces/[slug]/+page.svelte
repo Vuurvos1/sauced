@@ -17,10 +17,10 @@
 </script>
 
 <div class="container">
-	<section class="mb-12 grid gap-4 md:grid-cols-5">
-		<img class="aspect-square object-contain md:col-span-3" src={sauce.imageUrl} alt={sauce.name} />
+	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+		<img class="aspect-square object-contain xl:col-span-3" src={sauce.imageUrl} alt={sauce.name} />
 
-		<div class="md:col-span-2">
+		<div class="xl:col-span-2">
 			<h1 class="h1 mb-3">{sauce.name}</h1>
 
 			<p class="mb-5 text-gray-500">{sauce.description}</p>
@@ -29,6 +29,8 @@
 				<div class="flex flex-row gap-6">
 					<!-- TODO: error handle -->
 					<form method="post" action="?/wishlist" use:enhance>
+						<input type="hidden" name="id" value={sauce.sauceId} />
+
 						<input type="hidden" name="wishlist" value={!wishlisted} />
 
 						<button type="submit" class="btn">
@@ -83,6 +85,8 @@
 								};
 							}}
 						>
+							<input type="hidden" name="id" value={sauce.sauceId} />
+
 							<div class="mb-5 flex flex-col gap-4">
 								<!-- rating slider -->
 								<StarRater></StarRater>

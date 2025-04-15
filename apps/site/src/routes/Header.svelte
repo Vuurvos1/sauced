@@ -3,7 +3,6 @@
 	import { Search, UserRound, Flame, Store } from '@o7/icon/lucide';
 	import {
 		autoUpdate,
-		flip,
 		offset,
 		useDismiss,
 		useFloating,
@@ -71,7 +70,7 @@
 		placement: 'bottom',
 		strategy: 'fixed',
 		get middleware() {
-			return [offset(10), flip()];
+			return [offset(8)];
 		}
 	});
 
@@ -121,9 +120,11 @@
 
 <header class="sticky top-0">
 	<nav class="bg-neutral-950 py-4 text-white">
-		<ul class="container flex flex-row items-center gap-4 font-medium md:grid md:grid-cols-4">
+		<ul
+			class="container grid grid-cols-[2rem_1fr_2rem] flex-row items-center gap-3 font-medium sm:gap-4 md:grid md:grid-cols-4"
+		>
 			<li>
-				<a class="font-logo flex flex-row items-center gap-2.5 text-2xl" href="/">
+				<a class="font-logo flex w-fit flex-row items-center gap-2.5 text-2xl" href="/">
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"
@@ -171,7 +172,7 @@
 							use:portal={'body'}
 							style={floating.floatingStyles}
 							{...interactions.getFloatingProps()}
-							class="absolute z-50 max-h-[50vh] w-full max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg"
+							class="z-50 max-h-[50vh] w-[calc(100vw-2rem)] max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg"
 							transition:fade={{ duration: 100 }}
 						>
 							<!-- Sauces -->

@@ -23,13 +23,21 @@
 		&.btn-outline {
 			@apply border border-zinc-500 bg-transparent text-zinc-900 hover:bg-gray-100;
 		}
+
+		&.btn-danger {
+			@apply border border-red-500 bg-red-500 text-white hover:bg-red-600;
+		}
 	}
 
 	.label {
-		@apply font-semibold text-gray-900;
+		@apply text-sm font-medium text-gray-900;
 	}
 
 	.input {
 		@apply rounded border px-4 py-2;
+	}
+
+	.card {
+		@apply rounded border bg-white p-4 shadow-sm;
 	}
 }

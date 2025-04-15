@@ -3,7 +3,7 @@
 	import TextInput from '$lib/components/form/TextInput.svelte';
 	import { Google } from '@o7/icon/remix/solid';
 
-	export let form;
+	let { form } = $props();
 </script>
 
 <section class="mb-12 grid h-full flex-1 place-items-center">
