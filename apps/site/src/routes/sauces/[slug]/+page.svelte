@@ -89,7 +89,7 @@
 
 							<div class="mb-5 flex flex-col gap-4">
 								<!-- rating slider -->
-								<StarRater></StarRater>
+								<StarRater rating={userCheckin?.rating ?? 0}></StarRater>
 
 								<!-- comment -->
 								<label for="content">Review</label>
@@ -98,6 +98,7 @@
 									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
+									value={userCheckin?.review ?? ''}
 								></textarea>
 							</div>
 
