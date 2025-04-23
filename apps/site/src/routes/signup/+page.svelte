@@ -7,14 +7,20 @@
 </script>
 
 <section class="mb-12 grid h-full flex-1 place-items-center">
-	<div class="">
+	<div class="w-full max-w-sm">
 		<h1 class="h1 mb-4 text-center">Create an account</h1>
 		<form class="flex flex-col gap-4" method="POST" action="?/signup" use:enhance>
-			<TextInput label="Username" name="username" required></TextInput>
+			<TextInput label="Username" name="username" minlength={1} maxlength={30} required></TextInput>
 
 			<TextInput label="Email" type="email" name="email" required></TextInput>
 
-			<TextInput label="Password" type="password" name="password" minlength={6} required
+			<TextInput
+				label="Password"
+				type="password"
+				name="password"
+				minlength={6}
+				maxlength={255}
+				required
 			></TextInput>
 
 			<button class="btn w-full" type="submit">Continue</button>

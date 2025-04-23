@@ -76,7 +76,7 @@
 				<h2 class="h3 mb-4">Check-ins</h2>
 
 				{#if checkedSauces.length > 0}
-					<ul class="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-4">
+					<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-4">
 						{#each checkedSauces as sauce}
 							<li class="group relative">
 								<!-- TODO: add confirm dialog -->
@@ -127,11 +127,5 @@
 				{/if}
 			</div>
 		</section>
-		<!-- 
-		<section></section>
-
-		<section></section>
-
-		<section></section> -->
 	</div>
 </div>

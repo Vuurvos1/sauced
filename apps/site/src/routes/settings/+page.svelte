@@ -3,10 +3,14 @@
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
 	import { enhance } from '$app/forms';
 	import { redirect } from '@sveltejs/kit';
+	import { z } from 'zod';
 
 	let { data } = $props();
 
 	let { user } = $derived(data);
+
+	let formErrors: string[] = $state([]);
+	let isSuccess = $state(false);
 
 	// svelte-ignore state_referenced_locally
 	if (!user) {
@@ -24,8 +28,65 @@
 			<div class="card p-6">
 				<h2 class="mb-6 text-xl font-semibold">Basic Information</h2>
 
-				<form method="post" action="?/updateUser" class="space-y-6" use:enhance>
+				<form
+					method="post"
+					action="?/updateUser"
+					class="space-y-6"
+					use:enhance={() => {
+						formErrors = [];
+						isSuccess = false;
+
+						return ({ result }) => {
+							if (result.type === 'success') {
+								isSuccess = true;
+								formErrors = [];
+							} else if (result.type === 'failure') {
+								const message = result.data?.messages;
+								// check for string array
+								const parsed = z.array(z.string()).safeParse(message);
+								if (parsed.success) {
+									formErrors = parsed.data;
+								} else {
+									formErrors = ['An unexpected error occurred'];
+								}
+							}
+						};
+					}}
+				>
 					<TextInput label="Username" name="username" value={user.username} />
+
+					{#if formErrors.length > 0}
+						<div class="rounded-md bg-red-50 p-4">
+							<div class="flex">
+								<div class="flex-shrink-0">
+									<!-- You can add an error icon here if you want -->
+								</div>
+								<div class="ml-3">
+									<h3 class="text-sm font-medium text-red-800">
+										There {formErrors.length === 1 ? 'was an error' : 'were errors'} with your submission
+									</h3>
+									<div class="mt-2 text-sm text-red-700">
+										<ul class="list-disc space-y-1 pl-5">
+											{#each formErrors as error}
+												<li>{error}</li>
+											{/each}
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					<!-- TODO: turn this into a toast -->
+					{#if isSuccess}
+						<div class="rounded-md bg-green-50 p-4">
+							<div class="flex">
+								<div class="ml-3">
+									<p class="text-sm font-medium text-green-800">Username updated successfully</p>
+								</div>
+							</div>
+						</div>
+					{/if}
 
 					<!-- if changed, show save button -->
 					<div class="flex justify-end">

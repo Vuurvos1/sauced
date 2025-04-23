@@ -4,7 +4,7 @@ import { type Actions } from '@sveltejs/kit';
 import { eq, avg, count, desc, ilike, getTableColumns } from 'drizzle-orm';
 
 export async function load({ url }) {
-	const page = Number(url.searchParams.get('page')) || 1;
+	const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
 	const pageSize = 24;
 
 	const search = url.searchParams.get('q') ?? '';
@@ -21,7 +21,7 @@ export async function load({ url }) {
 			avgRating: avg(checkins.rating)
 		})
 		.from(hotSauces)
-		.where(ilike(hotSauces.name, `%${search}%`)) // No sql injection here, I checked :)
+		.where(ilike(hotSauces.name, `%${search}%`))
 		.limit(pageSize)
 		.offset((page - 1) * pageSize) // TODO: check if filtering before or after the join is faster
 		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))

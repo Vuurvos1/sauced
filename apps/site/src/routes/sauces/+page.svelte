@@ -23,7 +23,7 @@
 
 <div class="container">
 	<div class="flex flex-row items-center justify-between">
-		<h1 class="text-4xl font-semibold">Sauces</h1>
+		<h1 class="h1">Sauces</h1>
 
 		<p class="text-gray-500">Showing {sauceCount} sauces</p>
 	</div>
