@@ -87,7 +87,6 @@ export const actions = {
 	review: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, {
-				success: false,
 				error: 'Unauthorized'
 			});
 		}
@@ -97,7 +96,6 @@ export const actions = {
 		const sauceId = data.get('id') as string | null;
 		if (!sauceId) {
 			return fail(400, {
-				success: false,
 				error: 'Invalid sauce'
 			});
 		}
@@ -105,8 +103,7 @@ export const actions = {
 		const rating = Number(data.get('rating'));
 		if (rating < 1 || rating > 5) {
 			return fail(400, {
-				success: false,
-				error: 'Invalid rating'
+				error: 'Please enter a valid rating'
 			});
 		}
 
@@ -150,12 +147,11 @@ export const actions = {
 		} catch (err) {
 			console.error(err);
 			return fail(500, {
-				success: false,
 				error: 'Failed to save review'
 			});
 		}
 
-		return { success: true };
+		return {};
 	},
 	wishlist: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
@@ -181,7 +177,7 @@ export const actions = {
 				return fail(500, { error: 'Failed to remove from wishlist' });
 			}
 
-			return { success: true };
+			return {};
 		}
 
 		try {
@@ -196,7 +192,7 @@ export const actions = {
 			return fail(500, { error: 'Failed to add to wishlist' });
 		}
 
-		return { success: true };
+		return {};
 	},
 	removeCheckIn: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
@@ -219,6 +215,6 @@ export const actions = {
 			return fail(500, { error: 'Failed to delete check-in' });
 		}
 
-		return { success: true };
+		return {};
 	}
 };

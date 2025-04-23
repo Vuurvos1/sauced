@@ -13,6 +13,7 @@
 	let { sauce, session, user, wishlisted, stores } = $derived(data);
 	let checkins = $state(data.checkins);
 	let userCheckin = $state(data.userCheckin);
+	let error = $state<string | null>(null);
 
 	let open = $state(false);
 </script>
@@ -62,6 +63,11 @@
 								const newRating = Number(formData.get('rating'));
 								const newReview = formData.get('content') as string;
 
+								if (newRating < 1 || newRating > 5) {
+									error = 'Please enter a valid rating';
+									return;
+								}
+
 								if (!userCheckin) {
 									// @ts-expect-error - only needed fields
 									userCheckin = {
@@ -74,14 +80,17 @@
 									userCheckin.review = newReview;
 								}
 
-								open = false;
-
-								toast.success('Check-in submitted successfully');
+								// open = false;
 
 								return ({ result }) => {
-									if (result.type !== 'success') {
+									if (result.type === 'success') {
+										error = null;
+										toast.success('Check-in submitted successfully');
+										open = false;
+									} else if (result.type === 'failure') {
 										// @ts-expect-error - copy of userCheckin
 										userCheckin = baseCheckin;
+										error = (result.data as { error: string })?.error ?? 'An error occurred';
 									}
 								};
 							}}
@@ -89,10 +98,8 @@
 							<input type="hidden" name="id" value={sauce.sauceId} />
 
 							<div class="mb-5 flex flex-col gap-4">
-								<!-- rating slider -->
 								<StarRater rating={userCheckin?.rating ?? 0}></StarRater>
 
-								<!-- comment -->
 								<label for="content">Review</label>
 								<textarea
 									class="resize-none rounded border p-2"
@@ -102,6 +109,12 @@
 									value={userCheckin?.review ?? ''}
 								></textarea>
 							</div>
+
+							{#if error}
+								<div class="mb-6 rounded bg-red-50 p-3 text-sm text-red-600">
+									{error}
+								</div>
+							{/if}
 
 							<div class="flex flex-row-reverse gap-4">
 								<button type="submit" class="btn">Check-in</button>
@@ -165,10 +178,9 @@
 						action="?/removeCheckIn"
 						use:enhance={() => {
 							return ({ result }) => {
-								console.log(result);
-
 								if (result.type === 'success') {
 									userCheckin = null;
+									toast.success('Check-in removed successfully');
 								}
 							};
 						}}
