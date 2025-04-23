@@ -2,7 +2,9 @@
 	import '../app.css';
 	import '@fontsource-variable/inter';
 	import '@fontsource/bebas-neue';
+
 	import Header from './Header.svelte';
+	import { Toaster } from 'svelte-sonner';
 
 	let { children } = $props();
 </script>
@@ -18,3 +20,5 @@
 		{@render children()}
 	</main>
 </div>
+
+<Toaster richColors position="top-right" />
