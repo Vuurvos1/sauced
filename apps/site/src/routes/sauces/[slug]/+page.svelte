@@ -4,8 +4,9 @@
 	import dayjs from '$lib/dayjs';
 	import StarRating from '$lib/components/StarRating.svelte';
 	import StarRater from '$lib/components/StarRater.svelte';
-	import { ListPlus, ListMinus, Check } from '@o7/icon/lucide';
+	import { ListPlus, ListMinus, Check, ArrowUpRight, Trash2 } from '@o7/icon/lucide';
 	import { Dialog } from '$lib/components/dialog/index.js';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 
@@ -75,10 +76,10 @@
 
 								open = false;
 
+								toast.success('Check-in submitted successfully');
+
 								return ({ result }) => {
 									if (result.type !== 'success') {
-										// reset
-										console.error('Failed to submit review', result);
 										// @ts-expect-error - copy of userCheckin
 										userCheckin = baseCheckin;
 									}
@@ -130,19 +131,7 @@
 									href={store.url}
 								>
 									<span>{store.store.name}</span>
-									<svg
-										class="h-4 w-4"
-										xmlns="http://www.w3.org/2000/svg"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M7 17L17 7" />
-										<path d="M7 7h10v10" />
-									</svg>
+									<ArrowUpRight size={20}></ArrowUpRight>
 								</a>
 							</li>
 						{/each}
@@ -154,19 +143,46 @@
 		</div>
 	</section>
 
-	{#snippet checkinSnip(checkin: (typeof data.checkins)[number])}
+	{#snippet checkinSnippet(checkin: (typeof data.checkins)[number])}
 		<li class="py-4 first:pt-0 last:pb-0">
-			<div class="mb-3 flex flex-row items-center gap-4">
-				<BeamAvatar name={checkin.username ?? ''}></BeamAvatar>
+			<div class="mb-3 flex flex-row items-center justify-between">
+				<div class="flex flex-row items-center gap-4">
+					<BeamAvatar name={checkin.username ?? ''}></BeamAvatar>
 
-				<div class="flex flex-col">
-					<time datetime={dayjs(checkin.checkins.updatedAt).format('YYYY-MM-DD')}>
-						{dayjs(checkin.checkins.updatedAt).format('MMMM D, YYYY')}
-					</time>
-					{#if checkin.username}
-						<a href={`/profile/${checkin.username}`}>{checkin.username}</a>
-					{/if}
+					<div class="flex flex-col">
+						<time datetime={dayjs(checkin.checkins.updatedAt).format('YYYY-MM-DD')}>
+							{dayjs(checkin.checkins.updatedAt).format('MMMM D, YYYY')}
+						</time>
+						{#if checkin.username}
+							<a href={`/profile/${checkin.username}`}>{checkin.username}</a>
+						{/if}
+					</div>
 				</div>
+
+				{#if user && checkin.username === user.username}
+					<form
+						method="post"
+						action="?/removeCheckIn"
+						use:enhance={() => {
+							return ({ result }) => {
+								console.log(result);
+
+								if (result.type === 'success') {
+									userCheckin = null;
+								}
+							};
+						}}
+					>
+						<input type="hidden" name="sauceId" value={sauce.sauceId} />
+						<button
+							type="submit"
+							class="text-gray-400 transition-colors hover:text-red-600"
+							title="Remove review"
+						>
+							<Trash2 size={16}></Trash2>
+						</button>
+					</form>
+				{/if}
 			</div>
 
 			<div class="mb-3 flex flex-row items-center gap-2">
@@ -187,11 +203,11 @@
 		{:else}
 			<ul class="flex flex-col divide-y">
 				{#if userCheckin && user}
-					{@render checkinSnip({ username: user.username, checkins: userCheckin })}
+					{@render checkinSnippet({ username: user.username, checkins: userCheckin })}
 				{/if}
 
 				{#each checkins as checkin}
-					{@render checkinSnip(checkin)}
+					{@render checkinSnippet(checkin)}
 				{/each}
 			</ul>
 		{/if}

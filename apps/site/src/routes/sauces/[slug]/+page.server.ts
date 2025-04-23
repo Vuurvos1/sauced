@@ -197,5 +197,28 @@ export const actions = {
 		}
 
 		return { success: true };
+	},
+	removeCheckIn: async ({ request, locals: { session, user } }) => {
+		if (!session || !user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const data = await request.formData();
+		const sauceId = (data.get('sauceId') || '') as string;
+
+		if (!sauceId) {
+			return fail(400, { error: 'Missing sauceId' });
+		}
+
+		try {
+			await db
+				.delete(checkins)
+				.where(and(eq(checkins.hotSauceId, sauceId), eq(checkins.userId, user.id)));
+		} catch (err) {
+			console.error(err);
+			return fail(500, { error: 'Failed to delete check-in' });
+		}
+
+		return { success: true };
 	}
 };
