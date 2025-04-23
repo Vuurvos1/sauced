@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { sendEmailVerificationToken } from '$lib/server/email';
 import { hashSettings } from '$lib/server/utils';
+import { usernameSchema, emailSchema, passwordSchema } from '$lib/validation';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
@@ -19,29 +20,55 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
 	signup: async ({ request, cookies }) => {
 		const formData = await request.formData();
-		const username = formData.get('username');
-		const password = formData.get('password');
-		const email = formData.get('email');
-		if (
-			typeof username !== 'string' ||
-			username.length < 3 ||
-			username.length > 31 ||
-			!/^[a-z0-9_-]+$/.test(username)
-		) {
+		const formUsername = formData.get('username');
+		const formPassword = formData.get('password');
+		const formEmaill = formData.get('email');
+
+		if (!formUsername) {
 			return fail(400, {
-				message: 'Invalid username'
+				message: 'Username is required'
 			});
 		}
-		if (typeof password !== 'string' || password.length < 6 || password.length > 255) {
+
+		if (!formPassword) {
 			return fail(400, {
-				message: 'Invalid password'
+				message: 'Password is required'
 			});
 		}
-		if (typeof email !== 'string' || email.length < 3 || email.length > 255) {
+
+		if (!formEmaill) {
+			return fail(400, {
+				message: 'Email is required'
+			});
+		}
+
+		const usernameResult = usernameSchema.safeParse(formUsername);
+		if (!usernameResult.success) {
+			const errors = usernameResult.error.issues.map((issue) => issue.message);
+			return fail(400, {
+				message: errors[0]
+			});
+		}
+		const username = usernameResult.data;
+
+		const emailResult = emailSchema.safeParse(formEmaill);
+		if (!emailResult.success) {
 			return fail(400, {
 				message: 'Invalid email'
 			});
 		}
+		const email = emailResult.data;
+
+		// TODO: add a pwned password check
+		const passwordResult = passwordSchema.safeParse(formPassword);
+		if (!passwordResult.success) {
+			const errors = passwordResult.error.issues.map((issue) => issue.message);
+			return fail(400, {
+				message: errors[0]
+			});
+		}
+		const password = passwordResult.data;
+
 		// TODO: dissalow duplicate emails containing a plus sign, could be limited on a db level?
 
 		try {

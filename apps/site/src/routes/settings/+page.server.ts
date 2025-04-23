@@ -3,6 +3,7 @@ import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { userTable } from '@app/db/schema';
 import { eq } from 'drizzle-orm';
+import { usernameSchema } from '$lib/validation/index.js';
 
 export async function load({ locals: { user } }) {
 	if (!user) {
@@ -17,17 +18,30 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const username = formData.get('username') as string | null;
+		const formUsername = formData.get('username');
 
-		if (username) {
-			try {
-				await db.update(userTable).set({ username }).where(eq(userTable.id, locals.session.userId));
-			} catch (error) {
-				console.error(error);
-				return fail(500, {
-					message: 'Failed to update username'
-				});
-			}
+		if (!formUsername) {
+			return fail(400, {
+				messages: ['Username is required']
+			});
+		}
+
+		const usernameError = usernameSchema.safeParse(formUsername);
+		if (!usernameError.success) {
+			const errors = usernameError.error.issues.map((issue) => issue.message);
+			return fail(400, {
+				messages: errors
+			});
+		}
+		const username = usernameError.data;
+
+		try {
+			await db.update(userTable).set({ username }).where(eq(userTable.id, locals.session.userId));
+		} catch (error) {
+			console.error(error);
+			return fail(500, {
+				messages: ['Failed to update username']
+			});
 		}
 	},
 	deleteAccount: async ({ locals, cookies, request }) => {
