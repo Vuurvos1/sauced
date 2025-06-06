@@ -44,8 +44,8 @@
 			</div>
 		</section>
 
-		<section class="card">
-			<h2 class="h2 mb-5">Achievements</h2>
+		<section class="card flex flex-col gap-4">
+			<h2 class="h2">Achievements</h2>
 
 			<ul class="flex flex-col gap-4">
 				{#each achievements as achievement}
@@ -65,6 +65,10 @@
 							<p class="text-sm text-gray-500">{achievement.description}</p>
 						</div>
 					</li>
+				{:else}
+					<li>
+						<p class="text-sm text-gray-500">No achievements yet.</p>
+					</li>
 				{/each}
 			</ul>
 		</section>
@@ -76,7 +80,7 @@
 				<h2 class="h3 mb-4">Check-ins</h2>
 
 				{#if checkedSauces.length > 0}
-					<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-4">
+					<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-4">
 						{#each checkedSauces as sauce}
 							<li class="group relative">
 								<!-- TODO: add confirm dialog -->

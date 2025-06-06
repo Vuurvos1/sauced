@@ -118,7 +118,7 @@
 	</li>
 {/snippet}
 
-<header class="sticky top-0">
+<header class="sticky top-0 z-40">
 	<nav class="bg-neutral-950 py-4 text-white">
 		<ul
 			class="container grid grid-cols-[2rem_1fr_2rem] flex-row items-center gap-3 font-medium sm:gap-4 md:grid md:grid-cols-4"
@@ -235,13 +235,9 @@
 			</li>
 
 			<li class="md:ml-auto">
-				{#if session}
-					<a aria-label="profile" href="/profile">
-						<UserRound size={24}></UserRound>
-					</a>
-				{:else}
-					<a href="/login">login</a>
-				{/if}
+				<a aria-label="profile" href={session ? '/profile' : '/login'}>
+					<UserRound size={24}></UserRound>
+				</a>
 			</li>
 		</ul>
 	</nav>

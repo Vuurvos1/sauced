@@ -1,6 +1,6 @@
 import { db } from '$lib/db';
 import { checkins, hotSauces } from '@app/db/schema';
-import { eq, and, count, isNotNull } from 'drizzle-orm';
+import { eq, and, count, isNotNull, ne } from 'drizzle-orm';
 
 import { achievementMap, type Achievement, type AchievementChecker } from './';
 
@@ -11,7 +11,7 @@ export const reviewAchievement: AchievementChecker = async (user) => {
 		})
 		.from(checkins)
 		.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
-		.where(and(eq(checkins.userId, user.id), isNotNull(checkins.review)));
+		.where(and(eq(checkins.userId, user.id), isNotNull(checkins.review), ne(checkins.review, '')));
 	const sauce = sauces[0];
 
 	const achievements: Achievement[] = [];

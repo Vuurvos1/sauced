@@ -7,15 +7,14 @@
 		"site": "pnpm --filter @app/site -- ",
 		"scrapers": "pnpm --filter @app/scraper -- ",
 		"build": "turbo run build",
-		"dev": "turbo run dev",
 		"lint": "turbo run lint",
 		"format": "prettier --write .",
 		"docker:up": "docker compose up -d"
 	},
 	"devDependencies": {
 		"prettier": "^3.5.3",
-		"prettier-plugin-svelte": "^3.3.3",
-		"turbo": "^2.5.0"
+		"prettier-plugin-svelte": "^3.4.0",
+		"turbo": "^2.5.4"
 	},
 	"type": "module",
 	"packageManager": "pnpm@9.4.0",
@@ -24,8 +23,8 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"drizzle-orm": "^0.40.1",
-			"vitest": "^3.1.1"
+			"drizzle-orm": "^0.44.2",
+			"vitest": "^3.2.2"
 		}
 	}
 }
