@@ -61,7 +61,7 @@
 		"boring-avatars": "^1.11.2",
 		"clsx": "^2.1.1",
 		"dayjs": "^1.11.13",
-		"drizzle-orm": "^0.40.1",
+		"drizzle-orm": "^0.44.2",
 		"drizzle-zod": "^0.7.1",
 		"focus-trap": "^7.6.5",
 		"postgres": "^3.4.7",
@@ -69,6 +69,6 @@
 		"resend": "^4.5.2",
 		"svelte-sonner": "^0.3.28",
 		"tailwind-merge": "^2.6.0",
-		"zod": "4.0.0-beta.20250420T053007"
+		"zod": "3.25.53"
 	}
 }

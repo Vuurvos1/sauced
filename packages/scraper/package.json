@@ -10,10 +10,10 @@
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"dotenv": "^16.4.7",
-		"drizzle-orm": "^0.40.0",
+		"dotenv": "^16.5.0",
+		"drizzle-orm": "^0.44.2",
 		"fuzzysort": "^3.1.0",
-		"jsdom": "^24.1.1",
+		"jsdom": "^26.1.0",
 		"puppeteer": "^22.15.0",
 		"puppeteer-core": "^22.15.0",
 		"puppeteer-extra": "^3.3.6",
@@ -24,6 +24,6 @@
 	"devDependencies": {
 		"@types/jsdom": "^21.1.7",
 		"@types/yargs-parser": "^21.0.3",
-		"vitest": "^3.1.1"
+		"vitest": "^3.2.2"
 	}
 }

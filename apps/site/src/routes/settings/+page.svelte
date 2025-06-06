@@ -3,7 +3,7 @@
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
 	import { enhance } from '$app/forms';
 	import { redirect } from '@sveltejs/kit';
-	import { z } from 'zod';
+	import { z } from 'zod/v4';
 
 	let { data } = $props();
 
