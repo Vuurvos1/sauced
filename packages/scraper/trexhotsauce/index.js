@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
+import { fetchPage, getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://t-rexhotsauce.com';
 const cachePath = './cache/trex';
@@ -17,7 +17,7 @@ async function getSauceUrls(url, options) {
 	const pageCachePath = getCachePath('trex', pageUrl);
 
 	if (!cache || !fs.existsSync(pageCachePath)) {
-		const page = await fetch(pageUrl);
+		const page = await fetchPage(pageUrl);
 		const body = await page.text();
 		writeFile(pageCachePath, body);
 	}
@@ -26,11 +26,10 @@ async function getSauceUrls(url, options) {
 	const document = new JSDOM(page).window.document;
 
 	/** @type {NodeListOf<HTMLAnchorElement>} */
-	const productElements = document.querySelectorAll(
-		'#product-grid .grid__item .card > .card__content a'
-	);
+	const productElements = document.querySelectorAll('a.product-card__heading');
 
-	return Array.from(productElements).map((el) => `${url}${el.href}`);
+	const hrefs = new Set(Array.from(productElements, (el) => `${url}${el.getAttribute('href')}`));
+	return Array.from(hrefs);
 }
 
 /** @type {import('../').ScrapeSauce} */
@@ -39,7 +38,7 @@ async function scrapeSauce(url, options) {
 	const cachePath = getCachePath('trex', url);
 
 	if (!cache || !fs.existsSync(cachePath)) {
-		const page = await fetch(url);
+		const page = await fetchPage(url);
 		const body = await page.text();
 		writeFile(cachePath, body);
 	}

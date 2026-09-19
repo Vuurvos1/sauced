@@ -1,142 +1,67 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { hash } from '@node-rs/argon2';
-import { db } from '$lib/db';
-import { userTable } from '@app/db/schema';
-import postgres from 'postgres';
-import { checkIfUserExists, createEmailVerificationToken } from '$lib/server/auth';
-import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
-import { sendEmailVerificationToken } from '$lib/server/email';
-import { hashSettings } from '$lib/server/utils';
-import { usernameSchema, emailSchema, passwordSchema } from '$lib/validation';
+import { usernameSchema, passwordSchema, emailSchema } from '$lib/validation';
+import { superValidate, message } from 'sveltekit-superforms';
+import { zod4 } from 'sveltekit-superforms/adapters';
+import { z } from 'zod/v4';
+import { auth } from '$lib/server/auth';
+import { APIError } from 'better-auth/api';
+
+const signupSchema = z.object({
+	username: usernameSchema,
+	email: emailSchema,
+	password: passwordSchema
+});
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
 		return redirect(302, '/');
 	}
-	return {};
+
+	const form = await superValidate(zod4(signupSchema));
+
+	return { form };
 };
 
 export const actions: Actions = {
-	signup: async ({ request, cookies }) => {
-		const formData = await request.formData();
-		const formUsername = formData.get('username');
-		const formPassword = formData.get('password');
-		const formEmaill = formData.get('email');
+	signup: async ({ request }) => {
+		const form = await superValidate(request, zod4(signupSchema));
 
-		if (!formUsername) {
-			return fail(400, {
-				message: 'Username is required'
-			});
+		if (!form.valid) {
+			return fail(400, { form });
 		}
 
-		if (!formPassword) {
-			return fail(400, {
-				message: 'Password is required'
-			});
-		}
-
-		if (!formEmaill) {
-			return fail(400, {
-				message: 'Email is required'
-			});
-		}
-
-		const usernameResult = usernameSchema.safeParse(formUsername);
-		if (!usernameResult.success) {
-			const errors = usernameResult.error.issues.map((issue) => issue.message);
-			return fail(400, {
-				message: errors[0]
-			});
-		}
-		const username = usernameResult.data;
-
-		const emailResult = emailSchema.safeParse(formEmaill);
-		if (!emailResult.success) {
-			return fail(400, {
-				message: 'Invalid email'
-			});
-		}
-		const email = emailResult.data;
-
-		// TODO: add a pwned password check
-		const passwordResult = passwordSchema.safeParse(formPassword);
-		if (!passwordResult.success) {
-			const errors = passwordResult.error.issues.map((issue) => issue.message);
-			return fail(400, {
-				message: errors[0]
-			});
-		}
-		const password = passwordResult.data;
-
-		// TODO: dissalow duplicate emails containing a plus sign, could be limited on a db level?
+		const { username, email, password } = form.data;
 
 		try {
-			const existingUser = await checkIfUserExists(email);
-			if (existingUser && existingUser.authMethods.includes('email')) {
-				return fail(400, {
-					message: 'Email already used'
-				});
-			}
-
-			let userId = existingUser?.id;
-			const passwordHash = await hash(password, hashSettings);
-
-			if (!existingUser) {
-				const [{ id }] = await db
-					.insert(userTable)
-					.values({
-						id: userId,
-						email,
-						username,
-						passwordHash,
-						emailVerified: false,
-						authMethods: ['email']
-					})
-					.returning({ id: userTable.id });
-				userId = id;
-			} else {
-				await db
-					.update(userTable)
-					.set({
-						username,
-						passwordHash
-					})
-					.where(eq(userTable.email, email));
-			}
-
-			const emailVerificationCode = await createEmailVerificationToken(userId, email);
-
-			const sendEmailVerificationCodeResult = await sendEmailVerificationToken(
-				email,
-				emailVerificationCode
-			);
-
-			if (!sendEmailVerificationCodeResult.success) {
-				return fail(500, {
-					message: 'Failed to send email verification code'
-				});
-			}
-
-			const pendingVerificationUserData = JSON.stringify({ id: userId, email: email });
-
-			cookies.set('pendingUserVerification', pendingVerificationUserData, {
-				path: '/auth/email-verification'
+			await auth.api.signUpEmail({
+				body: {
+					email,
+					password,
+					name: username,
+					username
+				},
+				headers: request.headers
 			});
 		} catch (err) {
-			if (err instanceof postgres.PostgresError && err.code === '23505') {
-				return fail(400, {
-					message: 'Username already used'
-				});
+			if (err instanceof APIError) {
+				if (err.body?.code === 'USER_ALREADY_EXISTS') {
+					return message(form, 'An account with this email already exists', { status: 400 });
+				}
+				if (err.body?.code === 'PASSWORD_COMPROMISED') {
+					return message(
+						form,
+						'This password has been found in a data breach. Please choose a different password.',
+						{ status: 400 }
+					);
+				}
+				return message(form, err.body?.message ?? 'Signup failed', { status: 400 });
 			}
 
-			console.error(err);
-
-			return fail(500, {
-				message: 'An unknown error occurred'
-			});
+			console.error('Signup error:', err);
+			return message(form, 'An unexpected error occurred. Please try again.', { status: 500 });
 		}
 
-		throw redirect(303, '/auth/email-verification');
+		redirect(303, `/auth/email-verification?email=${encodeURIComponent(email)}`);
 	}
 };

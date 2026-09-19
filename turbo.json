@@ -4,7 +4,8 @@
 		"DATABASE_URL",
 		"GOOGLE_CLIENT_ID",
 		"GOOGLE_CLIENT_SECRET",
-		"RESEND_API_KEY"
+		"RESEND_API_KEY",
+		"BETTER_AUTH_SECRET"
 	],
 	"$schema": "https://turbo.build/schema.json",
 	"tasks": {

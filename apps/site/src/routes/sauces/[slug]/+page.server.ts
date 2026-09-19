@@ -1,5 +1,12 @@
-import { db } from '$lib/db';
-import { checkins, hotSauces, userTable, wishlist, stores, storeHotSauces } from '@app/db/schema';
+import { db } from '$lib/server/db';
+import {
+	checkins,
+	hotSauces,
+	user as userTable,
+	wishlist,
+	stores,
+	storeHotSauces
+} from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
 

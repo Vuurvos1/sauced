@@ -1,5 +1,5 @@
-import { db } from '$lib/db';
-import { checkins, hotSauces, userTable } from '@app/db/schema';
+import { db } from '$lib/server/db';
+import { checkins, hotSauces, user as userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { getAchievements } from '$lib/server/achievements';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';

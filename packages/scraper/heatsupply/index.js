@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
+import { fetchPage, getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://heatsupply.nl';
 const cachePath = './cache/heatsupply';
@@ -22,7 +22,7 @@ async function getSauceUrls(url, options) {
 		const pageCachePath = getCachePath('heatsupply', pageUrl);
 
 		if (!cache || !fs.existsSync(pageCachePath)) {
-			const page = await fetch(pageUrl);
+			const page = await fetchPage(pageUrl);
 			const body = await page.text();
 			writeFile(pageCachePath, body);
 		}
@@ -62,7 +62,7 @@ async function scrapeSauce(url, options) {
 	const cachePath = getCachePath('heatsupply', url);
 
 	if (!cache || !fs.existsSync(cachePath)) {
-		const page = await fetch(url);
+		const page = await fetchPage(url);
 		const body = await page.text();
 		writeFile(cachePath, body);
 	}

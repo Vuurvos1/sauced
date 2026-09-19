@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/db';
+import { db } from '$lib/server/db';
 import { checkins, hotSauces, stores } from '@app/db/schema';
 import { avg, desc, eq, count, ilike } from 'drizzle-orm';
 import type { SearchResponse } from '$lib/types/api';

@@ -11,67 +11,10 @@ import {
 	uuid,
 	index
 } from 'drizzle-orm/pg-core';
+import { user } from './auth.js';
 
 export const roleEnum = pgEnum('role', ['admin', 'moderator', 'user']);
 
-// auth
-export const userTable = pgTable('user', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	username: text('username').notNull().unique(),
-	passwordHash: text('password_hash'),
-	role: roleEnum('role').notNull().default('user'),
-
-	email: text('email').notNull().unique(),
-	emailVerified: boolean('is_email_verified').notNull().default(false),
-	authMethods: text('auth_methods').array().notNull().default([]),
-
-	createdAt: timestamp('created_at').notNull().defaultNow()
-});
-
-export const oauthAccountTable = pgTable(
-	'oauth_account',
-	{
-		userId: uuid('user_id')
-			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
-		providerId: text('provider').notNull(),
-		providerUserId: text('provider_user_id').notNull(),
-		createdAt: timestamp('created_at').notNull().defaultNow()
-	},
-	(t) => [primaryKey({ columns: [t.userId, t.providerId] })]
-);
-
-export const emailVerificationTable = pgTable('email_verification', {
-	id: serial('id').primaryKey(),
-	userId: uuid('user_id')
-		.notNull()
-		.references(() => userTable.id, { onDelete: 'cascade' }),
-	email: text('email').notNull(),
-	token: text('token').notNull(),
-	expiresAt: timestamp('expires_at').notNull()
-});
-
-export const passwordResetTokenTable = pgTable('password_reset_token', {
-	id: serial('id').primaryKey(),
-	userId: uuid('user_id')
-		.notNull()
-		.references(() => userTable.id),
-	tokenHash: text('token_hash').notNull().unique(),
-	expiresAt: timestamp('expires_at').notNull()
-});
-
-export const sessionTable = pgTable('session', {
-	id: text('id').primaryKey().notNull(), // TODO: change to uuid?
-	userId: uuid('user_id')
-		.notNull()
-		.references(() => userTable.id, { onDelete: 'cascade' }),
-	expiresAt: timestamp('expires_at', {
-		withTimezone: true,
-		mode: 'date'
-	}).notNull()
-});
-
-// app
 export const makers = pgTable('makers', {
 	makerId: uuid('maker_id').primaryKey().defaultRandom(),
 	name: varchar('name', { length: 256 }).notNull().unique(),
@@ -81,7 +24,6 @@ export const makers = pgTable('makers', {
 	updatedAt: timestamp('updated_at')
 		.notNull()
 		.defaultNow()
-		// TODO: maybe replace these with sql`now()`?
 		.$onUpdate(() => new Date())
 });
 
@@ -95,7 +37,7 @@ export const hotSauces = pgTable(
 		imageUrl: text('image_url'),
 		makerId: uuid('maker_id').references(() => makers.makerId, {
 			onDelete: 'set null'
-		}), // TODO: a sauce can have multiple makers
+		}),
 		createdAt: timestamp('created_at')
 			.notNull()
 			.defaultNow()
@@ -113,7 +55,6 @@ export const stores = pgTable('stores', {
 	name: varchar('name', { length: 256 }).notNull().unique(),
 	description: text('description').default(''),
 	url: varchar('url', { length: 256 }).notNull(),
-	// TODO: add country/loccation?
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at')
 		.notNull()
@@ -154,12 +95,12 @@ export const followers = pgTable(
 	'followers',
 	{
 		followerId: serial('follower_id'),
-		followerUserId: uuid('follower_user_id')
+		followerUserId: text('follower_user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
-		followedUserId: uuid('followed_user_id')
+			.references(() => user.id, { onDelete: 'cascade' }),
+		followedUserId: text('followed_user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
+			.references(() => user.id, { onDelete: 'cascade' }),
 		followedAt: timestamp('followed_at').defaultNow()
 	},
 	(t) => [primaryKey({ columns: [t.followerUserId, t.followedUserId] })]
@@ -169,12 +110,12 @@ export const friends = pgTable(
 	'friends',
 	{
 		friendId: serial('friend_id'),
-		userId: uuid('user_id')
+		userId: text('user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
-		friendUserId: uuid('friend_user_id')
+			.references(() => user.id, { onDelete: 'cascade' }),
+		friendUserId: text('friend_user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
+			.references(() => user.id, { onDelete: 'cascade' }),
 		becameFriendsAt: timestamp('became_friends_at').notNull().defaultNow()
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.friendUserId] })]
@@ -183,9 +124,9 @@ export const friends = pgTable(
 export const wishlist = pgTable(
 	'wishlist',
 	{
-		userId: uuid('user_id')
+		userId: text('user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
+			.references(() => user.id, { onDelete: 'cascade' }),
 		hotSauceId: uuid('hot_sauce_id')
 			.notNull()
 			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }),
@@ -197,13 +138,13 @@ export const wishlist = pgTable(
 export const checkins = pgTable(
 	'checkins',
 	{
-		userId: uuid('user_id')
+		userId: text('user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
+			.references(() => user.id, { onDelete: 'cascade' }),
 		hotSauceId: uuid('hot_sauce_id')
 			.notNull()
-			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }), // TODO: change to uuid?
-		rating: integer('rating'), // TODO: turn into a float?
+			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }),
+		rating: integer('rating'),
 		review: text('review').default(''),
 		flagged: boolean('flagged').default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -231,9 +172,9 @@ export const achievementEnum = pgEnum('achievement', [
 export const achievements = pgTable(
 	'achievements',
 	{
-		userId: uuid('user_id')
+		userId: text('user_id')
 			.notNull()
-			.references(() => userTable.id, { onDelete: 'cascade' }),
+			.references(() => user.id, { onDelete: 'cascade' }),
 		achievementName: achievementEnum('achievement_name').notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},

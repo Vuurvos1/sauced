@@ -1,7 +1,17 @@
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
-import * as schema from './schema.js';
+
+import * as authSchema from './schema/auth.js';
+import * as sauceSchema from './schema/sauce.js';
+
+export * from './schema/auth.js';
+export * from './schema/sauce.js';
+
+export const schema = {
+  ...authSchema,
+  ...sauceSchema,
+};
 
 /**
  * @param {string | undefined} dbUrl

@@ -22,6 +22,13 @@
       "when": 1744317345596,
       "tag": "0002_shiny_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776950665023,
+      "tag": "0003_white_hydra",
+      "breakpoints": true
     }
   ]
 }

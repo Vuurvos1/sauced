@@ -5,49 +5,21 @@
 </script>
 
 <div class="container">
-	<h1 class="mb-6 text-2xl font-bold leading-none">Email Verification Code</h1>
+	<h1 class="mb-6 text-2xl font-bold leading-none">Verify your email</h1>
 
 	<h2 class="mb-5">
-		Welcome aboard 🎉! To complete your registration, please enter the verification code we've sent
-		to your email:
-		<strong>{data.pendingUserEmail}</strong>.
+		Welcome aboard 🎉! We've sent a verification link to
+		{#if data.email}<strong>{data.email}</strong>{:else}your email address{/if}. Click the link in the
+		email to complete your registration.
 	</h2>
 
-	<form use:enhance method="post" class="space-y-4" action="?/verifyCode">
-		<label for="verificationCode">Verification Code</label>
+	<form method="post" action="?/resend" use:enhance class="mt-4 flex flex-col gap-2">
+		<input type="email" name="email" placeholder="your@email.com" value={data.email} required />
 
-		<!-- TODO: auto fill from url -->
-		<input
-			type="text"
-			id="verificationCode"
-			name="verificationCode"
-			required
-			placeholder="Enter your verification code here"
-		/>
+		<button type="submit">Resend verification email</button>
 
 		{#if form?.message}
 			<p>{form.message}</p>
 		{/if}
-
-		<button type="submit">Verify</button>
-	</form>
-
-	<form
-		method="post"
-		action="?/sendNewCode"
-		use:enhance={() => {
-			return async ({ result }) => {
-				if (result.type === 'failure') {
-					// toast.error(result.data?.message);
-				}
-
-				if (result.type === 'success') {
-					// toast.success(result.data?.message);
-				}
-			};
-		}}
-		class="mt-4"
-	>
-		<button type="submit">Send new code</button>
 	</form>
 </div>

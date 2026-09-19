@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
-import { getCachePath, slugifyName, writeFile } from '../utils/index.js';
+import { fetchPage, getCachePath, slugifyName, writeFile } from '../utils/index.js';
 
 const baseUrl = 'https://heatonist.com';
 const cachePath = './cache/heatonist';
@@ -48,7 +48,7 @@ async function getSauceUrls(url, options) {
 	const mainPageUrl = `${baseUrl}/collections/all-hot-sauces`;
 	const mainPageCachePath = getCachePath('heatonist', mainPageUrl);
 	if (!cache || !fs.existsSync(mainPageCachePath)) {
-		const page = await fetch(mainPageUrl);
+		const page = await fetchPage(mainPageUrl);
 		const body = await page.text();
 		writeFile(mainPageCachePath, body);
 	}
@@ -71,7 +71,7 @@ async function getSauceUrls(url, options) {
 		const pageCachePath = getCachePath('heatonist', pageUrl);
 
 		if (!cache || !fs.existsSync(pageCachePath)) {
-			const page = await fetch(pageUrl);
+			const page = await fetchPage(pageUrl);
 			const body = await page.text();
 			writeFile(pageCachePath, body);
 		}
@@ -91,7 +91,7 @@ async function scrapeSauce(url, options) {
 	const cachePath = getCachePath('heatonist', url);
 
 	if (!cache || !fs.existsSync(cachePath)) {
-		const page = await fetch(url);
+		const page = await fetchPage(url);
 		const body = await page.text();
 		writeFile(cachePath, body);
 	}

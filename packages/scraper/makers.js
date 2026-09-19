@@ -2,7 +2,7 @@
 export const makers = [
 	{
 		name: 'T-rex Hot sauce',
-		url: 'https://trexhotsauce.com/',
+		url: 'https://t-rexhotsauce.com/',
 		description:
 			'T-rex Hot sauce is a Amsterdam based hot sauce brand. From our own little kitchen we make small batches of vegan and fermented hot sauce.',
 		logoUrl: 'https://t-rexhotsauce.com/cdn/shop/files/T-REX-LOGO-DESIGN-2024.png?v=1711643615'

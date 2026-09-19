@@ -1,4 +1,4 @@
-import { db } from '$lib/db';
+import { db } from '$lib/server/db';
 import { hotSauces, stores, storeHotSauces } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';

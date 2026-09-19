@@ -1,68 +1,34 @@
-import { db } from '$lib/db.js';
-import { createPasswordResetToken, verifyPasswordResetToken } from '$lib/server/auth';
-import { sendPasswordResetEmail } from '$lib/server/email';
-import { userTable } from '@app/db/schema';
 import { fail, type Actions } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
-
-export const load = async (event) => {
-	// await passwordResetPageActionRateLimiter.cookieLimiter?.preflight(event);
-	const passwordResetToken = event.url.searchParams.get('token');
-	if (passwordResetToken) {
-		const { success, message } = await verifyPasswordResetToken(passwordResetToken);
-		return {
-			passwordResetTokenStatus: {
-				isValid: success,
-				message
-			}
-		};
-	}
-	// if (!passwordResetToken) {
-	// 	error(400, 'Password reset token is missing from the request.');
-	// }
-	// const { success, message } = await verifyPasswordResetToken(passwordResetToken);
-	// return {
-	// 	passwordResetTokenStatus: {
-	// 		isValid: success,
-	// 		message
-	// 	},
-	// 	passwordResetFormData: await superValidate(PasswordResetZodSchema)
-	// };
-
-	return {};
-};
+import { auth } from '$lib/server/auth';
+import { APIError } from 'better-auth/api';
 
 export const actions: Actions = {
-	sendPasswordResetEmail: async (event) => {
-		const formData = await event.request.formData();
-		const email = formData.get('email') as string;
+	sendPasswordResetEmail: async ({ request }) => {
+		const formData = await request.formData();
+		const email = formData.get('email');
 
-		if (!email) {
-			return fail(400, {
-				message: 'Email is missing from the request.'
-			});
+		if (typeof email !== 'string' || !email.includes('@')) {
+			return fail(400, { message: 'Please enter a valid email address.' });
 		}
 
-		const [user] = await db.select().from(userTable).where(eq(userTable.email, email)).limit(1);
-
-		if (!user) {
-			return fail(400, {
-				message: 'User with this email does not exist.'
+		try {
+			await auth.api.requestPasswordReset({
+				body: {
+					email,
+					redirectTo: '/auth/reset-password'
+				},
+				headers: request.headers
 			});
+		} catch (err) {
+			if (err instanceof APIError) {
+				return fail(400, { message: err.body?.message ?? 'Could not send reset email.' });
+			}
+			console.error('Forgot password error:', err);
+			return fail(500, { message: 'An unexpected error occurred.' });
 		}
 
-		const verificationToken = await createPasswordResetToken(user.id);
-
-		const sendResetResult = await sendPasswordResetEmail(email, verificationToken);
-
-		if (!sendResetResult.success) {
-			return fail(500, {
-				message: 'There was a problem sending the password reset email.'
-			});
-		}
-
-		// return new Response(null, {
-		// 	status: 200
-		// });
+		return {
+			message: 'If an account with that email exists, a reset link has been sent.'
+		};
 	}
 };

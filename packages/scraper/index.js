@@ -1,8 +1,8 @@
 import parser from 'yargs-parser';
 import fs from 'node:fs';
 import scrapers from './scrapers.js';
-import { getDb } from '@app/db/index.js';
-import { hotSauces, stores, storeHotSauces } from '@app/db/schema.js';
+import { getDb } from '@app/db';
+import { hotSauces, stores, storeHotSauces } from '@app/db/schema';
 import { normalizeName, isSimilarName } from './utils/index.js';
 import { eq } from 'drizzle-orm';
 
