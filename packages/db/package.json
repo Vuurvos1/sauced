@@ -22,7 +22,7 @@
 		"drizzle-zod": "catalog:"
 	},
 	"dependencies": {
-		"dotenv": "^16.5.0",
+		"dotenv": "^16.6.1",
 		"postgres": "catalog:"
 	},
 	"devDependencies": {
