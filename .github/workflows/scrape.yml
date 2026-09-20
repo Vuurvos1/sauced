@@ -11,14 +11,10 @@ on:
   workflow_dispatch:
     inputs:
       store:
-        type: choice
-        description: 'Select the store to scrape'
+        type: string
+        description: 'A store key from stores.js, or "all"'
         required: true
-        default: 'trex'
-        options:
-          - 'trex'
-          - 'heatsupply'
-          - 'heatonist'
+        default: 'all'
 
 jobs:
   scrape:
@@ -43,16 +39,40 @@ jobs:
       - name: Install dependencies
         run: pnpm --filter "@app/scraper..." install --frozen-lockfile
 
-      - name: Run scraper
+      # Read the store list from the registry rather than repeating it here, so
+      # adding a store to stores.js is the only step needed to have it scraped.
+      - name: Select stores
+        id: select
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            # Run all scrapers on dev branch
-            pnpm scrapers scrape trex --dbInsert --dev
-            pnpm scrapers scrape heatsupply --dbInsert --dev
-            pnpm scrapers scrape heatonist --dbInsert --dev
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.store }}" != 'all' ]]; then
+            keys='${{ inputs.store }}'
           else
-            # Run single scraper on manual trigger
-            pnpm scrapers scrape ${{ github.event.inputs.store }} --dbInsert
+            keys=$(node --input-type=module -e "
+              import('./packages/scraper/stores.js').then((m) =>
+                console.log([...m.shopifyStores, ...m.wooStores].map((s) => s.key).join(' '))
+              )")
+          fi
+          echo "keys=$keys" >> "$GITHUB_OUTPUT"
+          echo "Scraping:" $keys
+
+      - name: Run scrapers
+        # Only main gets full catalogues; everywhere else takes the 12-sauce sample.
+        run: |
+          dev_flag='--dev'
+          [[ "${{ github.ref }}" == 'refs/heads/main' ]] && dev_flag=''
+
+          failed=()
+          for key in ${{ steps.select.outputs.keys }}; do
+            echo "::group::$key"
+            pnpm scrapers scrape "$key" --dbInsert $dev_flag || failed+=("$key")
+            echo "::endgroup::"
+          done
+
+          # Run every store before failing, so one broken adapter does not hide
+          # the state of the others.
+          if (( ${#failed[@]} )); then
+            echo "::error::Scrapers failed: ${failed[*]}"
+            exit 1
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
