@@ -22,11 +22,12 @@ export function writeFile(path, data) {
 /**
  * @param {string} store
  * @param {string} url
+ * @param {string} [ext] 'json' for the storefront API adapters
  */
-export function getCachePath(store, url) {
+export function getCachePath(store, url, ext = 'html') {
 	const parsedUrl = new URL(url);
 	const path = parsedUrl.pathname + parsedUrl.search;
 	const cachePath = path.replace(/\//g, '_');
 
-	return `./cache/${store}/${cachePath}.html`;
+	return `./cache/${store}/${cachePath}.${ext}`;
 }
