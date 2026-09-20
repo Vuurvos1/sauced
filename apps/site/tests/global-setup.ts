@@ -68,10 +68,7 @@ export default async function globalSetup() {
 			}
 		});
 
-		await db
-			.update(user)
-			.set({ emailVerified: true })
-			.where(eq(user.email, CANONICAL_USER.email));
+		await db.update(user).set({ emailVerified: true }).where(eq(user.email, CANONICAL_USER.email));
 	} finally {
 		await client.end();
 	}

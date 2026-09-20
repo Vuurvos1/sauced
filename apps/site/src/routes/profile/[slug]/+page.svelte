@@ -4,6 +4,7 @@
 	import { enhance } from '$app/forms';
 	import StarRating from '$lib/components/StarRating.svelte';
 	import { formatTimeAgo } from '$lib/utils/time.js';
+	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
 
 	let { data } = $props();
 
@@ -97,9 +98,14 @@
 									</button>
 								</form>
 
-								<a class="card block h-full" href={`/sauces/${sauce.slug}`}>
+								<a
+									class="card block h-full"
+									href={`/sauces/${sauce.slug}`}
+									onclick={(e) => claimOnNavigate(e, 'checkins', sauce.slug)}
+								>
 									<img
 										class="aspect-square w-full object-contain"
+										style:view-transition-name={sauceImageName('checkins', sauce.slug)}
 										src={sauce?.imageUrl}
 										alt={sauce.name}
 									/>

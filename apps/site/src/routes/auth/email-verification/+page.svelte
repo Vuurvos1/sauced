@@ -9,8 +9,8 @@
 
 	<h2 class="mb-5">
 		Welcome aboard 🎉! We've sent a verification link to
-		{#if data.email}<strong>{data.email}</strong>{:else}your email address{/if}. Click the link in the
-		email to complete your registration.
+		{#if data.email}<strong>{data.email}</strong>{:else}your email address{/if}. Click the link in
+		the email to complete your registration.
 	</h2>
 
 	<form method="post" action="?/resend" use:enhance class="mt-4 flex flex-col gap-2">

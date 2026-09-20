@@ -3,18 +3,29 @@
 
 	let { data } = $props();
 
-	let { stores } = $derived(data);
+	let { stores, search } = $derived(data);
 </script>
 
 <section>
 	<hgroup class="container flex flex-col items-center gap-2 pb-6">
 		<h1 class="h1 mb-4">Hot Sauce Stores</h1>
-		<p class="mb-6 text-gray-600">Where to get your favorite hot sauces</p>
+		<p class="mb-6 text-gray-600">
+			{#if search}
+				{stores.length}
+				{stores.length === 1 ? 'store' : 'stores'} matching "{search}"
+			{:else}
+				Where to get your favorite hot sauces
+			{/if}
+		</p>
 	</hgroup>
 </section>
 
 <section>
 	<div class="container">
+		{#if search && stores.length === 0}
+			<p class="text-center text-gray-600">No stores found matching "{search}"</p>
+		{/if}
+
 		<ul class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each stores as store}
 				<li

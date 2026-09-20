@@ -41,3 +41,43 @@
 		@apply rounded border bg-white p-4 shadow-sm;
 	}
 }
+
+@media (prefers-reduced-motion: no-preference) {
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation-duration: 200ms;
+		animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	::view-transition-group(sauce-image) {
+		animation-duration: 320ms;
+		animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	/* Same photo on both sides, so cross-fading only ghosts it. Holding the new
+	   frame is safe because card and hero are both aspect-square. */
+	::view-transition-old(sauce-image) {
+		animation: none;
+		opacity: 0;
+	}
+
+	::view-transition-new(sauce-image) {
+		animation: none;
+		opacity: 1;
+	}
+
+	/* Otherwise the sticky header dips in opacity with the root cross-fade. */
+	::view-transition-group(header),
+	::view-transition-old(header),
+	::view-transition-new(header) {
+		animation: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none !important;
+	}
+}

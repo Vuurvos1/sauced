@@ -13,6 +13,7 @@
 	import { debounce } from '$lib/utils/debounce.svelte';
 	import type { SearchResponse } from '$lib/types/api';
 	import { portal } from '$lib/actions';
+	import { skipViewTransition } from '$lib/view-transition.svelte';
 
 	let {
 		data: { session }
@@ -29,21 +30,44 @@
 		sauces: []
 	});
 	let loadingTimeout: ReturnType<typeof setTimeout>;
+	let inFlight: AbortController | undefined;
+
+	const emptyResults: SearchResponse = { makers: [], stores: [], sauces: [] };
 
 	async function getSearchResults(search: string) {
-		if (search.length < 2) return;
+		// A request for an older query must never overwrite newer results.
+		inFlight?.abort();
 
-		// Set a timeout to show loading state only if the query takes longer than 300ms
+		if (search.length < 2) {
+			searchResults = emptyResults;
+			isLoading = false;
+			return;
+		}
+
+		const controller = new AbortController();
+		inFlight = controller;
+
+		// Only show the loading state if the query takes longer than 500ms
+		clearTimeout(loadingTimeout);
 		loadingTimeout = setTimeout(() => {
 			isLoading = true;
 		}, 500);
 
-		const response = await fetch(`/api/v1/search?q=${search}`);
-		const data = await response.json();
-		searchResults = data;
-
-		clearTimeout(loadingTimeout);
-		isLoading = false;
+		try {
+			const response = await fetch(`/api/v1/search?q=${encodeURIComponent(search)}`, {
+				signal: controller.signal
+			});
+			searchResults = await response.json();
+		} catch (error) {
+			if (controller.signal.aborted) return;
+			console.error('Search error:', error);
+			searchResults = emptyResults;
+		} finally {
+			if (!controller.signal.aborted) {
+				clearTimeout(loadingTimeout);
+				isLoading = false;
+			}
+		}
 	}
 
 	$effect(() => {
@@ -118,13 +142,17 @@
 	</li>
 {/snippet}
 
-<header class="sticky top-0 z-40">
+<header class="site-header sticky top-0 z-40">
 	<nav class="bg-neutral-950 py-4 text-white">
 		<ul
 			class="container grid grid-cols-[2rem_1fr_2rem] flex-row items-center gap-3 font-medium sm:gap-4 md:grid md:grid-cols-4"
 		>
 			<li>
-				<a class="font-logo flex w-fit flex-row items-center gap-2.5 text-2xl" href="/">
+				<a
+					class="flex w-fit flex-row items-center gap-2.5 font-logo text-2xl"
+					href="/"
+					onclick={skipViewTransition}
+				>
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"
@@ -242,3 +270,9 @@
 		</ul>
 	</nav>
 </header>
+
+<style>
+	.site-header {
+		view-transition-name: header;
+	}
+</style>

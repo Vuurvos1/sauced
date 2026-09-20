@@ -14,7 +14,7 @@
 
 		{#if sauces && sauces.length > 0}
 			<!-- TODO: make custom wishlist grid -->
-			<SauceGrid {sauces}></SauceGrid>
+			<SauceGrid {sauces} section="wishlist"></SauceGrid>
 		{:else}
 			<p>No sauces found</p>
 		{/if}

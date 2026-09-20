@@ -9,8 +9,7 @@
 
 	const { form, errors, message, enhance, submitting } = superForm(data.form);
 
-	const signInWithGoogle = () =>
-		authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+	const signInWithGoogle = () => authClient.signIn.social({ provider: 'google', callbackURL: '/' });
 </script>
 
 <section class="mb-12 grid h-full flex-1 place-items-center">

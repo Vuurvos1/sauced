@@ -40,6 +40,6 @@
 	<div class="container">
 		<!-- <h2 class="h2 mb-4">Their Sauces</h2> -->
 
-		<SauceGrid sauces={gridSauces}></SauceGrid>
+		<SauceGrid sauces={gridSauces} section="store"></SauceGrid>
 	</div>
 </section>
