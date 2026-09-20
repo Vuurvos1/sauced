@@ -32,7 +32,9 @@ export const makers = pgTable(
 	(table) => [
 		// Trigram index, so `ilike '%query%'` and the similarity operators can be
 		// served from an index instead of scanning every row. Requires pg_trgm.
-		index('makers_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`)
+		// Keyed on the unaccented name so the search queries, which compare the
+		// same expression, can use it. See migration 0005.
+		index('makers_name_trgm_idx').using('gin', sql`immutable_unaccent(${table.name}) gin_trgm_ops`)
 	]
 );
 
@@ -58,8 +60,14 @@ export const hotSauces = pgTable(
 	},
 	(table) => [
 		index('slug_idx').on(table.slug),
-		index('hot_sauces_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
-		index('hot_sauces_description_trgm_idx').using('gin', sql`${table.description} gin_trgm_ops`)
+		index('hot_sauces_name_trgm_idx').using(
+			'gin',
+			sql`immutable_unaccent(${table.name}) gin_trgm_ops`
+		),
+		index('hot_sauces_description_trgm_idx').using(
+			'gin',
+			sql`immutable_unaccent(${table.description}) gin_trgm_ops`
+		)
 	]
 );
 
@@ -76,7 +84,9 @@ export const stores = pgTable(
 			.defaultNow()
 			.$onUpdate(() => new Date())
 	},
-	(table) => [index('stores_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`)]
+	(table) => [
+		index('stores_name_trgm_idx').using('gin', sql`immutable_unaccent(${table.name}) gin_trgm_ops`)
+	]
 );
 
 export const storeHotSauces = pgTable(

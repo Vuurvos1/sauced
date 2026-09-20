@@ -36,6 +36,13 @@
       "when": 1789889869551,
       "tag": "0004_even_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789932578673,
+      "tag": "0005_unaccent_search",
+      "breakpoints": true
     }
   ]
 }
