@@ -11,21 +11,30 @@ import {
 	uuid,
 	index
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { user } from './auth.js';
 
 export const roleEnum = pgEnum('role', ['admin', 'moderator', 'user']);
 
-export const makers = pgTable('makers', {
-	makerId: uuid('maker_id').primaryKey().defaultRandom(),
-	name: varchar('name', { length: 256 }).notNull().unique(),
-	description: text('description').default(''),
-	website: varchar('website', { length: 256 }),
-	createdAt: timestamp('created_at').notNull().defaultNow(),
-	updatedAt: timestamp('updated_at')
-		.notNull()
-		.defaultNow()
-		.$onUpdate(() => new Date())
-});
+export const makers = pgTable(
+	'makers',
+	{
+		makerId: uuid('maker_id').primaryKey().defaultRandom(),
+		name: varchar('name', { length: 256 }).notNull().unique(),
+		description: text('description').default(''),
+		website: varchar('website', { length: 256 }),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at')
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [
+		// Trigram index, so `ilike '%query%'` and the similarity operators can be
+		// served from an index instead of scanning every row. Requires pg_trgm.
+		index('makers_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`)
+	]
+);
 
 export const hotSauces = pgTable(
 	'hot_sauces',
@@ -47,20 +56,28 @@ export const hotSauces = pgTable(
 			.defaultNow()
 			.$onUpdate(() => new Date())
 	},
-	(table) => [index('slug_idx').on(table.slug)]
+	(table) => [
+		index('slug_idx').on(table.slug),
+		index('hot_sauces_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
+		index('hot_sauces_description_trgm_idx').using('gin', sql`${table.description} gin_trgm_ops`)
+	]
 );
 
-export const stores = pgTable('stores', {
-	storeId: uuid('store_id').primaryKey().defaultRandom(),
-	name: varchar('name', { length: 256 }).notNull().unique(),
-	description: text('description').default(''),
-	url: varchar('url', { length: 256 }).notNull(),
-	createdAt: timestamp('created_at').notNull().defaultNow(),
-	updatedAt: timestamp('updated_at')
-		.notNull()
-		.defaultNow()
-		.$onUpdate(() => new Date())
-});
+export const stores = pgTable(
+	'stores',
+	{
+		storeId: uuid('store_id').primaryKey().defaultRandom(),
+		name: varchar('name', { length: 256 }).notNull().unique(),
+		description: text('description').default(''),
+		url: varchar('url', { length: 256 }).notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at')
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [index('stores_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`)]
+);
 
 export const storeHotSauces = pgTable(
 	'store_hot_sauces',

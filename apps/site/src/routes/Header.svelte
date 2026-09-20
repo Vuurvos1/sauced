@@ -29,21 +29,44 @@
 		sauces: []
 	});
 	let loadingTimeout: ReturnType<typeof setTimeout>;
+	let inFlight: AbortController | undefined;
+
+	const emptyResults: SearchResponse = { makers: [], stores: [], sauces: [] };
 
 	async function getSearchResults(search: string) {
-		if (search.length < 2) return;
+		// A request for an older query must never overwrite newer results.
+		inFlight?.abort();
 
-		// Set a timeout to show loading state only if the query takes longer than 300ms
+		if (search.length < 2) {
+			searchResults = emptyResults;
+			isLoading = false;
+			return;
+		}
+
+		const controller = new AbortController();
+		inFlight = controller;
+
+		// Only show the loading state if the query takes longer than 500ms
+		clearTimeout(loadingTimeout);
 		loadingTimeout = setTimeout(() => {
 			isLoading = true;
 		}, 500);
 
-		const response = await fetch(`/api/v1/search?q=${search}`);
-		const data = await response.json();
-		searchResults = data;
-
-		clearTimeout(loadingTimeout);
-		isLoading = false;
+		try {
+			const response = await fetch(`/api/v1/search?q=${encodeURIComponent(search)}`, {
+				signal: controller.signal
+			});
+			searchResults = await response.json();
+		} catch (error) {
+			if (controller.signal.aborted) return;
+			console.error('Search error:', error);
+			searchResults = emptyResults;
+		} finally {
+			if (!controller.signal.aborted) {
+				clearTimeout(loadingTimeout);
+				isLoading = false;
+			}
+		}
 	}
 
 	$effect(() => {
