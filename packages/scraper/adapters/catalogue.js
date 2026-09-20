@@ -1,5 +1,12 @@
 import fs from 'node:fs';
-import { decodeEntities, fetchPage, getCachePath, sleep, writeFile } from '../utils/index.js';
+import {
+	cleanProductName,
+	decodeEntities,
+	fetchPage,
+	getCachePath,
+	sleep,
+	writeFile
+} from '../utils/index.js';
 
 /** High enough for the largest catalogue found (~900 products), low enough to bound a bad config. */
 const DEFAULT_MAX_PAGES = 40;
@@ -23,7 +30,8 @@ export function trimTrailingSlash(url) {
  */
 export function cleanTitle(raw, stripFromName) {
 	const title = decodeEntities(String(raw ?? '')).trim();
-	return stripFromName ? title.replace(stripFromName, '').trim() : title;
+	const stripped = stripFromName ? title.replace(stripFromName, '').trim() : title;
+	return cleanProductName(stripped);
 }
 
 /**
@@ -43,6 +51,7 @@ export function createCatalogueScraper(config) {
 		name,
 		url,
 		description,
+		language = 'en',
 		pageSize,
 		maxPages = DEFAULT_MAX_PAGES,
 		requestDelayMs = DEFAULT_REQUEST_DELAY_MS,
@@ -135,5 +144,5 @@ export function createCatalogueScraper(config) {
 		return sauce;
 	}
 
-	return { name, url, description, getSauceUrls, scrapeSauce };
+	return { name, url, description, language, getSauceUrls, scrapeSauce };
 }

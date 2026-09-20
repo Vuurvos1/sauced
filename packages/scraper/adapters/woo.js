@@ -45,10 +45,12 @@ export function createWooScraper(config) {
 		exclude = [],
 		includeCategories = [],
 		brandTaxonomy,
+		lang,
 		houseBrand = name,
 		stripFromName,
 		maxPages,
-		requestDelayMs
+		requestDelayMs,
+		language
 	} = config;
 
 	const wantedCategories = new Set(includeCategories.map((slug) => slug.toLowerCase()));
@@ -58,12 +60,16 @@ export function createWooScraper(config) {
 		name,
 		url,
 		description,
+		language,
 		pageSize: PAGE_SIZE,
 		maxPages,
 		requestDelayMs,
 
+		// Multilingual shops answer in their own language unless asked; heatsupply
+		// and hotta both honour ?lang=, the rest ignore it.
 		buildPageUrl: (storeUrl, page, pageSize) =>
-			`${storeUrl}/wp-json/wc/store/v1/products?per_page=${pageSize}&page=${page}`,
+			`${storeUrl}/wp-json/wc/store/v1/products?per_page=${pageSize}&page=${page}` +
+			(lang ? `&lang=${lang}` : ''),
 
 		readPage: (payload) => (Array.isArray(payload) ? payload : []),
 

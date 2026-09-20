@@ -19,6 +19,8 @@ export type ScrapeSauce = (url: string, options: ScrapeSauceOptions) => Promise<
 
 // Could be a class with method chaining?
 export type SauceScraper = StoreInsert & {
+	/** Language the shop publishes in. Non-English shops only fill empty descriptions. */
+	language?: string;
 	getSauceUrls: GetSauceUrls;
 	scrapeSauce: ScrapeSauce;
 };
@@ -47,6 +49,8 @@ export type BaseScraperConfig = StoreInsert & {
 };
 
 export type ShopifyScraperConfig = BaseScraperConfig & {
+	/** Language the shop publishes in, e.g. `fr`. Defaults to `en`. */
+	language?: string;
 	/** Collection handle, to narrow a general store to its sauce aisle. */
 	collection?: string;
 	/** Vendors to drop, for shops that also sell snacks or kitchenware. */
@@ -54,10 +58,14 @@ export type ShopifyScraperConfig = BaseScraperConfig & {
 };
 
 export type WooScraperConfig = BaseScraperConfig & {
+	/** Language the shop publishes in, e.g. `fr`. Defaults to `en`. */
+	language?: string;
 	/** Category slugs to keep. Empty means keep everything. */
 	includeCategories?: string[];
 	/** Attribute taxonomy holding the brand, e.g. `pa_merk-hot-sauce`. Auto-detected when unset. */
 	brandTaxonomy?: string;
+	/** Language for a multilingual shop, e.g. `en`. Ignored by shops without translations. */
+	lang?: string;
 };
 
 export type CatalogueScraperConfig = BaseScraperConfig & {

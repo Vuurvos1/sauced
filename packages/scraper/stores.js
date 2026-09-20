@@ -35,6 +35,7 @@ export const shopifyStores = [
 	},
 	{
 		key: 'scovello',
+		language: 'nl',
 		name: 'Scovello',
 		url: 'https://scovello.nl'
 	},
@@ -76,12 +77,20 @@ export const shopifyStores = [
 	{
 		key: 'somelikeithot',
 		name: 'Some Like It Hot',
-		url: 'https://somelikeithot.shop'
+		url: 'https://somelikeithot.shop',
+		// A running joke listed as a real product: "We're sorry.... this doesn't
+		// exist (yet)... but if it did we would stock it". The only one in the
+		// catalogue, so a name match is cheaper than reading descriptions.
+		exclude: [/glass onion/i]
 	},
 	{
 		key: 'southdevonchilli',
 		name: 'South Devon Chilli Farm',
-		url: 'https://www.southdevonchillifarm.co.uk'
+		url: 'https://www.southdevonchillifarm.co.uk',
+		// A chilli farm with a sauce line, not a sauce shop: the full catalogue is
+		// 421 products of seeds, pot plants, growing kit and farm tours. The
+		// collection holds all 25 sauces and nothing else.
+		collection: 'sauces'
 	},
 	{
 		key: 'onestopchilli',
@@ -105,6 +114,7 @@ export const shopifyStores = [
 	},
 	{
 		key: 'sweetpepper',
+		language: 'fr',
 		name: 'Sweet Pepper',
 		url: 'https://sweetpepper.fr'
 	}
@@ -118,7 +128,9 @@ export const wooStores = [
 		url: 'https://www.heatsupply.nl',
 		description:
 			'Do you love hot sauce? Then you are at the right place. Heatsupply has a wide and changing assortment of great hot sauces and other spicyness.',
-		brandTaxonomy: 'pa_merk-hot-sauce'
+		brandTaxonomy: 'pa_merk-hot-sauce',
+		// Dutch by default; 203 of 307 descriptions came back in Dutch.
+		lang: 'en'
 	},
 	{
 		key: 'chilisausbe',
@@ -131,6 +143,7 @@ You will NOT find our Products in ANY Supermarkets!`
 	},
 	{
 		key: 'dekkerpepper',
+		language: 'nl',
 		name: 'Dekker Pepper',
 		url: 'https://www.dekkerpepper.nl'
 	},
@@ -144,7 +157,9 @@ You will NOT find our Products in ANY Supermarkets!`
 	{
 		key: 'hotta',
 		name: 'Hotta',
-		url: 'https://hotta.eu'
+		url: 'https://hotta.eu',
+		// Estonian by default.
+		lang: 'en'
 	},
 	{
 		key: 'hotsauceemporium',
@@ -168,12 +183,17 @@ You will NOT find our Products in ANY Supermarkets!`
 	},
 	{
 		key: 'chilirezept',
+		language: 'de',
 		name: 'Chilirezept',
 		url: 'https://shop.chilirezept.de'
 	},
 	{
 		key: 'maisonpiquante',
+		language: 'fr',
 		name: 'Maison Piquante',
-		url: 'https://maisonpiquante.com'
+		url: 'https://maisonpiquante.com',
+		// Every title carries a French flavour summary after an en dash:
+		// "… Hot Sauce Angry Goat Pepper Co – Ail". It defeats cross-store dedup.
+		stripFromName: /\s+[–—]\s+.*$/
 	}
 ];

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { slugifyName, normalizeName, isSimilarName, foldAccents } from './format';
+import { slugifyName, normalizeName, isSimilarName, foldAccents, cleanProductName } from './format';
 
 describe('slugifyName', () => {
 	it('should slugify a name', () => {
@@ -90,5 +90,46 @@ describe('isSimilarName', () => {
 		expect(
 			isSimilarName('El Jefe Primo Salsa Barbacoa Cherry Hot Sauce', 'Fiya! Fiya! Hot Sauce')
 		).toBe(false);
+	});
+});
+
+describe('cleanProductName', () => {
+	it('should strip serving sizes', () => {
+		expect(cleanProductName('Melinda’s Chipotle Hot Sauce 148ml')).toBe(
+			'Melinda’s Chipotle Hot Sauce'
+		);
+		expect(cleanProductName('Slap Ya Mama Original Blend, 8oz')).toBe(
+			'Slap Ya Mama Original Blend'
+		);
+		expect(cleanProductName('Het Sass: Miso Hot Sauce | 148ml | Singularity Sauce Co.')).toBe(
+			'Het Sass: Miso Hot Sauce | Singularity Sauce Co.'
+		);
+	});
+
+	it('should strip promotional copy', () => {
+		expect(
+			cleanProductName("Blonde Beard's Dojo Asian Wing Sauce – *REDUCED*  **LAST CHANCE TO BUY**")
+		).toBe("Blonde Beard's Dojo Asian Wing Sauce");
+		expect(cleanProductName('*PSYCHO JUICE 70% Habanero')).toBe('PSYCHO JUICE 70% Habanero');
+		expect(cleanProductName('Aji Mango Pot Plant (Pre Order)')).toBe('Aji Mango Pot Plant');
+	});
+
+	it('should leave a clean name untouched', () => {
+		expect(cleanProductName('Naga Viper')).toBe('Naga Viper');
+		expect(cleanProductName('Habanero Hustle')).toBe('Habanero Hustle');
+	});
+
+	// Stripping every token would otherwise leave an empty name.
+	it('should fall back to the original when cleaning empties the name', () => {
+		expect(cleanProductName('250ml')).toBe('250ml');
+	});
+});
+
+describe('slugifyName — stranded separators', () => {
+	it('should not leave a trailing hyphen where an emoji was', () => {
+		expect(slugifyName('Melinda’s - Black Truffle Hot Sauce 🍯')).toBe(
+			'melindas-black-truffle-hot-sauce'
+		);
+		expect(slugifyName('Hot Zeg - Krush 🍊')).toBe('hot-zeg-krush');
 	});
 });

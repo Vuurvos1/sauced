@@ -38,7 +38,8 @@ export function createShopifyScraper(config) {
 		houseBrand = name,
 		stripFromName,
 		maxPages,
-		requestDelayMs
+		requestDelayMs,
+		language
 	} = config;
 
 	const skippedVendors = new Set(excludeVendors.map((vendor) => vendor.toLowerCase()));
@@ -48,6 +49,7 @@ export function createShopifyScraper(config) {
 		name,
 		url,
 		description,
+		language,
 		pageSize: PAGE_SIZE,
 		maxPages,
 		requestDelayMs,

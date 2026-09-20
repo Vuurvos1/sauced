@@ -38,7 +38,7 @@ async function insertStoreData(scraper, data) {
 
 	console.info('Inserting hot sauce data');
 	const existingSauceNames = await db
-		.select({ id: hotSauces.sauceId, name: hotSauces.name })
+		.select({ id: hotSauces.sauceId, name: hotSauces.name, description: hotSauces.description })
 		.from(hotSauces);
 
 	const { newSauces, existingSauces } = data.reduce(
@@ -60,14 +60,33 @@ async function insertStoreData(scraper, data) {
 		({ newSauces: [], existingSauces: [] })
 	);
 
-	console.info('Deduped', data.length - existingSauces.length, 'sauces');
+	console.info('Matched', existingSauces.length, 'existing,', newSauces.length, 'new');
+
+	let writeFailures = 0;
+
+	// A shop that publishes in its own language may fill an empty description, but
+	// must not overwrite an English one — Maison Piquante and Sweet Pepper were
+	// replacing English copy with French on sauces five other shops also stock.
+	const writesEnglish = (scraper.language ?? 'en') === 'en';
 
 	// update existing sauces
 	for (const sauce of existingSauces) {
 		if (!sauce.sauceId) continue;
+
+		const existing = existingSauceNames.find((row) => row.id === sauce.sauceId);
+		const keepDescription = !writesEnglish && Boolean(existing?.description);
+
+		/** Name and slug are identity: rewriting them from another shop's spelling
+		 * collides with the unique indexes, and the slug is already a live URL. */
+		const changes = {
+			description: keepDescription ? existing?.description : sauce.description,
+			imageUrl: sauce.imageUrl
+		};
+
 		try {
-			await db.update(hotSauces).set(sauce).where(eq(hotSauces.sauceId, sauce.sauceId));
+			await db.update(hotSauces).set(changes).where(eq(hotSauces.sauceId, sauce.sauceId));
 		} catch (error) {
+			writeFailures++;
 			console.error('Error updating sauce', sauce.name, error);
 		}
 	}
@@ -86,6 +105,7 @@ async function insertStoreData(scraper, data) {
 	for (const sauce of data) {
 		const s = existingSauceNames.find((s) => isSimilarName(s.name, sauce.name));
 		if (!s) {
+			writeFailures++;
 			console.error('Sauce not found', sauce.name);
 			continue;
 		}
@@ -104,6 +124,8 @@ async function insertStoreData(scraper, data) {
 				}
 			});
 	}
+
+	return writeFailures;
 }
 
 /**
@@ -128,8 +150,17 @@ async function scrapeStore(scraper, options) {
 
 	console.info('Found', data.length, 'sauces');
 
+	// A live store never legitimately returns nothing; heatsupply and heatonist
+	// sat broken for weeks behind a green pipeline because this was not checked.
+	if (data.length === 0) {
+		throw new Error('returned 0 sauces');
+	}
+
 	if (options.dbInsert) {
-		await insertStoreData(scraper, data);
+		const writeFailures = await insertStoreData(scraper, data);
+		if (writeFailures > 0) {
+			throw new Error(`${writeFailures} of ${data.length} sauces failed to save`);
+		}
 	}
 
 	return data;

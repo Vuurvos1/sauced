@@ -39,6 +39,50 @@ export function foldAccents(name) {
 }
 
 /**
+ * Trailing size, as shops append it: "… 148ml", "…, 8oz", "… | 250g |".
+ * Not anchored, because it also turns up mid-name between separators.
+ */
+const SIZE = /\b\d+([.,]\d+)?\s*(ml|cl|kg|g|oz|lb|l|litre|liter|ltr)\b/gi;
+
+/** Shop copy that is not part of the product name. */
+const PROMO = [
+	/\*\*[^*]+\*\*/g, // **LAST CHANCE TO BUY**
+	/\*[^*]+\*/g, // *REDUCED*
+	/\s*[-–—]\s*buy now!?\s*$/gi,
+	/\(\s*pre[- ]?order\s*\)/gi,
+	/\[\s*pre[- ]?order\s*\]/gi,
+	/\b(sold out|out of stock|back in stock)\b/gi
+];
+
+/** Separators and punctuation left stranded once a fragment is removed. */
+function tidySeparators(name) {
+	return name
+		.replace(/\s*([|:,–—-])\s*\1+/g, ' $1 ')
+		.replace(/^[\s|:,–—-]+/, '')
+		.replace(/[\s|:,–—-]+$/, '')
+		.replace(/\(\s*\)/g, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim();
+}
+
+/**
+ * Strips the size and any promotional copy a shop baked into the product title,
+ * so the stored name is the sauce and nothing else.
+ *
+ * @param {string} name
+ */
+export function cleanProductName(name) {
+	let cleaned = String(name ?? '');
+	// Leading marker some shops use to flag a range, e.g. "*PSYCHO JUICE".
+	cleaned = cleaned.replace(/^\s*\*(?!\*)/, '');
+	for (const pattern of PROMO) cleaned = cleaned.replace(pattern, ' ');
+	cleaned = cleaned.replace(SIZE, ' ');
+	const tidied = tidySeparators(cleaned);
+	// Never strip a name down to nothing — keep the original if we would.
+	return tidied || String(name ?? '').trim();
+}
+
+/**
  * @param {string} name
  */
 export function normalizeName(name) {
@@ -56,7 +100,8 @@ export function slugifyName(name) {
 	return foldAccents(name)
 		.toLowerCase() // convert to lowercase first
 		.replace(/[^a-z0-9 ]/g, '') // remove all non-alphanumeric chars except spaces
-		.replace(/ +/g, '-'); // replace one or more spaces with single hyphen
+		.trim() // emoji leave a stranded space that would become a hyphen
+		.replace(/ +/g, '-');
 }
 
 /**

@@ -59,3 +59,82 @@ describe('shouldSkipProduct', () => {
 		expect(shouldSkipProduct('Original Hot', [/\s-C$/])).toBe(false);
 	});
 });
+
+describe('isBundleName — multilingual bundles', () => {
+	it('should drop bundles named in Dutch, German and French', () => {
+		expect(isBundleName('Coffret 5 Sauces Da’Bomb')).toBe(true);
+		expect(isBundleName('Hot sauce proefpakket – Mild')).toBe(true);
+		expect(isBundleName('Adobo Rojo BBQ peperpakket')).toBe(true);
+		expect(isBundleName('6er Set Sriracha Hot Chili Sauce 6 x 200ml')).toBe(true);
+		expect(isBundleName('Mexican Tears – Hot Sauce Adventskalender mit 24')).toBe(true);
+		expect(isBundleName('Carte Cadeau Maison Piquante')).toBe(true);
+	});
+
+	it('should drop wholesale cases and multipacks in any language', () => {
+		expect(isBundleName('Case of Private Label Mango Hot Sauce, 12 x 5oz')).toBe(true);
+		expect(isBundleName('Nekrogoblikon’s Goblin Sauce - Case of 12')).toBe(true);
+		expect(isBundleName('Set of 3 Fatalii Seedlings - Buy Now!')).toBe(true);
+	});
+});
+
+describe('isBundleName — non-sauce products', () => {
+	it('should drop growing kit, produce and merch', () => {
+		expect(isBundleName('Aji Mango 1 Litre Pot Plant (Pre Order)')).toBe(true);
+		expect(isBundleName('Red Habanero Chilli Seeds')).toBe(true);
+		expect(isBundleName('Chilli & Pepper Focus Plant Food')).toBe(true);
+		expect(isBundleName('Propagator')).toBe(true);
+		expect(isBundleName('De Sambal Longsleeve – Per de Man')).toBe(true);
+	});
+
+	it('should drop powders, rubs and seasonings', () => {
+		expect(isBundleName('Queen Majesty Ancho Habanero Hot Sauce Powder')).toBe(true);
+		expect(isBundleName('BLACK COFFEE GHOST RUB')).toBe(true);
+		expect(isBundleName('Karma Sauce Jerk Me Around Seasoning')).toBe(true);
+	});
+
+	it('should drop coffee and snacks but keep coffee-flavoured sauce', () => {
+		expect(isBundleName('Medium Roast Coffee Beans | 250g')).toBe(true);
+		expect(isBundleName('Firechips Carolina Reaper Kartoffelchips')).toBe(true);
+		expect(isBundleName('Dawson’s Coffee Date hot sauce')).toBe(false);
+		expect(isBundleName('Coffee BBQ Sauce - Rich Coffee Flavor')).toBe(false);
+	});
+});
+
+describe('isBundleName — checkout line items', () => {
+	it('should drop shipping and fee products', () => {
+		expect(isBundleName('Nouvelle Livraison (Expédition)')).toBe(true);
+		expect(isBundleName('Verzendkosten')).toBe(true);
+		expect(isBundleName('Shipping Protection')).toBe(true);
+	});
+
+	// A bare `tip` pattern would take this one.
+	it('should keep a sauce whose name merely contains a fee word', () => {
+		expect(isBundleName('Blacktip Widow Hot Sauce')).toBe(false);
+	});
+});
+
+describe('isBundleName — false positives that must survive', () => {
+	// Every one of these was wrongly dropped by an earlier draft of the patterns.
+	it('should keep sauces whose name contains an alcohol flavour', () => {
+		expect(isBundleName('Burning Asphalt Irish Whiskey BBQ Sauce')).toBe(false);
+		expect(isBundleName('PepperNutz Caribbean Rum Hot Sauce')).toBe(false);
+	});
+
+	it('should keep sauces whose brand collides with a filter word', () => {
+		expect(isBundleName('Seed Ranch Flavor Co. Truffle Hound Hot Sauce')).toBe(false);
+		expect(isBundleName('Buffalo Wings Hot Sauce | Chilli Mash Co. | Plant Based')).toBe(false);
+	});
+
+	// The shared filter reads names only, and nothing in this one marks it as fake —
+	// the joke is in the description. It is excluded per-store instead.
+	it('should not try to catch the Glass Onion joke listing here', () => {
+		expect(isBundleName('Jeremy Renner’s Small-Batch Hot Sauce - Glass Onion')).toBe(false);
+		expect(
+			shouldSkipProduct('Jeremy Renner’s Small-Batch Hot Sauce - Glass Onion', [/glass onion/i])
+		).toBe(true);
+	});
+
+	it('should drop the bottled spirit itself', () => {
+		expect(isBundleName('Dekker Pepper Spicy Spirit – chili (700ml)')).toBe(true);
+	});
+});
