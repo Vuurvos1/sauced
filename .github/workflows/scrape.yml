@@ -39,40 +39,15 @@ jobs:
       - name: Install dependencies
         run: pnpm --filter "@app/scraper..." install --frozen-lockfile
 
-      # Read the store list from the registry rather than repeating it here, so
-      # adding a store to stores.js is the only step needed to have it scraped.
-      - name: Select stores
-        id: select
-        run: |
-          if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.store }}" != 'all' ]]; then
-            keys='${{ inputs.store }}'
-          else
-            keys=$(node --input-type=module -e "
-              import('./packages/scraper/stores.js').then((m) =>
-                console.log([...m.shopifyStores, ...m.wooStores].map((s) => s.key).join(' '))
-              )")
-          fi
-          echo "keys=$keys" >> "$GITHUB_OUTPUT"
-          echo "Scraping:" $keys
-
       - name: Run scrapers
+        # `all` is resolved by the CLI, which runs every store before failing so
+        # one broken adapter does not hide the state of the others.
         # Only main gets full catalogues; everywhere else takes the 12-sauce sample.
         run: |
+          store='${{ github.event_name == 'workflow_dispatch' && inputs.store || 'all' }}'
           dev_flag='--dev'
           [[ "${{ github.ref }}" == 'refs/heads/main' ]] && dev_flag=''
 
-          failed=()
-          for key in ${{ steps.select.outputs.keys }}; do
-            echo "::group::$key"
-            pnpm scrapers scrape "$key" --dbInsert $dev_flag || failed+=("$key")
-            echo "::endgroup::"
-          done
-
-          # Run every store before failing, so one broken adapter does not hide
-          # the state of the others.
-          if (( ${#failed[@]} )); then
-            echo "::error::Scrapers failed: ${failed[*]}"
-            exit 1
-          fi
+          pnpm scrapers scrape "$store" --dbInsert $dev_flag
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -15,29 +15,102 @@ const flags = parser(args, {
 
 const db = getDb(process.env.DATABASE_URL);
 
-async function main() {
-	const startTime = performance.now();
-	const command = flags['_'].shift();
+/**
+ * @param {import('./index.d').SauceScraper} scraper
+ * @param {import('./index.d').Sauce[]} data
+ */
+async function insertStoreData(scraper, data) {
+	// upsert store data
+	console.info('Upserting store data');
+	const store = await db
+		.insert(stores)
+		.values({
+			name: scraper.name,
+			url: scraper.url
+		})
+		.onConflictDoUpdate({
+			target: stores.name,
+			set: {
+				url: scraper.url
+			}
+		})
+		.returning();
 
-	if (!command) {
-		console.error('No command provided');
-		process.exit(1);
+	console.info('Inserting hot sauce data');
+	const existingSauceNames = await db
+		.select({ id: hotSauces.sauceId, name: hotSauces.name })
+		.from(hotSauces);
+
+	const { newSauces, existingSauces } = data.reduce(
+		(acc, sauce) => {
+			const normalizedNewName = normalizeName(sauce.name);
+			const existing = existingSauceNames.find((existing) =>
+				isSimilarName(normalizeName(existing.name), normalizedNewName)
+			);
+
+			if (existing) {
+				sauce.sauceId = existing.id;
+				acc.existingSauces.push(sauce);
+			} else {
+				acc.newSauces.push(sauce);
+			}
+			return acc;
+		},
+		/** @type {{ newSauces: import('./index.d').Sauce[], existingSauces: (import('./index.d').Sauce)[] }} */
+		({ newSauces: [], existingSauces: [] })
+	);
+
+	console.info('Deduped', data.length - existingSauces.length, 'sauces');
+
+	// update existing sauces
+	for (const sauce of existingSauces) {
+		if (!sauce.sauceId) continue;
+		try {
+			await db.update(hotSauces).set(sauce).where(eq(hotSauces.sauceId, sauce.sauceId));
+		} catch (error) {
+			console.error('Error updating sauce', sauce.name, error);
+		}
 	}
 
-	const scraper = scrapers[command.toString().toLowerCase()];
-
-	if (!scraper) {
-		console.error('No scraper found for', command);
-		process.exit(1);
+	// insert new sauces
+	if (newSauces.length > 0) {
+		const sauces = await db
+			.insert(hotSauces)
+			.values(newSauces)
+			.onConflictDoNothing()
+			.returning({ id: hotSauces.sauceId, name: hotSauces.name });
+		existingSauceNames.push(...sauces);
 	}
 
-	/** @type {import('./index.d').ScrapeSauceOptions} */
-	const options = {
-		cache: !flags.noCache,
-		dbInsert: flags.dbInsert,
-		dev: flags.dev
-	};
+	console.info('Inserting store hot sauce data');
+	for (const sauce of data) {
+		const s = existingSauceNames.find((s) => isSimilarName(s.name, sauce.name));
+		if (!s) {
+			console.error('Sauce not found', sauce.name);
+			continue;
+		}
 
+		await db
+			.insert(storeHotSauces)
+			.values({
+				sauceId: s.id,
+				storeId: store[0].storeId,
+				url: sauce.url
+			})
+			.onConflictDoUpdate({
+				target: [storeHotSauces.sauceId, storeHotSauces.storeId],
+				set: {
+					url: sauce.url
+				}
+			});
+	}
+}
+
+/**
+ * @param {import('./index.d').SauceScraper} scraper
+ * @param {import('./index.d').ScrapeSauceOptions} options
+ */
+async function scrapeStore(scraper, options) {
 	console.info(`Running scraper - ${scraper.name} - ${scraper.url}`);
 	let urls = await scraper.getSauceUrls(scraper.url, options);
 
@@ -56,89 +129,50 @@ async function main() {
 	console.info('Found', data.length, 'sauces');
 
 	if (options.dbInsert) {
-		// upsert store data
-		console.info('Upserting store data');
-		const store = await db
-			.insert(stores)
-			.values({
-				name: scraper.name,
-				url: scraper.url
-			})
-			.onConflictDoUpdate({
-				target: stores.name,
-				set: {
-					url: scraper.url
-				}
-			})
-			.returning();
+		await insertStoreData(scraper, data);
+	}
 
-		console.info('Inserting hot sauce data');
-		const existingSauceNames = await db
-			.select({ id: hotSauces.sauceId, name: hotSauces.name })
-			.from(hotSauces);
+	return data;
+}
 
-		const { newSauces, existingSauces } = data.reduce(
-			(acc, sauce) => {
-				const normalizedNewName = normalizeName(sauce.name);
-				const existing = existingSauceNames.find((existing) =>
-					isSimilarName(normalizeName(existing.name), normalizedNewName)
-				);
+async function main() {
+	const startTime = performance.now();
+	const command = flags['_'].shift();
 
-				if (existing) {
-					sauce.sauceId = existing.id;
-					acc.existingSauces.push(sauce);
-				} else {
-					acc.newSauces.push(sauce);
-				}
-				return acc;
-			},
-			/** @type {{ newSauces: import('./index.d').Sauce[], existingSauces: (import('./index.d').Sauce)[] }} */
-			({ newSauces: [], existingSauces: [] })
-		);
+	if (!command) {
+		console.error('No command provided');
+		process.exit(1);
+	}
 
-		console.info('Deduped', data.length - existingSauces.length, 'sauces');
+	const key = command.toString().toLowerCase();
 
-		// update existing sauces
-		for (const sauce of existingSauces) {
-			if (!sauce.sauceId) continue;
-			try {
-				await db.update(hotSauces).set(sauce).where(eq(hotSauces.sauceId, sauce.sauceId));
-			} catch (error) {
-				console.error('Error updating sauce', sauce.name, error);
-			}
-		}
+	if (key !== 'all' && !scrapers[key]) {
+		console.error('No scraper found for', command);
+		console.error('Available: all,', Object.keys(scrapers).join(', '));
+		process.exit(1);
+	}
 
-		// insert new sauces
-		if (newSauces.length > 0) {
-			const sauces = await db
-				.insert(hotSauces)
-				.values(newSauces)
-				.onConflictDoNothing()
-				.returning({ id: hotSauces.sauceId, name: hotSauces.name });
-			existingSauceNames.push(...sauces);
-		}
+	const selected = key === 'all' ? Object.keys(scrapers) : [key];
 
-		console.info('Inserting store hot sauce data');
-		for (const sauce of data) {
-			const s = existingSauceNames.find((s) => isSimilarName(s.name, sauce.name));
-			if (!s) {
-				console.error('Sauce not found', sauce.name);
-				continue;
-			}
+	/** @type {import('./index.d').ScrapeSauceOptions} */
+	const options = {
+		cache: !flags.noCache,
+		dbInsert: flags.dbInsert,
+		dev: flags.dev
+	};
 
-			await db
-				.insert(storeHotSauces)
-				.values({
-					sauceId: s.id,
-					storeId: store[0].storeId,
-					url: sauce.url
-				})
-				.onConflictDoUpdate({
-					target: [storeHotSauces.sauceId, storeHotSauces.storeId],
-					set: {
-						url: sauce.url
-					}
-				});
+	/** @type {import('./index.d').Sauce[]} */
+	const data = [];
+	/** @type {string[]} */
+	const failed = [];
+
+	for (const name of selected) {
+		try {
+			data.push(...(await scrapeStore(scrapers[name], options)));
+		} catch (error) {
+			// Run the rest regardless, so one broken store does not hide the others.
+			console.error(`Scraper ${name} failed:`, /** @type {Error} */ (error).message);
+			failed.push(name);
 		}
 	}
 
@@ -146,6 +180,12 @@ async function main() {
 	fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
 
 	console.info('done in', Math.round(performance.now() - startTime), 'ms');
+
+	if (failed.length > 0) {
+		console.error('Failed scrapers:', failed.join(', '));
+		process.exit(1);
+	}
+
 	process.exit(0);
 }
 

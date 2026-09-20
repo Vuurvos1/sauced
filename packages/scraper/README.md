@@ -18,9 +18,15 @@ interface is unchanged, but a 900-product store costs ~4 requests instead of 900
 ```bash
 pnpm scrapers scrape trex
 
+# every store in stores.js, in one run
+pnpm scrapers scrape all
+
 # example with flags
 pnpm scrapers scrape trex --noCache --dbInsert
 ```
+
+`all` runs every store before it fails, so one broken adapter does not hide the
+state of the others; it exits non-zero listing whichever stores failed.
 
 ### Flags
 
