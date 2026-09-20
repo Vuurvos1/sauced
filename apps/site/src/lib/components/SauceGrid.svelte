@@ -1,22 +1,26 @@
 <script lang="ts">
 	import type { HotSauce } from '@app/db/types';
 	import StarRating from './StarRating.svelte';
+	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
 
 	type SauceRating = HotSauce & { avgRating?: string | number | null };
 
 	interface Props {
 		sauces: SauceRating[];
+		/** Disambiguates the same sauce rendered in two grids on one page. */
+		section: string;
 	}
 
-	const { sauces = [] }: Props = $props();
+	const { sauces = [], section }: Props = $props();
 </script>
 
 {#snippet sauce(sauce: SauceRating)}
 	<li>
 		<!-- TODO: make relative? -->
-		<a href="/sauces/{sauce.slug}">
+		<a href="/sauces/{sauce.slug}" onclick={(e) => claimOnNavigate(e, section, sauce.slug)}>
 			<img
 				class="mx-auto mb-3 aspect-square max-w-full object-contain"
+				style:view-transition-name={sauceImageName(section, sauce.slug)}
 				src={sauce.imageUrl}
 				alt={sauce.name}
 			/>

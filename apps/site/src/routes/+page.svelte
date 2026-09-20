@@ -12,7 +12,7 @@
 		<div class="container">
 			<h2 class="h2 mb-6">Recently added sauces</h2>
 
-			<SauceGrid sauces={recentSauces} />
+			<SauceGrid sauces={recentSauces} section="recent" />
 
 			<div class="mt-4 flex justify-end">
 				<a class="btn" href="/sauces">Check all sauces</a>
@@ -24,7 +24,7 @@
 		<div class="container">
 			<h2 class="h2 mb-6">Top rated sauces</h2>
 
-			<SauceGrid sauces={topSauces} />
+			<SauceGrid sauces={topSauces} section="top" />
 
 			<div class="mt-4 flex justify-end">
 				<a class="btn" href="/sauces">Check all sauces</a>

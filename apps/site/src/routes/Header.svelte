@@ -13,6 +13,7 @@
 	import { debounce } from '$lib/utils/debounce.svelte';
 	import type { SearchResponse } from '$lib/types/api';
 	import { portal } from '$lib/actions';
+	import { skipViewTransition } from '$lib/view-transition.svelte';
 
 	let {
 		data: { session }
@@ -141,13 +142,17 @@
 	</li>
 {/snippet}
 
-<header class="sticky top-0 z-40">
+<header class="site-header sticky top-0 z-40">
 	<nav class="bg-neutral-950 py-4 text-white">
 		<ul
 			class="container grid grid-cols-[2rem_1fr_2rem] flex-row items-center gap-3 font-medium sm:gap-4 md:grid md:grid-cols-4"
 		>
 			<li>
-				<a class="flex w-fit flex-row items-center gap-2.5 font-logo text-2xl" href="/">
+				<a
+					class="flex w-fit flex-row items-center gap-2.5 font-logo text-2xl"
+					href="/"
+					onclick={skipViewTransition}
+				>
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"
@@ -265,3 +270,9 @@
 		</ul>
 	</nav>
 </header>
+
+<style>
+	.site-header {
+		view-transition-name: header;
+	}
+</style>

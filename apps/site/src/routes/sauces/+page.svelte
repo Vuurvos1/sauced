@@ -31,7 +31,7 @@
 	{#if sauceCount === 0 && search}
 		<p class="py-8 text-center text-gray-600">No sauces found matching "{search}"</p>
 	{:else}
-		<SauceGrid {sauces}></SauceGrid>
+		<SauceGrid {sauces} section="all"></SauceGrid>
 	{/if}
 
 	<div class="flex flex-row justify-end gap-6 py-4">
