@@ -19,8 +19,8 @@ const config = {
 		// local Node version. Vercel offers 20.x / 22.x / 24.x (20.x is deprecated
 		// from 2026-10-01), so the build machine's Node can move independently.
 		adapter: adapter({ runtime: 'nodejs24.x' }),
-		experimental: { 
-			remoteFunctions: true	
+		experimental: {
+			remoteFunctions: true
 		}
 	},
 

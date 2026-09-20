@@ -8,12 +8,12 @@
 		"scrapers": "pnpm --filter @app/scraper -- ",
 		"build": "turbo run build",
 		"lint": "turbo run lint",
-		"format": "prettier --write .",
-		"docker:up": "docker compose up -d"
+		"format": "oxfmt",
+		"docker:up": "docker compose up -d",
+		"format:check": "oxfmt --check"
 	},
 	"devDependencies": {
-		"prettier": "^3.9.8",
-		"prettier-plugin-svelte": "^3.5.2",
+		"oxfmt": "^0.68.0",
 		"turbo": "^2.11.2"
 	},
 	"type": "module",

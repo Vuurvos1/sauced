@@ -106,8 +106,7 @@
 									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
-									value={userCheckin?.review ?? ''}
-								></textarea>
+									value={userCheckin?.review ?? ''}></textarea>
 							</div>
 
 							{#if error}

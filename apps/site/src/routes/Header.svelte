@@ -124,7 +124,7 @@
 			class="container grid grid-cols-[2rem_1fr_2rem] flex-row items-center gap-3 font-medium sm:gap-4 md:grid md:grid-cols-4"
 		>
 			<li>
-				<a class="font-logo flex w-fit flex-row items-center gap-2.5 text-2xl" href="/">
+				<a class="flex w-fit flex-row items-center gap-2.5 font-logo text-2xl" href="/">
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 						<path
 							fill="#DC2626"
