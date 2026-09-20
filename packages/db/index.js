@@ -12,7 +12,11 @@ export const schema = {
 	...sauceSchema
 };
 
-/** Loose enough for one wrong letter, strict enough to keep unrelated names out. */
+/**
+ * Loose enough for one wrong letter, strict enough to keep unrelated names out.
+ * Applied per transaction by the site's search helpers, not at connect time:
+ * poolers reject `-c pg_trgm...` as a startup parameter.
+ */
 export const WORD_SIMILARITY_THRESHOLD = 0.45;
 
 /**
@@ -24,11 +28,6 @@ export function getDb(dbUrl) {
 		throw new Error('Database URL is required');
 	}
 
-	const client = postgres(dbUrl, {
-		// Postgres' default word similarity threshold (0.6) rejects single-letter
-		// misspellings like "habenero", which is exactly what fuzzy search is for.
-		// Set at connect time so every `<%` in a search query uses it.
-		connection: { options: `-c pg_trgm.word_similarity_threshold=${WORD_SIMILARITY_THRESHOLD}` }
-	});
+	const client = postgres(dbUrl);
 	return drizzle(client, { schema });
 }

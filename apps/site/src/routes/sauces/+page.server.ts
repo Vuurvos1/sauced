@@ -2,7 +2,14 @@ import { db } from '$lib/server/db';
 import { hotSauces, checkins } from '@app/db/schema';
 import { type Actions } from '@sveltejs/kit';
 import { eq, avg, count, desc, getTableColumns } from 'drizzle-orm';
-import { matchSimilarity, matchTier, normalizeQuery, sauceMatchesQuery } from '$lib/server/search';
+import {
+	type Executor,
+	matchSimilarity,
+	matchTier,
+	normalizeQuery,
+	sauceMatchesQuery,
+	withFuzzyMatching
+} from '$lib/server/search';
 
 export async function load({ url }) {
 	const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
@@ -20,23 +27,28 @@ export async function load({ url }) {
 			]
 		: [desc(hotSauces.createdAt)];
 
-	const sauceCountQuery = db.select({ count: count() }).from(hotSauces).where(filter);
-
 	const hotSauceColumns = getTableColumns(hotSauces);
-	const sauceQuery = db
-		.select({
-			...hotSauceColumns,
-			avgRating: avg(checkins.rating)
-		})
-		.from(hotSauces)
-		.where(filter)
-		.limit(pageSize)
-		.offset((page - 1) * pageSize) // TODO: check if filtering before or after the join is faster
-		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
-		.groupBy(hotSauces.sauceId)
-		.orderBy(...order);
+	const run = (executor: Executor) => {
+		const sauceCountQuery = executor.select({ count: count() }).from(hotSauces).where(filter);
 
-	const [sauceCount, sauces] = await Promise.all([sauceCountQuery, sauceQuery]);
+		const sauceQuery = executor
+			.select({
+				...hotSauceColumns,
+				avgRating: avg(checkins.rating)
+			})
+			.from(hotSauces)
+			.where(filter)
+			.limit(pageSize)
+			.offset((page - 1) * pageSize) // TODO: check if filtering before or after the join is faster
+			.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
+			.groupBy(hotSauces.sauceId)
+			.orderBy(...order);
+
+		return Promise.all([sauceCountQuery, sauceQuery]);
+	};
+
+	// Only a search needs the lowered trigram threshold, so browsing stays out of a transaction.
+	const [sauceCount, sauces] = search ? await withFuzzyMatching(run) : await run(db);
 
 	return { sauces, sauceCount: sauceCount[0].count, pageSize, search };
 }
