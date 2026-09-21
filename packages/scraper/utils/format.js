@@ -82,6 +82,10 @@ export function cleanProductName(name) {
 	return tidied || String(name ?? '').trim();
 }
 
+/** Trade words a shop appends to its own name but leaves off its product titles. */
+const TRADE_SUFFIX =
+	/\s+(hot\s+sauces?|sauces?|sauce\s+co\.?|co\.?|company|ltd\.?|inc\.?|llc|foods?|brand)\s*$/i;
+
 /** @param {string} value */
 function escapeRegExp(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -110,6 +114,13 @@ export function stripMakerFromName(name, maker) {
 	};
 
 	let stripped = attempt(title, brand);
+
+	// A shop often registers the brand with its trade suffix ("Queen Majesty Hot
+	// Sauce") while titling the product without it ("Queen Majesty Cocoa Ghost").
+	if (stripped === title) {
+		const shortened = brand.replace(TRADE_SUFFIX, '').trim();
+		if (shortened.length >= 3 && shortened !== brand) stripped = attempt(title, shortened);
+	}
 
 	// Shops spell the brand with different accents; fold both to compare, but only
 	// when folding preserves length, so offsets into the original stay valid.

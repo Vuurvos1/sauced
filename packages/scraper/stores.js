@@ -172,10 +172,16 @@ You will NOT find our Products in ANY Supermarkets!`
 		name: 'Hotta',
 		url: 'https://hotta.eu',
 		// Estonian by default.
-		lang: 'en'
+		lang: 'en',
+		// Category slugs are translated too, so these must match `lang` above:
+		// the Estonian `kastmed` is `sauces` once English is requested.
+		includeCategories: ['sauces']
 	},
 	{
 		key: 'hotsauceemporium',
+		// 909 products, of which a quarter is gear, snacks, rubs and gift boxes.
+		// Verified: nothing dropped by these categories is a sauce.
+		includeCategories: ['hot-chilli-sauces', 'bbq-wing-marinades', 'british-sauces', 'hot-ones'],
 		name: 'Hot Sauce Emporium',
 		url: 'https://www.hotsauceemporium.co.uk'
 	},
@@ -198,6 +204,10 @@ You will NOT find our Products in ANY Supermarkets!`
 	{
 		key: 'chilirezept',
 		language: 'de',
+		// A German cooking shop as much as a sauce shop: pizza flour, yeast,
+		// Damascus knives, a Bosch hand mixer, dried chillies. Its categories
+		// separate them, and `senf` is kept on the same basis as mayo and BBQ.
+		includeCategories: ['hot-sauce', 'sriracha', 'tabasco', 'grill-sauce', 'chili-extrakt', 'senf'],
 		name: 'Chilirezept',
 		url: 'https://shop.chilirezept.de'
 	},

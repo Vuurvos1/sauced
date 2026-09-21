@@ -152,6 +152,17 @@ describe('stripMakerFromName', () => {
 		expect(stripMakerFromName('HotZeg Adixxion Hot Sauce', 'HotZeg')).toBe('Adixxion Hot Sauce');
 	});
 
+	// Shops register "Queen Majesty Hot Sauce" but title the product
+	// "Queen Majesty Cocoa Ghost", which left it a separate sauce.
+	it('should strip the brand without its trade suffix', () => {
+		expect(stripMakerFromName('Queen Majesty Cocoa Ghost', 'Queen Majesty Hot Sauce')).toBe(
+			'Cocoa Ghost'
+		);
+		expect(stripMakerFromName('Torchbearer Garlic Reaper', 'Torchbearer Sauces')).toBe(
+			'Garlic Reaper'
+		);
+	});
+
 	it('should leave the name alone when the maker is not in it', () => {
 		expect(stripMakerFromName('Habanero Hustle', 'T-Rex Hot Sauce')).toBe('Habanero Hustle');
 	});
