@@ -35,7 +35,7 @@ Grouped by urgency: **Bugs** are wrong today, **Now** unblocks other work,
       leaves the separator that became one: `Melinda's - Black Truffle Hot Sauce 🍯`
       → `melindas-black-truffle-hot-sauce-`. Trim leading/trailing hyphens.
 - [x] **`Deduped N` logs the wrong number.** `packages/scraper/index.js:63` prints
-      `data.length - existingSauces.length`, which is the count of *new* sauces. For
+      `data.length - existingSauces.length`, which is the count of _new_ sauces. For
       heathotsauce it read "Deduped 773" when 43 were deduped.
 - [ ] **`url` columns are `varchar(256)`.** Shopify product URLs with query params
       exceed this and the scraper insert throws. Use `text`.
@@ -200,28 +200,28 @@ Walker & Sons, Woolf's Kitchen, Yellowbird, Yo Mama's Foods.
 
 **Done in the cleanup pass.** Full 27-store rescrape after the fixes:
 
-| | before | after |
-| --- | --- | --- |
-| sauces | 4278 | 3254 |
-| bundles left | 77 | 0 |
-| plants / seeds | 249 | 0 |
-| powders / rubs | 182 | 0 |
-| sizes in names | 740 | 0 |
-| promotional copy | 67 | 4 |
-| slugs with a stray hyphen | 288 | 0 |
-| French descriptions with an English source available | 83 | 4 |
-| shipping / fee SKUs | 1 | 0 |
+|                                                      | before | after |
+| ---------------------------------------------------- | ------ | ----- |
+| sauces                                               | 4278   | 3254  |
+| bundles left                                         | 77     | 0     |
+| plants / seeds                                       | 249    | 0     |
+| powders / rubs                                       | 182    | 0     |
+| sizes in names                                       | 740    | 0     |
+| promotional copy                                     | 67     | 4     |
+| slugs with a stray hyphen                            | 288    | 0     |
+| French descriptions with an English source available | 83     | 4     |
+| shipping / fee SKUs                                  | 1      | 0     |
 
 Then the makers pass, on top of that:
 
-| | before | after |
-| --- | --- | --- |
-| sauces | 3254 | 2860 |
-| makers | 0 | 450 |
-| sauces with no maker | 3254 | 0 |
+|                      | before | after |
+| -------------------- | ------ | ----- |
+| sauces               | 3254   | 2860  |
+| makers               | 0      | 450   |
+| sauces with no maker | 3254   | 0     |
 
 Measured first, because the obvious design was wrong: bucketing dedup by maker
-gives *3868* distinct sauces against 3178 for plain name matching — worse, because
+gives _3868_ distinct sauces against 3178 for plain name matching — worse, because
 545 brand strings are only 450 real brands. Stripping the maker from the name and
 keeping the comparison flat was the variant that won.
 
@@ -231,7 +231,6 @@ conservative enough to leave them alone.
 
 Still open below.
 
-
 Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roughly
 **600 rows (14%) are not a single bottle of sauce**.
 
@@ -240,20 +239,21 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       28 collections including `chilli-seeds`, `plants-seedlings`,
       `growing-equipment`, `chocolate`, `alcohol`, `private-tours` and `vouchers`.
       We ingest the whole farm shop — `Propagator`, `Chilli & Pepper Focus Plant
-      Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
+  Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
       Measured against the live API:
 
       | | products |
-      | --- | --- |
-      | whole catalogue (scraped today) | 421 |
-      | `collections/sauces` | 25 |
-      | non-sauce left in that collection | 0 |
-      | real sauces lost by scoping | 0 |
+              | --- | --- |
+              | whole catalogue (scraped today) | 421 |
+              | `collections/sauces` | 25 |
+              | non-sauce left in that collection | 0 |
+              | real sauces lost by scoping | 0 |
 
-      Verified the last row directly: 20 titles in the full catalogue contain
-      "sauce" and all 20 are already inside the collection. So
-      `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
-      most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
+              Verified the last row directly: 20 titles in the full catalogue contain
+              "sauce" and all 20 are already inside the collection. So
+              `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
+              most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
+
 - [ ] **Remaining plants and seeds elsewhere — ~50 rows** once South Devon is scoped
       (One Stop Chilli Shop, Heat Hot Sauce Shop). Small enough for the shared
       `filter.js` pattern rather than per-store config.
@@ -279,11 +279,11 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       `Hot Zeg - Adixion 🥭` (Sweet Pepper) are one sauce in two rows. Names should
       be the sauce alone, with the brand in `makers` — which also gives the maker
       pages a reason to exist.
-      **Measured caveat:** extracting the maker does *not* fix that duplicate.
+      **Measured caveat:** extracting the maker does _not_ fix that duplicate.
       `isSimilarName('Adixxion', 'Adixion')` is false — fuzzysort's 0.6 threshold
       rejects a one-letter difference on a short name, the same shape of problem as
       the pg_trgm threshold in `apps/site/src/lib/server/search.ts`. Shorter names
-      make dedup *more* sensitive to typos, not less, so the threshold needs
+      make dedup _more_ sensitive to typos, not less, so the threshold needs
       revisiting alongside this or the duplicates simply change shape.
       (`HotZeg Mazoshista Hot Sauce` does dedupe correctly — both stores spell it
       identically, and it is one row linked to two stores.)
@@ -301,7 +301,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       parameter (`Here it is: De Sambal by Perry de Man!…`). **203 of heatsupply's
       307 rows currently hold Dutch descriptions.** Hotta is Estonian by default.
       Add a `lang` option to the Woo config and set it for those two.
-      Checked and *not* fixable this way — chilisaus.be, dekkerpepper, chilirezept
+      Checked and _not_ fixable this way — chilisaus.be, dekkerpepper, chilirezept
       and maisonpiquante return identical content with or without the parameter,
       so their single-language content is a genuine limitation, not a missed flag.
 - [x] **Spice mixes, pastes and Asian condiments.** `Nomie Veggie Curry Kruidenmix`
@@ -331,13 +331,13 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       `Dekker Pepper Spicy Spirit … [PRE-ORDER]`, a chilli spirit — also not a sauce.
       So `(Pre Order)` needs stripping from names, but as a category it is almost
       entirely a symptom of the plants problem rather than its own issue. Handling
-      pre-order as an availability *state* belongs with **Stock tracking** below.
+      pre-order as an availability _state_ belongs with **Stock tracking** below.
 - [x] **Coasters, mugs and clothing — 7 rows.** `houseware` (coaster, mug, glass,
       opener, apron) and clothing both slip past the merch pattern. Small, but the
       pattern list is the same one that misses `longsleeve`.
 - [x] **Coffee cannot be a blanket exclusion.** Real coffee is in the catalogue
       (`Medium Roast Coffee Beans | 250g | Gorilla's Coffee`, `PSYCHO COFFEE 1kg`),
-      but so are coffee-*flavoured* sauces that must survive:
+      but so are coffee-_flavoured_ sauces that must survive:
       `Dawson's Coffee Date hot sauce`, `El Yucateco Habanero & Coffee`,
       `Coffee BBQ Sauce - Rich Coffee Flavor`. Match on the product noun (beans,
       ground, roast) rather than the flavour word.
@@ -359,7 +359,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       treating one bottle as one sauce. The second is much cheaper and probably right
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
-      (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+  (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
 - [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
@@ -385,7 +385,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       A text classifier over name + description would answer "is this a bottle of
       hot sauce?" without a per-language word list, and an image classifier could
       catch what text cannot (a bottle vs a bag of crisps vs a t-shirt).
-      Shape it as a *fallback*, not a replacement: keep the cheap regex tiers for
+      Shape it as a _fallback_, not a replacement: keep the cheap regex tiers for
       the obvious cases and only call the model for products no rule is confident
       about, so cost scales with novelty rather than catalogue size. Cache the
       verdict per product URL — the catalogue barely changes between runs.
@@ -423,9 +423,9 @@ being thrown away. Stock is per store, not per sauce, so it belongs on
 
 Both APIs expose it, verified live:
 
-| Platform | Field | Note |
-| --- | --- | --- |
-| Shopify | `variants[].available` | per variant — in stock if any variant is available |
+| Platform    | Field                           | Note                                                                                     |
+| ----------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Shopify     | `variants[].available`          | per variant — in stock if any variant is available                                       |
 | WooCommerce | `is_in_stock`, `is_purchasable` | also `stock_availability.text`, e.g. "Limited stock, order soon" (HTML, needs stripping) |
 
 - [ ] Add `inStock boolean` + `stockCheckedAt timestamp` to `storeHotSauces`
@@ -530,7 +530,10 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
       in search results, and the ratings are already there.
 - [ ] Heading hierarchy: `SauceGrid` emits an `<h2>` per card and several pages have no
       `<h1>`.
-- [ ] Search dropdown has no keyboard navigation — no arrow keys, no Enter to select.
+- [x] Search dropdown has no keyboard navigation — no arrow keys, no Enter to select.
+      Now a combobox: arrows walk the results and wrap back to the input, Enter opens the
+      highlighted one (or the full results page when nothing is highlighted), Escape and Tab
+      close it, and `/` or ⌘K focuses the box from anywhere.
 - [ ] Improve (and index) search.
 - [ ] Improve achievement icons.
 
@@ -548,9 +551,15 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 
 - [ ] User following system with a timeline (`+page.svelte:35`).
 - [ ] Dark mode.
-- [ ] Design: a little more minimal /playfull / brutalist.
+- [ ] Design: a little more minimal / playfull / brutalist.
 - [ ] PWA.
 - [ ] Mobile APK.
+- [ ] Save images in bucket 
+      - [ ] turn white backgrounds into pngs
+      - [ ] image optimization
+      - [ ] image caching
+      - [ ] object detection?
+- [ ] Prioritize naming and descriptions from sauce makers where possible 
 
 ---
 
