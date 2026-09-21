@@ -21,6 +21,7 @@ export const makers = pgTable(
 	{
 		makerId: uuid('maker_id').primaryKey().defaultRandom(),
 		name: varchar('name', { length: 256 }).notNull().unique(),
+		slug: text('slug').notNull().unique(),
 		description: text('description').default(''),
 		website: varchar('website', { length: 256 }),
 		createdAt: timestamp('created_at').notNull().defaultNow(),

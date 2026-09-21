@@ -10,7 +10,7 @@
 
 	let { data } = $props();
 
-	let { sauce, session, user, wishlisted, stores } = $derived(data);
+	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
 	let checkins = $state(data.checkins);
 	let userCheckin = $state(data.userCheckin);
 	let error = $state<string | null>(null);
@@ -27,7 +27,16 @@
 		/>
 
 		<div class="xl:col-span-2">
-			<h1 class="h1 mb-3">{sauce.name}</h1>
+			<h1 class="h1 mb-1">{sauce.name}</h1>
+
+			{#if maker}
+				<a
+					class="mb-3 inline-block font-medium text-gray-600 underline-offset-2 hover:underline"
+					href="/makers/{maker.slug}"
+				>
+					{maker.name}
+				</a>
+			{/if}
 
 			<p class="mb-5 text-gray-500">{sauce.description}</p>
 

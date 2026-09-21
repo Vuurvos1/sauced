@@ -43,6 +43,13 @@
       "when": 1789932578673,
       "tag": "0005_unaccent_search",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790007924525,
+      "tag": "0006_maker_slug",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,11 @@
  * rather than code. Platform and product counts were measured against the live
  * endpoints; see the repo TODO for the stores that still need bespoke scrapers.
  *
+ * `houseBrand` is only set for a shop that makes its own sauce. A retailer whose
+ * feed names no brand leaves the maker unknown rather than claiming it made the
+ * product — Hot Sauce Emporium's feed names no brands at all, and it stocks Pain
+ * Is Good and Marie Sharp's.
+ *
  * `key` is the CLI name (`pnpm scrapers scrape <key>`) and the cache directory.
  * `name` must stay stable — `stores.name` is unique and upserted on.
  */
@@ -71,6 +76,7 @@ export const shopifyStores = [
 	},
 	{
 		key: 'torchbearer',
+		houseBrand: 'Torchbearer Sauces',
 		name: 'Torchbearer Sauces',
 		url: 'https://www.torchbearersauces.com'
 	},
@@ -85,6 +91,7 @@ export const shopifyStores = [
 	},
 	{
 		key: 'southdevonchilli',
+		houseBrand: 'South Devon Chilli Farm',
 		name: 'South Devon Chilli Farm',
 		url: 'https://www.southdevonchillifarm.co.uk',
 		// A chilli farm with a sauce line, not a sauce shop: the full catalogue is
@@ -99,16 +106,19 @@ export const shopifyStores = [
 	},
 	{
 		key: 'condimaniac',
+		houseBrand: 'Condimaniac',
 		name: 'Condimaniac',
 		url: 'https://condimaniac.com'
 	},
 	{
 		key: 'sauceshop',
+		houseBrand: 'Sauce Shop',
 		name: 'Sauce Shop',
 		url: 'https://www.sauceshop.co'
 	},
 	{
 		key: 'pipshotsauce',
+		houseBrand: "Pip's Hot Sauce",
 		name: "Pip's Hot Sauce",
 		url: 'https://pipshotsauce.co.uk'
 	},
@@ -149,6 +159,7 @@ You will NOT find our Products in ANY Supermarkets!`
 	},
 	{
 		key: 'chardys',
+		houseBrand: "Chardy's Hot Sauce",
 		name: "Chardy's Hot Sauce",
 		url: 'https://chardys.nl',
 		// Mostly jam, chocolate and apparel; only this category is sauce.
@@ -178,6 +189,7 @@ You will NOT find our Products in ANY Supermarkets!`
 	},
 	{
 		key: 'justchillies',
+		houseBrand: 'Wiltshire Chilli Farm',
 		name: 'Wiltshire Chilli Farm',
 		url: 'https://justchillies.co.uk'
 	},

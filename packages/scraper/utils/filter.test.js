@@ -138,3 +138,48 @@ describe('isBundleName — false positives that must survive', () => {
 		expect(isBundleName('Dekker Pepper Spicy Spirit – chili (700ml)')).toBe(true);
 	});
 });
+
+describe('isBundleName — accented and compound vocabulary', () => {
+	// JS \b only knows [A-Za-z0-9_], so `\bépices\b` never matched "d'épices".
+	// Patterns are ASCII and the name is accent-folded before testing.
+	it('should match accented words', () => {
+		expect(isBundleName('Raz El Hanout mélange d’épices')).toBe(true);
+		expect(isBundleName('Chimichurri mélange d’épice traditionnelle')).toBe(true);
+		expect(isBundleName('7 Piments Ghost Pepper séchés entiers indiens')).toBe(true);
+		expect(isBundleName('Paprika en Poudre')).toBe(true);
+	});
+
+	it('should match German and French non-sauce products', () => {
+		expect(isBundleName('Zwilling Gourmet Selbstschärfender Messerblock 7-teilig')).toBe(true);
+		expect(isBundleName('Lil’Nitro bonbon Nounours le plus piquant du monde')).toBe(true);
+	});
+
+	it('should match words inside Dutch compounds', () => {
+		expect(isBundleName('Honinglepel hout')).toBe(true);
+		expect(isBundleName('Adobo Rojo BBQ peperpakket')).toBe(true);
+	});
+
+	it('should match Dutch merch and produce', () => {
+		expect(isBundleName('Chilipeper Sokken Zwart (maat 39/45)')).toBe(true);
+		expect(isBundleName('Gedroogde Madame Jeanette pepers')).toBe(true);
+	});
+
+	// `gedroogd` and `dried` describe an ingredient just as often as a product.
+	it('should keep a sauce made from dried peppers', () => {
+		expect(isBundleName('Gedroogde Tomaat Saus')).toBe(false);
+		expect(isBundleName('Smoked Dried Chipotle Hot Sauce')).toBe(false);
+	});
+
+	it('should drop confectionery but keep chilli varieties named after it', () => {
+		expect(isBundleName('Fudge Caramels')).toBe(true);
+		expect(isBundleName('Diva Diablo Dulce de Leche Caramel Pretzels')).toBe(true);
+		expect(isBundleName('Chocolate Habanero Chilli Sauce')).toBe(false);
+		expect(isBundleName('Cocoa Ghost Hot Sauce')).toBe(false);
+		expect(isBundleName('Satay Peanut Hot Sauce')).toBe(false);
+	});
+
+	it('should drop bulk and hardware', () => {
+		expect(isBundleName('Los Calientes Verde 5 Gallon Bucket')).toBe(true);
+		expect(isBundleName('Psycho Juice Pen')).toBe(true);
+	});
+});

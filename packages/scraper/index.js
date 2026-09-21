@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import scrapers from './scrapers.js';
 import { getDb } from '@app/db';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
-import { normalizeName, isSimilarName } from './utils/index.js';
-import { eq } from 'drizzle-orm';
+import { normalizeName, isSimilarName, slugifyName } from './utils/index.js';
+import { eq, notExists, sql } from 'drizzle-orm';
 
 import 'dotenv/config';
 
@@ -49,7 +49,7 @@ async function upsertMakers(data) {
 	if (fresh.length > 0) {
 		const inserted = await db
 			.insert(makers)
-			.values(fresh.map((name) => ({ name })))
+			.values(fresh.map((name) => ({ name, slug: slugifyName(name) })))
 			.onConflictDoNothing()
 			.returning({ id: makers.makerId, name: makers.name });
 		for (const row of inserted) byName.set(normalizeName(row.name), row.id);
@@ -268,6 +268,23 @@ async function main() {
 			console.error(`Scraper ${name} failed:`, /** @type {Error} */ (error).message);
 			failed.push(name);
 		}
+	}
+
+	// Dedup can leave a brand behind when all its sauces merge into rows credited
+	// to someone else. An empty brand page is worse than no page.
+	if (options.dbInsert && selected.length > 1) {
+		const orphaned = await db
+			.delete(makers)
+			.where(
+				notExists(
+					db
+						.select({ n: sql`1` })
+						.from(hotSauces)
+						.where(eq(hotSauces.makerId, makers.makerId))
+				)
+			)
+			.returning({ id: makers.makerId });
+		if (orphaned.length > 0) console.info('Removed', orphaned.length, 'makers with no sauces');
 	}
 
 	console.info('Writing to data.json');

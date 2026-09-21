@@ -360,7 +360,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
       (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
-- [ ] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
+- [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
       Chilisaus.be 61. Some are legitimate — Torchbearer, T-Rex and Raijmakers do
@@ -370,6 +370,33 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       It also blocks the last dedup wins: `Queen Majesty Scotch Bonnet & Ginger`
       is still its own row because Hot Sauce Emporium was recorded as its maker,
       so the brand never got stripped from the name.
+- [ ] **`Pepper Palace Warehouse` reads oddly as a brand** (114 sauces). It is the
+      vendor string Pepper Palace's own feed uses, so the attribution is right,
+      but the page needs a display alias.
+- [ ] **628 sauces have no maker.** Correct — their feeds name none — but the
+      brand label is simply absent on those pages. Worth deciding whether to show
+      nothing, or the shop as a weaker "sold by" line.
+- [ ] **Classify the uncertain items with a small model instead of more regexes.**
+      The keyword list is load-bearing and leaks a new category every time a
+      non-English store is added: Dutch (`pakket`, `Honinglepel`, `Sokken`,
+      `Gedroogde`), French (`coffret`, `mélange d'épices`, `bonbon`, `poudre`,
+      `séchés`), German (`Adventskalender`, `6er Set`, `Messerblock`). Every one
+      was found by eye, not by the scraper.
+      A text classifier over name + description would answer "is this a bottle of
+      hot sauce?" without a per-language word list, and an image classifier could
+      catch what text cannot (a bottle vs a bag of crisps vs a t-shirt).
+      Shape it as a *fallback*, not a replacement: keep the cheap regex tiers for
+      the obvious cases and only call the model for products no rule is confident
+      about, so cost scales with novelty rather than catalogue size. Cache the
+      verdict per product URL — the catalogue barely changes between runs.
+      Worth deciding first: a hosted API (simplest, per-item cost, needs a key in
+      CI) versus a small local model run in the scrape job (no per-item cost,
+      slower job, heavier install). Model options and pricing need checking
+      properly before committing to either — do not pick from memory.
+      Structural alternative that needs no model at all: most of these shops
+      already categorise their stock, and the Woo adapter supports
+      `includeCategories`. Scoping stores the way South Devon was scoped would
+      make the word lists mostly redundant. Try that first — it is free.
 - [ ] **The filter only ever reads the name.** A product can be junk for reasons
       that live entirely in its description, and nothing in the current design can
       see that. Found via `Jeremy Renner's … Hot Sauce - Glass Onion`, whose

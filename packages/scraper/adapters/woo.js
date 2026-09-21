@@ -16,7 +16,8 @@ const BRAND_TAXONOMY = /\b(merk|brand|marque|marke|marca)\b/i;
 /**
  * @param {any} product
  * @param {string | undefined} brandTaxonomy
- * @param {string} fallback
+ * @param {string | undefined} fallback
+ * @returns {string | null} null when neither the feed nor the config names a maker
  */
 function extractMaker(product, brandTaxonomy, fallback) {
 	// WooCommerce 9.6+ ships a first-class brands taxonomy; older shops model it
@@ -33,7 +34,7 @@ function extractMaker(product, brandTaxonomy, fallback) {
 	);
 
 	const term = attribute?.terms?.[0]?.name;
-	return term ? decodeEntities(String(term)).trim() : fallback;
+	return term ? decodeEntities(String(term)).trim() : (fallback ?? null);
 }
 
 /**
@@ -52,7 +53,7 @@ export function createWooScraper(config) {
 		includeCategories = [],
 		brandTaxonomy,
 		lang,
-		houseBrand = name,
+		houseBrand,
 		stripFromName,
 		maxPages,
 		requestDelayMs,

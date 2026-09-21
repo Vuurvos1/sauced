@@ -1,3 +1,5 @@
+import { foldAccents } from './format.js';
+
 /**
  * Storefront catalogues carry more than sauce: multipacks, subscriptions, gift
  * boxes and merch. Those are not distinct sauces, so they are dropped before a
@@ -17,6 +19,8 @@ const BUNDLE_PATTERNS = [
 	/year of hot ones/i,
 	// Language-agnostic: "Case of 12", "6 x 200ml", "12 x 5oz".
 	/\bcase of\b/i,
+	/\b\d+\s*gallon\b/i,
+	/\bbucket\b/i,
 	/\b\d+\s*x\s*\d+/i,
 	/\bset of\b/i,
 	/\b\d+\s*er\s+set\b/i,
@@ -25,14 +29,19 @@ const BUNDLE_PATTERNS = [
 	// Dutch compounds them: "peperpakket", "proefpakket".
 	/(pakket|geschenk|cadeau|kado|bundel|voordeel|kookboek)/i,
 	/\b(coffret|assortiment|carte cadeau)\b/i,
+	/\bmelange\s+d/i,
 	/\b(adventskalender|probierset|geschenkset|paket)\b/i
 ];
 
 /** Merch and hardware that shops shelve alongside the sauce. */
 const MERCH_PATTERNS = [
-	/\b(socks?|t-?shirts?|hoodies?|sweater|longsleeve|long sleeve|trui|beanie|cap|hat)\b/i,
+	/\b(socks?|sokken|t-?shirts?|hoodies?|sweater|longsleeve|long sleeve|trui|beanie|cap|hat)\b/i,
 	// `glass` alone would take "Hot Sauce - Glass Onion".
-	/\b(mugs?|glassware|coasters?|onderzetters?|apron|schort|opener)\b/i,
+	/\b(mugs?|mokken?|glassware|coasters?|onderzetters?|apron|schort|opener)\b/i,
+	/\b(messer\w*|couteau\w*|knife|knives|besteck|cutlery)\b/i,
+	// Dutch compounds again: "Honinglepel".
+	/(lepel)/i,
+	/\b(spoon|spatula|pens?)\b/i,
 	/\b(stickers?|poster|keychain|magnet|tote|pin|badge|calendar|tea\s*towel)\b/i
 ];
 
@@ -50,7 +59,7 @@ const GROWING_PATTERNS = [
  * which are close enough to belong in the catalogue.
  */
 const NOT_SAUCE_PATTERNS = [
-	/\b(chips|crisps|kartoffelchips|popcorn|gummy|jerky)\b/i,
+	/\b(chips|crisps|kartoffelchips|popcorn|gummy|jerky|bonbons?)\b/i,
 	/\b(kruidenmix|specerijen)\b/i,
 	/\b(ketjap|kecap|sojasaus|soy sauce|vissaus|fish sauce)\b/i,
 	// Coffee beans are not sauce; "Coffee BBQ Sauce" and "Coffee Date hot sauce" are.
@@ -64,9 +73,12 @@ const NOT_SAUCE_PATTERNS = [
 const DRY_GOODS_PATTERNS = [
 	/\b(powder|poeder|pulver)\b/i,
 	/\brubs?\b/i,
-	/\b(seasoning|gew.rz\w*|épices|epices)\b/i,
+	/\b(seasoning|gewurz\w*|epices?)\b/i,
+	/\b(poudre|poeder)\b/i,
 	/\b(flakes|vlokken)\b/i,
-	/\bdried\b(?!.*\bsauce\b)/i
+	/\bdried\b(?!.*\bsauce\b)/i,
+	/\bsech(e|ee|es|ees)\b(?!.*\bsauce\b)/i,
+	/\bgedroogd\w*\b(?!.*\b(saus|sauce)\b)/i
 ];
 
 /**
@@ -75,7 +87,7 @@ const DRY_GOODS_PATTERNS = [
  */
 const FEE_PATTERNS = [
 	/\b(shipping|postage|carriage|delivery)\b/i,
-	/\b(livraison|exp.dition|frais de port)\b/i,
+	/\b(livraison|expedition|frais de port)\b/i,
 	/\b(verzendkosten|versandkosten|statiegeld|pfand)\b/i,
 	/\b(donation|gift ?aid|deposit)\b/i
 ];
@@ -87,6 +99,17 @@ const FEE_PATTERNS = [
  */
 const ALCOHOL_PATTERNS = [
 	/\b(spirits?|gin|vodka|whisk(e)?y|rum|liqueur|likeur|bier|beer|wijn|wine)\b/i
+];
+
+/**
+ * Confectionery. Guarded like alcohol: "Chocolate Habanero" is a pepper variety
+ * and "Salted Caramel BBQ Sauce" is a sauce, so only drop these when the product
+ * does not call itself one.
+ */
+const CONFECTIONERY_PATTERNS = [
+	/\b(fudge|caramels?|toffee|marshmallows?|nougat|truffles?)\b/i,
+	/\b(chocolate|chocolat|schokolade)\b/i,
+	/\b(peanuts?|pretzels?|bread|cookies?|biscuits?)\b/i
 ];
 
 /** Says the product is a sauce, whichever language the shop sells in. */
@@ -107,9 +130,14 @@ const ALWAYS_PATTERNS = [
  */
 export function isBundleName(name) {
 	if (!name) return true;
-	if (ALWAYS_PATTERNS.some((pattern) => pattern.test(name))) return true;
-	if (IS_A_SAUCE.test(name)) return false;
-	return ALCOHOL_PATTERNS.some((pattern) => pattern.test(name));
+
+	// Patterns are written in ASCII and matched against the folded name: JS `\b`
+	// only knows [A-Za-z0-9_], so `\bepices\b` never fires against "d'épices".
+	const folded = foldAccents(String(name));
+
+	if (ALWAYS_PATTERNS.some((pattern) => pattern.test(folded))) return true;
+	if (IS_A_SAUCE.test(folded)) return false;
+	return [...ALCOHOL_PATTERNS, ...CONFECTIONERY_PATTERNS].some((pattern) => pattern.test(folded));
 }
 
 /**

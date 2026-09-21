@@ -72,11 +72,31 @@ describe('createShopifyScraper', () => {
 		});
 	});
 
-	it('drops bundles and falls back to the house brand for placeholder vendors', async () => {
+	it('drops bundles', async () => {
 		const scraper = createShopifyScraper({ key: SHOPIFY_KEY, name: 'Test Shop', url });
 		const sauces = await scrapeAll(scraper);
 
 		expect(sauces.map((s) => s.name)).not.toContain('Hot Sauce Giftpack');
+	});
+
+	// A retailer must not be credited with making what it only sells, so the
+	// fallback is opt-in: no houseBrand means the maker stays unknown.
+	it('leaves the maker unknown for a placeholder vendor', async () => {
+		const scraper = createShopifyScraper({ key: SHOPIFY_KEY, name: 'Test Shop', url });
+		const sauces = await scrapeAll(scraper);
+
+		expect(sauces.find((s) => s.name === 'House Blend')?.maker).toBeNull();
+	});
+
+	it('uses houseBrand when the shop makes its own sauce', async () => {
+		const scraper = createShopifyScraper({
+			key: SHOPIFY_KEY,
+			name: 'Test Shop',
+			url,
+			houseBrand: 'Test Shop'
+		});
+		const sauces = await scrapeAll(scraper);
+
 		expect(sauces.find((s) => s.name === 'House Blend')?.maker).toBe('Test Shop');
 	});
 
@@ -171,8 +191,20 @@ describe('createWooScraper', () => {
 		expect(sauces.map((s) => s.name)).toEqual(['De Sambal – Per de Man']);
 	});
 
-	it('falls back to the house brand when no brand is reported', async () => {
+	it('leaves the maker unknown when no brand is reported', async () => {
 		const scraper = createWooScraper({ key: WOO_KEY, name: 'Woo Shop', url });
+		const sauces = await scrapeAll(scraper);
+
+		expect(sauces.find((s) => s.name === 'Chutney')?.maker).toBeNull();
+	});
+
+	it('uses houseBrand when the shop makes its own sauce', async () => {
+		const scraper = createWooScraper({
+			key: WOO_KEY,
+			name: 'Woo Shop',
+			url,
+			houseBrand: 'Woo Shop'
+		});
 		const sauces = await scrapeAll(scraper);
 
 		expect(sauces.find((s) => s.name === 'Chutney')?.maker).toBe('Woo Shop');
