@@ -208,6 +208,12 @@ You will NOT find our Products in ANY Supermarkets!`
 		url: 'https://maisonpiquante.com',
 		// Every title carries a French flavour summary after an en dash:
 		// "… Hot Sauce Angry Goat Pepper Co – Ail". It defeats cross-store dedup.
-		stripFromName: /\s+[–—]\s+.*$/
+		stripFromName: /\s+[–—]\s+.*$/,
+		// They also sell the Terre Exotique spice range, fresh chillies and
+		// snacks. Their own categories separate these cleanly, which no keyword
+		// list would: `epices-poivres-sels` alone is 30 peppers, salts and curry
+		// blends. `condiment` is chilli oils, purées and mustards — kept, on the
+		// same basis as mayo and BBQ.
+		includeCategories: ['toutes-nos-sauces-pimentee', 'sauce-piment-douce', 'condiment']
 	}
 ];
