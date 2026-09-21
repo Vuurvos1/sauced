@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Search, UserRound, Flame, Store } from '@o7/icon/lucide';
+	import { Search, UserRound, Flame, Store, Factory } from '@o7/icon/lucide';
 	import {
 		autoUpdate,
 		offset,
@@ -123,6 +123,24 @@
 	</li>
 {/snippet}
 
+{#snippet makerItem(maker: SearchResponse['makers'][number])}
+	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+		<a
+			onclick={() => (open = false)}
+			class="flex items-center gap-2"
+			href={`/makers/${maker.slug}`}
+		>
+			<div>
+				<div class="font-medium">{maker.name}</div>
+				<div class="text-sm text-gray-500">
+					{maker.sauceCount}
+					{maker.sauceCount === 1 ? 'sauce' : 'sauces'}
+				</div>
+			</div>
+		</a>
+	</li>
+{/snippet}
+
 {#snippet sauceItem(sauce: SearchResponse['sauces'][number])}
 	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
 		<a
@@ -232,6 +250,30 @@
 								<p class="py-2">No sauces found matching "{search}"</p>
 							{:else}
 								<p class="py-2">Type at least 2 characters to search</p>
+							{/if}
+
+							{#if !isLoading && searchResults.makers.length > 0}
+								<div>
+									<div class="mt-4 flex items-center gap-2">
+										<Factory class="text-amber-600" size={20}></Factory>
+										<h3 class="text-lg font-medium">Makers</h3>
+									</div>
+
+									<ul>
+										{#each searchResults.makers as maker}
+											{@render makerItem(maker)}
+										{/each}
+									</ul>
+									<div class="mt-2 flex pb-2">
+										<a
+											href={`/makers?q=${encodeURIComponent(search)}`}
+											class="ml-auto text-gray-600 hover:underline"
+											onclick={() => (open = false)}
+										>
+											View all results
+										</a>
+									</div>
+								</div>
 							{/if}
 
 							{#if !isLoading && searchResults.stores.length > 0}

@@ -56,6 +56,7 @@ export function createShopifyScraper(config) {
 		exclude = [],
 		excludeVendors = [],
 		houseBrand,
+		renameMakers = {},
 		stripFromName,
 		maxPages,
 		requestDelayMs,
@@ -91,8 +92,12 @@ export function createShopifyScraper(config) {
 			const title = cleanTitle(rawTitle, stripFromName);
 			if (!title) return null;
 
-			const vendor = cleanVendor(product.vendor, houseBrand);
-			if (vendor && skippedVendors.has(vendor.toLowerCase())) return null;
+			const rawVendor = cleanVendor(product.vendor, houseBrand);
+			if (rawVendor && skippedVendors.has(rawVendor.toLowerCase())) return null;
+
+			// Feeds spell a brand however they like; "Pepper Palace Warehouse" is
+			// the shop's internal name for its own line.
+			const vendor = rawVendor ? (renameMakers[rawVendor] ?? rawVendor) : null;
 
 			const sauceName = stripMakerFromName(title, vendor);
 

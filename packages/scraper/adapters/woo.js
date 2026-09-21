@@ -54,6 +54,7 @@ export function createWooScraper(config) {
 		brandTaxonomy,
 		lang,
 		houseBrand,
+		renameMakers = {},
 		stripFromName,
 		maxPages,
 		requestDelayMs,
@@ -99,7 +100,8 @@ export function createWooScraper(config) {
 				if (!inWanted) return null;
 			}
 
-			const maker = extractMaker(product, brandTaxonomy, houseBrand);
+			const rawMaker = extractMaker(product, brandTaxonomy, houseBrand);
+			const maker = rawMaker ? (renameMakers[rawMaker] ?? rawMaker) : null;
 			const sauceName = stripMakerFromName(title, maker);
 
 			return {

@@ -100,6 +100,18 @@ describe('createShopifyScraper', () => {
 		expect(sauces.find((s) => s.name === 'House Blend')?.maker).toBe('Test Shop');
 	});
 
+	it('renames a brand the feed spells oddly', async () => {
+		const scraper = createShopifyScraper({
+			key: SHOPIFY_KEY,
+			name: 'Test Shop',
+			url,
+			renameMakers: { 'Test Maker': 'Test Maker Co.' }
+		});
+		const sauces = await scrapeAll(scraper);
+
+		expect(sauces.find((s) => s.name === 'Ghost Pepper Sauce')?.maker).toBe('Test Maker Co.');
+	});
+
 	it('honours excludeVendors', async () => {
 		const scraper = createShopifyScraper({
 			key: SHOPIFY_KEY,

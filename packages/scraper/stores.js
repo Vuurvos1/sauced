@@ -72,7 +72,9 @@ export const shopifyStores = [
 	{
 		key: 'pepperpalace',
 		name: 'Pepper Palace',
-		url: 'https://pepperpalace.com'
+		url: 'https://pepperpalace.com',
+		// Their own line ships under an internal warehouse name.
+		renameMakers: { 'Pepper Palace Warehouse': 'Pepper Palace' }
 	},
 	{
 		key: 'torchbearer',

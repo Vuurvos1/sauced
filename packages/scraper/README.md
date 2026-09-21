@@ -55,18 +55,21 @@ Then add an entry to the matching array in `stores.js`:
 
 ### Options
 
-| Option              | Applies to | Purpose                                                                         |
-| ------------------- | ---------- | ------------------------------------------------------------------------------- |
-| `description`       | both       | Store blurb shown on the site                                                   |
-| `exclude`           | both       | Extra name patterns to skip, on top of the bundle filter                        |
-| `houseBrand`        | both       | Maker to use when the feed reports none. Defaults to `name`                     |
-| `stripFromName`     | both       | Removes a brand suffix baked into the product title                             |
-| `maxPages`          | both       | Page cap. Default 40                                                            |
-| `requestDelayMs`    | both       | Pause after each live request. Default 500                                      |
-| `collection`        | Shopify    | Collection handle, to narrow a general store to its sauces                      |
-| `excludeVendors`    | Shopify    | Drop vendors that aren't sauce, e.g. snacks or kitchenware                      |
-| `includeCategories` | Woo        | Category slugs to keep                                                          |
-| `brandTaxonomy`     | Woo        | Attribute holding the brand, e.g. `pa_merk-hot-sauce`. Auto-detected when unset |
+| Option              | Applies to | Purpose                                                                                                                       |
+| ------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `description`       | both       | Store blurb shown on the site                                                                                                 |
+| `exclude`           | both       | Extra name patterns to skip, on top of the bundle filter                                                                      |
+| `houseBrand`        | both       | Maker to use when the feed reports none. Set it only for a shop that makes its own sauce; a retailer leaves the maker unknown |
+| `renameMakers`      | both       | Renames a brand the feed spells oddly, e.g. `Pepper Palace Warehouse`                                                         |
+| `language`          | both       | Language the shop publishes in, e.g. `fr`. Non-English shops only fill empty descriptions                                     |
+| `lang`              | Woo        | Asks a multilingual shop for a language, e.g. `en`                                                                            |
+| `stripFromName`     | both       | Removes a brand suffix baked into the product title                                                                           |
+| `maxPages`          | both       | Page cap. Default 40                                                                                                          |
+| `requestDelayMs`    | both       | Pause after each live request. Default 500                                                                                    |
+| `collection`        | Shopify    | Collection handle, to narrow a general store to its sauces                                                                    |
+| `excludeVendors`    | Shopify    | Drop vendors that aren't sauce, e.g. snacks or kitchenware                                                                    |
+| `includeCategories` | Woo        | Category slugs to keep                                                                                                        |
+| `brandTaxonomy`     | Woo        | Attribute holding the brand, e.g. `pa_merk-hot-sauce`. Auto-detected when unset                                               |
 
 Bundles, gift sets, subscriptions and merch are filtered for every store by
 `utils/filter.js`. Anything more specific — a shop that also sells chutney or
@@ -86,7 +89,17 @@ pnpm --filter @app/scraper test
 
 The adapter tests seed the cache with fixtures, so they never hit the network.
 
+## Makers
+
+Both adapters return a `maker` per product, and the brand is stripped from the
+sauce name — 36% of titles carry it, spelled differently per shop, which was the
+biggest cause of cross-store duplicates.
+
+`houseBrand` is opt-in on purpose. A retailer whose feed names no brand leaves
+`maker_id` null rather than claiming it made the product; only a shop that makes
+its own sauce sets it. Brands are matched fuzzily on upsert, so `Queen Majesty`
+and `Queen Majesty Hot Sauce` stay one maker.
+
 ## TODO
 
-- [ ] Populate the `makers` table from the `maker` each adapter returns
 - [ ] Stores that need bespoke scrapers: BigCommerce, JTL, Shopware, Gambio, Wix

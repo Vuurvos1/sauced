@@ -41,6 +41,8 @@ export type BaseScraperConfig = StoreInsert & {
 	/** Used when the feed reports no brand. Defaults to the store name. */
 	houseBrand?: string;
 	/** Removed from the product title, for stores that append the brand to it. */
+	/** Renames a brand the feed spells oddly, e.g. `Pepper Palace Warehouse` -> `Pepper Palace`. */
+	renameMakers?: Record<string, string>;
 	stripFromName?: RegExp;
 	/** Safety valve against a feed that never signals its end. Default 40. */
 	maxPages?: number;

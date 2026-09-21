@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { checkins, hotSauces, stores } from '@app/db/schema';
+import { checkins, hotSauces, makers, stores } from '@app/db/schema';
 import { avg, desc, eq, count } from 'drizzle-orm';
 import {
 	MIN_SEARCH_LENGTH,
@@ -24,7 +24,7 @@ export async function GET({ url }) {
 	}
 
 	try {
-		const [sauceResults, storeResults] = await withFuzzyMatching(async (tx) => {
+		const [sauceResults, storeResults, makerResults] = await withFuzzyMatching(async (tx) => {
 			const sauceQuery = tx
 				.select({
 					sauceId: hotSauces.sauceId,
@@ -58,11 +58,25 @@ export async function GET({ url }) {
 				.orderBy(desc(matchTier(stores.name, query)), desc(matchSimilarity(stores.name, query)))
 				.limit(RESULT_LIMIT);
 
-			return Promise.all([sauceQuery, storeQuery]);
+			const makerQuery = tx
+				.select({
+					id: makers.makerId,
+					name: makers.name,
+					slug: makers.slug,
+					sauceCount: count(hotSauces.sauceId)
+				})
+				.from(makers)
+				.where(matchesQuery(makers.name, query))
+				.leftJoin(hotSauces, eq(hotSauces.makerId, makers.makerId))
+				.groupBy(makers.makerId)
+				.orderBy(desc(matchTier(makers.name, query)), desc(count(hotSauces.sauceId)))
+				.limit(RESULT_LIMIT);
+
+			return Promise.all([sauceQuery, storeQuery, makerQuery]);
 		});
 
 		return json({
-			makers: [],
+			makers: makerResults,
 			stores: storeResults,
 			sauces: sauceResults
 		} satisfies SearchResponse);

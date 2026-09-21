@@ -97,7 +97,12 @@ async function insertStoreData(scraper, data) {
 
 	console.info('Inserting hot sauce data');
 	const existingSauceNames = await db
-		.select({ id: hotSauces.sauceId, name: hotSauces.name, description: hotSauces.description })
+		.select({
+			id: hotSauces.sauceId,
+			name: hotSauces.name,
+			description: hotSauces.description,
+			makerId: hotSauces.makerId
+		})
 		.from(hotSauces);
 
 	const { newSauces, existingSauces } = data.reduce(
@@ -140,10 +145,13 @@ async function insertStoreData(scraper, data) {
 
 		/** Name and slug are identity: rewriting them from another shop's spelling
 		 * collides with the unique indexes, and the slug is already a live URL. */
+		// Fill a missing brand, never replace a known one: the next shop to stock
+		// this sauce would otherwise reattribute it. T-Rex's own Pineapple Sunshine
+		// Sriracha ended up credited to Melinda's that way.
 		const changes = {
 			description: keepDescription ? existing?.description : sauce.description,
 			imageUrl: sauce.imageUrl,
-			...(sauce.makerId ? { makerId: sauce.makerId } : {})
+			...(sauce.makerId && !existing?.makerId ? { makerId: sauce.makerId } : {})
 		};
 
 		try {
