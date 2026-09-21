@@ -100,6 +100,34 @@ describe('isBundleName — non-sauce products', () => {
 	});
 });
 
+describe('isBundleName — kitchenware and grinders', () => {
+	it('should drop utensils and tableware', () => {
+		expect(isBundleName('Bamboo Ramen Ladle')).toBe(true);
+		expect(isBundleName('Mini Whisk Keyring')).toBe(true);
+		expect(isBundleName('Dippy Tea Tray & Ramekins')).toBe(true);
+		expect(isBundleName('Metal Keyring Chip Fork')).toBe(true);
+	});
+
+	// A pepper grinder is a seasoning, not a sauce.
+	it('should drop pepper grinders', () => {
+		expect(isBundleName('Carolina Reaper Grinder')).toBe(true);
+		expect(isBundleName('Hot Pepper Grinder Refill')).toBe(true);
+	});
+
+	// The name alone gives nothing away — "The Ranch Rod" is a measuring spoon —
+	// so the word is guarded rather than absolute.
+	it('should drop a rod or board but keep a sauce named after one', () => {
+		expect(isBundleName('The Ranch Rod')).toBe(true);
+		expect(isBundleName('Chopping Board')).toBe(true);
+		expect(isBundleName('Hot Rod Hot Sauce')).toBe(false);
+		expect(isBundleName('Boardwalk Hot Sauce')).toBe(false);
+	});
+
+	it('should drop a lucky-dip listing, which is no particular sauce', () => {
+		expect(isBundleName('Mystery Bottle of Hot Sauce')).toBe(true);
+	});
+});
+
 describe('isBundleName — checkout line items', () => {
 	it('should drop shipping and fee products', () => {
 		expect(isBundleName('Nouvelle Livraison (Expédition)')).toBe(true);

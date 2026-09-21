@@ -13,7 +13,8 @@ const BUNDLE_PATTERNS = [
 	/\b(packs?|trio|duo|combo|bundle|variety)\b/i,
 	/\bgift\s*(sets?|packs?|box(es)?|cards?|bags?)\b/i,
 	/\bgift(set|pack)s?\b/i,
-	/\b(sauce|selection|mystery|tasting|spicy)\s*box\b/i,
+	/\b(sauce|selection|tasting|spicy)\s*box\b/i,
+	/\bmystery\b/i,
 	/\b(monthly|subscription|membership|challenge|collection)\b/i,
 	/\b(voucher|e-?gift)\b/i,
 	/year of hot ones/i,
@@ -39,6 +40,7 @@ const MERCH_PATTERNS = [
 	// `glass` alone would take "Hot Sauce - Glass Onion".
 	/\b(mugs?|mokken?|glassware|coasters?|onderzetters?|apron|schort|opener)\b/i,
 	/\b(messer\w*|couteau\w*|knife|knives|besteck|cutlery)\b/i,
+	/\b(ladle|whisk|ramekins?|keyrings?|key ?chain|grinders?)\b/i,
 	// Dutch compounds again: "Honinglepel".
 	/(lepel)/i,
 	/\b(spoon|spatula|pens?)\b/i,
@@ -116,6 +118,12 @@ const CONFECTIONERY_PATTERNS = [
 	/\b(peanuts?|pretzels?|bread|cookies?|biscuits?)\b/i
 ];
 
+/**
+ * Kitchenware whose words also turn up in sauce names — "Hot Rod", "Board" —
+ * so only drop them when the product does not call itself a sauce.
+ */
+const UTENSIL_PATTERNS = [/\b(rods?|forks?|boards?|trays?|scoops?|tongs?|peelers?)\b/i];
+
 /** Says the product is a sauce, whichever language the shop sells in. */
 const IS_A_SAUCE = /\b(sauces?|saus|sos|salsa)\b/i;
 
@@ -141,7 +149,9 @@ export function isBundleName(name) {
 
 	if (ALWAYS_PATTERNS.some((pattern) => pattern.test(folded))) return true;
 	if (IS_A_SAUCE.test(folded)) return false;
-	return [...ALCOHOL_PATTERNS, ...CONFECTIONERY_PATTERNS].some((pattern) => pattern.test(folded));
+	return [...ALCOHOL_PATTERNS, ...CONFECTIONERY_PATTERNS, ...UTENSIL_PATTERNS].some((pattern) =>
+		pattern.test(folded)
+	);
 }
 
 /**
