@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 
-import { slugifyName, normalizeName, isSimilarName, foldAccents, cleanProductName } from './format';
+import {
+	slugifyName,
+	normalizeName,
+	isSimilarName,
+	foldAccents,
+	cleanProductName,
+	stripMakerFromName
+} from './format';
 
 describe('slugifyName', () => {
 	it('should slugify a name', () => {
@@ -131,5 +138,37 @@ describe('slugifyName — stranded separators', () => {
 			'melindas-black-truffle-hot-sauce'
 		);
 		expect(slugifyName('Hot Zeg - Krush 🍊')).toBe('hot-zeg-krush');
+	});
+});
+
+describe('stripMakerFromName', () => {
+	it('should remove the maker from either end', () => {
+		expect(stripMakerFromName('Queen Majesty - Scotch Bonnet & Ginger', 'Queen Majesty')).toBe(
+			'Scotch Bonnet & Ginger'
+		);
+		expect(stripMakerFromName('Cocoa Ghost Hot Sauce Queen Majesty', 'Queen Majesty')).toBe(
+			'Cocoa Ghost Hot Sauce'
+		);
+		expect(stripMakerFromName('HotZeg Adixxion Hot Sauce', 'HotZeg')).toBe('Adixxion Hot Sauce');
+	});
+
+	it('should leave the name alone when the maker is not in it', () => {
+		expect(stripMakerFromName('Habanero Hustle', 'T-Rex Hot Sauce')).toBe('Habanero Hustle');
+	});
+
+	// Otherwise the sauce would end up with no name at all.
+	it('should keep a sauce named only after its maker', () => {
+		expect(stripMakerFromName('Torchbearer', 'Torchbearer')).toBe('Torchbearer');
+	});
+
+	// "Valentina ❤️" minus "Valentina" is an emoji, which slugifies to nothing.
+	it('should keep the name when stripping would leave no letters', () => {
+		expect(stripMakerFromName('Valentina ❤️', 'Valentina')).toBe('Valentina ❤️');
+		expect(stripMakerFromName('Truff - 🔥', 'Truff')).toBe('Truff - 🔥');
+	});
+
+	it('should tolerate a missing maker', () => {
+		expect(stripMakerFromName('Naga Viper', '')).toBe('Naga Viper');
+		expect(stripMakerFromName('Naga Viper', null)).toBe('Naga Viper');
 	});
 });

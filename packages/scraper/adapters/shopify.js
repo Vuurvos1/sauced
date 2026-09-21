@@ -1,4 +1,10 @@
-import { decodeEntities, shouldSkipProduct, slugifyName, stripHtml } from '../utils/index.js';
+import {
+	decodeEntities,
+	shouldSkipProduct,
+	slugifyName,
+	stripHtml,
+	stripMakerFromName
+} from '../utils/index.js';
 import { cleanTitle, createCatalogueScraper, trimTrailingSlash } from './catalogue.js';
 
 /** Shopify caps products.json at 250 per page. */
@@ -74,9 +80,11 @@ export function createShopifyScraper(config) {
 			const vendor = cleanVendor(product.vendor, houseBrand);
 			if (skippedVendors.has(vendor.toLowerCase())) return null;
 
+			const sauceName = stripMakerFromName(title, vendor);
+
 			return {
-				name: title,
-				slug: slugifyName(title),
+				name: sauceName,
+				slug: slugifyName(sauceName),
 				description: stripHtml(product.body_html),
 				url: `${trimTrailingSlash(storeUrl)}/products/${product.handle}`,
 				imageUrl: product.images?.[0]?.src ?? null,

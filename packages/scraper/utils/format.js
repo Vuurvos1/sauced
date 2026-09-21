@@ -82,6 +82,51 @@ export function cleanProductName(name) {
 	return tidied || String(name ?? '').trim();
 }
 
+/** @param {string} value */
+function escapeRegExp(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Removes the maker from the front or back of a product title, so "Queen Majesty
+ * - Scotch Bonnet & Ginger" and "Scotch Bonnet & Ginger Hot Sauce" become the
+ * same sauce. 36% of scraped titles carry the brand, spelled differently per
+ * shop, and it is the single biggest cause of cross-store duplicates.
+ *
+ * @param {string} name
+ * @param {string | null | undefined} maker
+ */
+export function stripMakerFromName(name, maker) {
+	const title = String(name ?? '').trim();
+	const brand = String(maker ?? '').trim();
+	if (!brand || !title) return title;
+
+	const attempt = (haystack, needle) => {
+		const b = escapeRegExp(needle);
+		return haystack
+			.replace(new RegExp(`^\\s*${b}\\s*(?:[-–—:|,]\\s*)?`, 'i'), '')
+			.replace(new RegExp(`\\s*(?:[-–—:|,]\\s*)?${b}\\s*$`, 'i'), '')
+			.trim();
+	};
+
+	let stripped = attempt(title, brand);
+
+	// Shops spell the brand with different accents; fold both to compare, but only
+	// when folding preserves length, so offsets into the original stay valid.
+	if (stripped === title && foldAccents(title).length === title.length) {
+		const folded = attempt(foldAccents(title), foldAccents(brand));
+		if (folded !== foldAccents(title)) {
+			const start = foldAccents(title).indexOf(folded);
+			if (start >= 0) stripped = title.slice(start, start + folded.length).trim();
+		}
+	}
+
+	// A sauce named only after its maker keeps its name — as does one left with
+	// nothing but punctuation or an emoji ("Valentina ❤️" minus "Valentina"),
+	// which would otherwise slugify to an empty string.
+	return /[a-z0-9]/i.test(foldAccents(stripped)) ? stripped : title;
+}
+
 /**
  * @param {string} name
  */

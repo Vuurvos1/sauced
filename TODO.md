@@ -212,6 +212,19 @@ Walker & Sons, Woolf's Kitchen, Yellowbird, Yo Mama's Foods.
 | French descriptions with an English source available | 83 | 4 |
 | shipping / fee SKUs | 1 | 0 |
 
+Then the makers pass, on top of that:
+
+| | before | after |
+| --- | --- | --- |
+| sauces | 3254 | 2860 |
+| makers | 0 | 450 |
+| sauces with no maker | 3254 | 0 |
+
+Measured first, because the obvious design was wrong: bucketing dedup by maker
+gives *3868* distinct sauces against 3178 for plain name matching — worse, because
+545 brand strings are only 450 real brands. Stripping the maker from the name and
+keeping the comparison flat was the variant that won.
+
 The 4 remaining promo names are deliberate: `F*ck, That's Delicious` and
 `Bumblef**ked Hot Sauce` are real product names, and the patterns are
 conservative enough to leave them alone.
@@ -261,7 +274,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       which catch ~140 rows regardless of language (72 are wholesale cases).
 - [x] **Powders, rubs and seasonings — 182 rows.** Needs a product decision: is
       `Queen Majesty Ancho Habanero Hot Sauce Powder` a sauce? One pattern either way.
-- [ ] **The maker is baked into the sauce name**, differently per store, so the same
+- [x] **The maker is baked into the sauce name**, differently per store, so the same
       product lands twice: `HotZeg Adixxion Hot Sauce` (Heatsupply) and
       `Hot Zeg - Adixion 🥭` (Sweet Pepper) are one sauce in two rows. Names should
       be the sauce alone, with the brand in `makers` — which also gives the maker
@@ -274,7 +287,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       revisiting alongside this or the duplicates simply change shape.
       (`HotZeg Mazoshista Hot Sauce` does dedupe correctly — both stores spell it
       identically, and it is one row linked to two stores.)
-- [ ] **Search must keep matching on the maker** once it moves out of the name, or
+- [x] **Search must keep matching on the maker** once it moves out of the name, or
       searching "hotzeg" stops finding anything. `sauceMatchesQuery`
       (`apps/site/src/lib/server/search.ts`) currently covers name + description;
       it needs the joined `makers.name` too. The index is already in place —
@@ -347,6 +360,16 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
       (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+- [ ] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
+      the store name, so any product whose feed reports no vendor is attributed to
+      the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
+      Chilisaus.be 61. Some are legitimate — Torchbearer, T-Rex and Raijmakers do
+      make their own — so the fix is per-store judgement, not a blanket rule:
+      make the fallback opt-in and leave `maker_id` null when a shop is only a
+      retailer. Exposed by populating makers; it was invisible before.
+      It also blocks the last dedup wins: `Queen Majesty Scotch Bonnet & Ginger`
+      is still its own row because Hot Sauce Emporium was recorded as its maker,
+      so the brand never got stripped from the name.
 - [ ] **The filter only ever reads the name.** A product can be junk for reasons
       that live entirely in its description, and nothing in the current design can
       see that. Found via `Jeremy Renner's … Hot Sauce - Glass Onion`, whose
@@ -359,7 +382,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
 - [ ] **Mayo / ketchup / mustard / BBQ — 272 rows.** Left alone deliberately; many are
       genuinely hot-sauce-adjacent (`Honey Mustard Hot Sauce`). Only act on this if
       the catalogue should be strictly sauce.
-- [ ] **`makers` is still empty.** Both adapters already return a `maker` per product;
+- [x] **`makers` is still empty.** Both adapters already return a `maker` per product;
       Drizzle silently drops the unknown key on insert, so `maker_id` stays null.
       Cross-store dedup of ~357 distinct vendor strings is the real work here.
 

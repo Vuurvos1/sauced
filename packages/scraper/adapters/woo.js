@@ -1,4 +1,10 @@
-import { decodeEntities, shouldSkipProduct, slugifyName, stripHtml } from '../utils/index.js';
+import {
+	decodeEntities,
+	shouldSkipProduct,
+	slugifyName,
+	stripHtml,
+	stripMakerFromName
+} from '../utils/index.js';
 import { cleanTitle, createCatalogueScraper } from './catalogue.js';
 
 /** wc/store/v1 rejects per_page above 100. */
@@ -92,14 +98,17 @@ export function createWooScraper(config) {
 				if (!inWanted) return null;
 			}
 
+			const maker = extractMaker(product, brandTaxonomy, houseBrand);
+			const sauceName = stripMakerFromName(title, maker);
+
 			return {
-				name: title,
-				slug: slugifyName(title),
+				name: sauceName,
+				slug: slugifyName(sauceName),
 				// short_description is the product blurb; description is the full page copy.
 				description: stripHtml(product.short_description || product.description),
 				url: product.permalink,
 				imageUrl: product.images?.[0]?.src ?? null,
-				maker: extractMaker(product, brandTaxonomy, houseBrand)
+				maker
 			};
 		}
 	});

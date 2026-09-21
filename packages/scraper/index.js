@@ -2,7 +2,7 @@ import parser from 'yargs-parser';
 import fs from 'node:fs';
 import scrapers from './scrapers.js';
 import { getDb } from '@app/db';
-import { hotSauces, stores, storeHotSauces } from '@app/db/schema';
+import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
 import { normalizeName, isSimilarName } from './utils/index.js';
 import { eq } from 'drizzle-orm';
 
@@ -14,6 +14,60 @@ const flags = parser(args, {
 });
 
 const db = getDb(process.env.DATABASE_URL);
+
+/**
+ * Upserts every brand seen in a batch and returns normalised name -> maker id.
+ * Existing makers are matched fuzzily first, so "Queen Majesty" and "Queen
+ * Majesty Hot Sauce" do not become two brands.
+ *
+ * @param {import('./index.d').Sauce[]} data
+ * @returns {Promise<Map<string, string>>}
+ */
+async function upsertMakers(data) {
+	const existing = await db.select({ id: makers.makerId, name: makers.name }).from(makers);
+
+	/** @type {Map<string, string>} */
+	const byName = new Map();
+	for (const row of existing) byName.set(normalizeName(row.name), row.id);
+
+	/** @type {string[]} */
+	const fresh = [];
+	for (const sauce of data) {
+		const name = String(sauce.maker ?? '').trim();
+		if (!name) continue;
+		const key = normalizeName(name);
+		if (byName.has(key)) continue;
+
+		const match = existing.find((row) => isSimilarName(row.name, name));
+		if (match) {
+			byName.set(key, match.id);
+			continue;
+		}
+		if (!fresh.some((candidate) => isSimilarName(candidate, name))) fresh.push(name);
+	}
+
+	if (fresh.length > 0) {
+		const inserted = await db
+			.insert(makers)
+			.values(fresh.map((name) => ({ name })))
+			.onConflictDoNothing()
+			.returning({ id: makers.makerId, name: makers.name });
+		for (const row of inserted) byName.set(normalizeName(row.name), row.id);
+	}
+
+	// Anything dropped by onConflictDoNothing, plus the fuzzy aliases.
+	const all = await db.select({ id: makers.makerId, name: makers.name }).from(makers);
+	for (const sauce of data) {
+		const name = String(sauce.maker ?? '').trim();
+		if (!name) continue;
+		const key = normalizeName(name);
+		if (byName.has(key)) continue;
+		const match = all.find((row) => isSimilarName(row.name, name));
+		if (match) byName.set(key, match.id);
+	}
+
+	return byName;
+}
 
 /**
  * @param {import('./index.d').SauceScraper} scraper
@@ -36,6 +90,11 @@ async function insertStoreData(scraper, data) {
 		})
 		.returning();
 
+	// Brands arrive spelled differently per shop, so match them the same fuzzy way
+	// sauces are matched rather than trusting the string.
+	console.info('Upserting makers');
+	const makerIds = await upsertMakers(data);
+
 	console.info('Inserting hot sauce data');
 	const existingSauceNames = await db
 		.select({ id: hotSauces.sauceId, name: hotSauces.name, description: hotSauces.description })
@@ -47,6 +106,9 @@ async function insertStoreData(scraper, data) {
 			const existing = existingSauceNames.find((existing) =>
 				isSimilarName(normalizeName(existing.name), normalizedNewName)
 			);
+
+			sauce.makerId = makerIds.get(normalizeName(sauce.maker ?? '')) ?? null;
+			delete sauce.maker;
 
 			if (existing) {
 				sauce.sauceId = existing.id;
@@ -80,7 +142,8 @@ async function insertStoreData(scraper, data) {
 		 * collides with the unique indexes, and the slug is already a live URL. */
 		const changes = {
 			description: keepDescription ? existing?.description : sauce.description,
-			imageUrl: sauce.imageUrl
+			imageUrl: sauce.imageUrl,
+			...(sauce.makerId ? { makerId: sauce.makerId } : {})
 		};
 
 		try {

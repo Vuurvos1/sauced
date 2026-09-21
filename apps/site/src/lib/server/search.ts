@@ -1,6 +1,6 @@
 import { or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { hotSauces } from '@app/db/schema';
+import { hotSauces, makers } from '@app/db/schema';
 import { WORD_SIMILARITY_THRESHOLD } from '@app/db';
 import { db } from './db';
 
@@ -82,7 +82,25 @@ export function withFuzzyMatching<T>(fn: (tx: Executor) => Promise<T>): Promise<
 	});
 }
 
-/** A sauce matches on its name or, more loosely, on its description. */
+/**
+ * The maker used to be part of the sauce name, so searching "queen majesty" hit
+ * `hotSauces.name`. The scraper strips it now, so match the joined brand too.
+ * A correlated EXISTS keeps this a drop-in `where` fragment — no call site has
+ * to add a join — and the subquery still uses `makers_name_trgm_idx`.
+ */
+function makerMatchesQuery(query: string): SQL {
+	return sql`exists (
+		select 1 from ${makers}
+		where ${makers.makerId} = ${hotSauces.makerId}
+		  and ${matchesQuery(makers.name, query)}
+	)`;
+}
+
+/** A sauce matches on its name, its description, or the brand that makes it. */
 export function sauceMatchesQuery(query: string) {
-	return or(matchesQuery(hotSauces.name, query), matchesQuery(hotSauces.description, query));
+	return or(
+		matchesQuery(hotSauces.name, query),
+		matchesQuery(hotSauces.description, query),
+		makerMatchesQuery(query)
+	);
 }
