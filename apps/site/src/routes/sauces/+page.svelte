@@ -39,7 +39,7 @@
 <Meta {title} {description} {canonical} noindex={!!search} />
 
 <div class="container">
-	<div class="flex flex-row items-center justify-between">
+	<div class="mb-3 flex flex-row items-center justify-between">
 		<h1 class="h1">{search ? `Results for "${search}"` : 'Sauces'}</h1>
 
 		<p class="text-gray-500">Showing {sauceCount} sauces</p>
