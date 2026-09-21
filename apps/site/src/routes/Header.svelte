@@ -1,18 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
-	import {
-		autoUpdate,
-		offset,
-		useDismiss,
-		useFloating,
-		useInteractions,
-		useRole
-	} from '@skeletonlabs/floating-ui-svelte';
+	import { Popover } from 'bits-ui';
 	import { fade } from 'svelte/transition';
 	import { debounce } from '$lib/utils/debounce.svelte';
 	import type { SearchResponse } from '$lib/types/api';
-	import { portal } from '$lib/actions';
 	import { skipViewTransition } from '$lib/view-transition.svelte';
 
 	let {
@@ -108,26 +100,16 @@
 		update(search);
 	});
 
-	// Use Floating
-	const floating = useFloating({
-		whileElementsMounted: autoUpdate,
-		get open() {
-			return open;
-		},
-		onOpenChange: (v) => {
-			open = v;
-		},
-		placement: 'bottom',
-		strategy: 'fixed',
-		get middleware() {
-			return [offset(8)];
-		}
-	});
+	// The panel hangs off the whole search box, not just the input.
+	let anchor = $state<HTMLElement>();
+	const panelId = $props.id();
 
-	// Interactions
-	const role = useRole(floating.context, { role: 'combobox' });
-	const dismiss = useDismiss(floating.context);
-	const interactions = useInteractions([role, dismiss]);
+	// bits-ui's `child` snippet params aren't inferred through svelte2tsx
+	type ChildProps = {
+		props: Record<string, unknown>;
+		wrapperProps: Record<string, unknown>;
+		open: boolean;
+	};
 
 	// Keyboard navigation walks the sections in the order they render.
 	let input = $state<HTMLInputElement>();
@@ -206,6 +188,87 @@
 </script>
 
 <svelte:window onkeydown={handleShortcut} />
+
+{#snippet results()}
+	<!-- Sauces -->
+	{#if showSkeleton}
+		{@render skeletonSection(3)}
+	{:else if searchResults.sauces.length > 0}
+		<div>
+			<div class="flex items-center gap-2">
+				<Flame class="text-red-600" size={20}></Flame>
+				<h3 id="search-group-sauces" class="text-lg font-medium">Sauces</h3>
+			</div>
+
+			<ul role="group" aria-labelledby="search-group-sauces">
+				{#each searchResults.sauces as sauce, i}
+					{@render sauceItem(sauce, i)}
+				{/each}
+			</ul>
+			<div class="mt-2 flex pb-2">
+				<a
+					href={`/sauces?q=${encodeURIComponent(search)}`}
+					class="ml-auto text-gray-600 hover:underline"
+					onclick={() => (open = false)}
+				>
+					View all results
+				</a>
+			</div>
+		</div>
+	{:else if resultsQuery.length >= MIN_SEARCH_LENGTH}
+		<p class="py-2">No sauces found matching "{resultsQuery}"</p>
+	{:else}
+		<p class="py-2">Type at least {MIN_SEARCH_LENGTH} characters to search</p>
+	{/if}
+
+	{#if !showSkeleton && searchResults.makers.length > 0}
+		<div>
+			<div class="mt-4 flex items-center gap-2">
+				<Factory class="text-amber-600" size={20}></Factory>
+				<h3 id="search-group-makers" class="text-lg font-medium">Makers</h3>
+			</div>
+
+			<ul role="group" aria-labelledby="search-group-makers">
+				{#each searchResults.makers as maker, i}
+					{@render makerItem(maker, makerOffset + i)}
+				{/each}
+			</ul>
+			<div class="mt-2 flex pb-2">
+				<a
+					href={`/makers?q=${encodeURIComponent(search)}`}
+					class="ml-auto text-gray-600 hover:underline"
+					onclick={() => (open = false)}
+				>
+					View all results
+				</a>
+			</div>
+		</div>
+	{/if}
+
+	{#if !showSkeleton && searchResults.stores.length > 0}
+		<div>
+			<div class="mt-4 flex items-center gap-2">
+				<Store class="text-green-600" size={20}></Store>
+				<h3 id="search-group-stores" class="text-lg font-medium">Stores</h3>
+			</div>
+
+			<ul role="group" aria-labelledby="search-group-stores">
+				{#each searchResults.stores as store, i}
+					{@render storeItem(store, storeOffset + i)}
+				{/each}
+			</ul>
+			<div class="mt-2 flex pb-2">
+				<a
+					href={`/stores?q=${encodeURIComponent(search)}`}
+					class="ml-auto text-gray-600 hover:underline"
+					onclick={() => (open = false)}
+				>
+					View all results
+				</a>
+			</div>
+		</div>
+	{/if}
+{/snippet}
 
 {#snippet skeletonSection(rows: number)}
 	<div class="animate-pulse" aria-hidden="true">
@@ -340,137 +403,82 @@
 			</li>
 
 			<li class="w-full md:col-span-2 md:w-auto">
-				<form data-sveltekit-keepfocus action="/sauces" onsubmit={() => (open = false)}>
-					<label
-						bind:this={floating.elements.reference}
-						class="relative mx-auto flex w-full max-w-lg flex-row items-center text-base text-black"
-					>
-						<input
-							bind:this={input}
-							bind:value={search}
-							{...interactions.getReferenceProps({
-								onkeydown: handleKeydown,
-								'aria-activedescendant': activeIndex < 0 ? undefined : optionId(activeIndex)
-							})}
-							class="w-full rounded-full bg-white py-1.5 pl-4 pr-12 focus:outline-none"
-							placeholder="Search sauces"
-							autocomplete="off"
-							name="q"
-							type="text"
-							oninput={() => (activeIndex = -1)}
-							onfocus={() => {
-								if (search.length > 2) open = true;
-							}}
-						/>
-						<button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-4">
-							<span class="sr-only">Search</span>
-							{#if pending}
-								<LoaderCircle class="animate-spin text-gray-500" size={20}></LoaderCircle>
-							{:else}
-								<Search size={20}></Search>
-							{/if}
-						</button>
-					</label>
-				</form>
-
-				<div>
-					<!-- Floating Element -->
-					{#if open}
-						<div
-							bind:this={floating.elements.floating}
-							use:portal={'body'}
-							style={floating.floatingStyles}
-							{...interactions.getFloatingProps()}
-							class={[
-								'z-50 max-h-[50vh] w-[calc(100vw-2rem)] max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg transition-opacity',
-								isStale && 'opacity-50'
-							]}
-							aria-busy={pending}
-							aria-label="Search results"
-							onmouseleave={() => (activeIndex = -1)}
-							transition:fade={{ duration: 100 }}
+				<Popover.Root bind:open>
+					<form data-sveltekit-keepfocus action="/sauces" onsubmit={() => (open = false)}>
+						<label
+							bind:this={anchor}
+							class="relative mx-auto flex w-full max-w-lg flex-row items-center text-base text-black"
 						>
-							<!-- Sauces -->
-							{#if showSkeleton}
-								{@render skeletonSection(3)}
-							{:else if searchResults.sauces.length > 0}
-								<div>
-									<div class="flex items-center gap-2">
-										<Flame class="text-red-600" size={20}></Flame>
-										<h3 id="search-group-sauces" class="text-lg font-medium">Sauces</h3>
-									</div>
+							<input
+								bind:this={input}
+								bind:value={search}
+								class="w-full rounded-full bg-white py-1.5 pl-4 pr-12 focus:outline-none"
+								placeholder="Search sauces"
+								autocomplete="off"
+								name="q"
+								type="text"
+								role="combobox"
+								aria-controls={panelId}
+								aria-expanded={open}
+								aria-autocomplete="list"
+								aria-activedescendant={activeIndex < 0 ? undefined : optionId(activeIndex)}
+								onkeydown={handleKeydown}
+								oninput={() => (activeIndex = -1)}
+								onfocus={() => {
+									if (search.length > 2) open = true;
+								}}
+							/>
+							<button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-4">
+								<span class="sr-only">Search</span>
+								{#if pending}
+									<LoaderCircle class="animate-spin text-gray-500" size={20}></LoaderCircle>
+								{:else}
+									<Search size={20}></Search>
+								{/if}
+							</button>
+						</label>
+					</form>
 
-									<ul role="group" aria-labelledby="search-group-sauces">
-										{#each searchResults.sauces as sauce, i}
-											{@render sauceItem(sauce, i)}
-										{/each}
-									</ul>
-									<div class="mt-2 flex pb-2">
-										<a
-											href={`/sauces?q=${encodeURIComponent(search)}`}
-											class="ml-auto text-gray-600 hover:underline"
-											onclick={() => (open = false)}
+					<Popover.Portal>
+						<Popover.Content
+							forceMount
+							id={panelId}
+							customAnchor={anchor}
+							sideOffset={8}
+							strategy="fixed"
+							trapFocus={false}
+							onOpenAutoFocus={(event: Event) => event.preventDefault()}
+							onInteractOutside={(event: PointerEvent) => {
+								// The search box drives the panel, so clicks on it are never "outside".
+								if (anchor?.contains(event.target as Node)) return;
+								// bits-ui only closes the panel itself when a Popover.Trigger owns it,
+								// and a combobox has none.
+								open = false;
+							}}
+						>
+							{#snippet child({ wrapperProps, props, open: isOpen }: ChildProps)}
+								{#if isOpen}
+									<div {...wrapperProps}>
+										<div
+											{...props}
+											role="listbox"
+											aria-label="Search results"
+											aria-busy={pending}
+											onmouseleave={() => (activeIndex = -1)}
+											class={[
+												'z-50 max-h-[50vh] w-[calc(100vw-2rem)] max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg transition-opacity',
+												isStale && 'opacity-50'
+											]}
+											transition:fade={{ duration: 100 }}
 										>
-											View all results
-										</a>
+											{@render results()}
+										</div>
 									</div>
-								</div>
-							{:else if resultsQuery.length >= MIN_SEARCH_LENGTH}
-								<p class="py-2">No sauces found matching "{resultsQuery}"</p>
-							{:else}
-								<p class="py-2">Type at least {MIN_SEARCH_LENGTH} characters to search</p>
-							{/if}
-
-							{#if !showSkeleton && searchResults.makers.length > 0}
-								<div>
-									<div class="mt-4 flex items-center gap-2">
-										<Factory class="text-amber-600" size={20}></Factory>
-										<h3 id="search-group-makers" class="text-lg font-medium">Makers</h3>
-									</div>
-
-									<ul role="group" aria-labelledby="search-group-makers">
-										{#each searchResults.makers as maker, i}
-											{@render makerItem(maker, makerOffset + i)}
-										{/each}
-									</ul>
-									<div class="mt-2 flex pb-2">
-										<a
-											href={`/makers?q=${encodeURIComponent(search)}`}
-											class="ml-auto text-gray-600 hover:underline"
-											onclick={() => (open = false)}
-										>
-											View all results
-										</a>
-									</div>
-								</div>
-							{/if}
-
-							{#if !showSkeleton && searchResults.stores.length > 0}
-								<div>
-									<div class="mt-4 flex items-center gap-2">
-										<Store class="text-green-600" size={20}></Store>
-										<h3 id="search-group-stores" class="text-lg font-medium">Stores</h3>
-									</div>
-
-									<ul role="group" aria-labelledby="search-group-stores">
-										{#each searchResults.stores as store, i}
-											{@render storeItem(store, storeOffset + i)}
-										{/each}
-									</ul>
-									<div class="mt-2 flex pb-2">
-										<a
-											href={`/stores?q=${encodeURIComponent(search)}`}
-											class="ml-auto text-gray-600 hover:underline"
-											onclick={() => (open = false)}
-										>
-											View all results
-										</a>
-									</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
+								{/if}
+							{/snippet}
+						</Popover.Content>
+					</Popover.Portal>
+				</Popover.Root>
 			</li>
 
 			<li class="md:ml-auto">

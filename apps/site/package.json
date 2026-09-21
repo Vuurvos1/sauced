@@ -50,7 +50,6 @@
 		"@fontsource-variable/inter": "^5.3.0",
 		"@fontsource/bebas-neue": "^5.3.0",
 		"@o7/icon": "^0.2.9",
-		"@skeletonlabs/floating-ui-svelte": "^0.3.9",
 		"@tensorflow-models/toxicity": "^1.2.2",
 		"@tensorflow/tfjs": "^4.22.0",
 		"@tensorflow/tfjs-node": "^4.22.0",

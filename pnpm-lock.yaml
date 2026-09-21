@@ -47,9 +47,6 @@ importers:
       '@o7/icon':
         specifier: ^0.2.9
         version: 0.2.9(@sveltejs/kit@2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.57.1(@typescript-eslint/types@8.70.0))(vite@5.4.21(@types/node@26.6.2)))(svelte@5.57.1(@typescript-eslint/types@8.70.0))(typescript@5.9.3)(vite@5.4.21(@types/node@26.6.2)))(svelte@5.57.1(@typescript-eslint/types@8.70.0))
-      '@skeletonlabs/floating-ui-svelte':
-        specifier: ^0.3.9
-        version: 0.3.9(svelte@5.57.1(@typescript-eslint/types@8.70.0))
       '@tensorflow-models/toxicity':
         specifier: ^1.2.2
         version: 1.2.2(@tensorflow/tfjs-converter@4.22.0(@tensorflow/tfjs-core@4.22.0))(@tensorflow/tfjs-core@4.22.0)
@@ -1857,12 +1854,6 @@ packages:
 
   '@sideway/pinpoint@2.0.0':
     resolution: {integrity: sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==}
-
-  '@skeletonlabs/floating-ui-svelte@0.3.9':
-    resolution: {integrity: sha512-YjGAqVVD54v2biXgbVeZKTj40Zc1I7hS62NTpF72UBFzKsFrYN8+odexBaHNZ/4ScPYLF1ChA0vp3NClo8To1Q==}
-    deprecated: 'This project is no longer actively maintained. Please see this GitHub Discussion: https://github.com/skeletonlabs/floating-ui-svelte/discussions/169 for details about why it was deprecated and where to go next'
-    peerDependencies:
-      svelte: ^5.0.0
 
   '@softwaretechnik/dbml-renderer@1.0.31':
     resolution: {integrity: sha512-ThoBDBc2/ODuCtvrHKLaZNHvBhSMdgTXae7z1hOgXn+i5Qdqp1tq5nK1rrkm7THfnAIXuZ3WxAeos1iRZSKeOw==}
@@ -6092,12 +6083,6 @@ snapshots:
 
   '@sideway/pinpoint@2.0.0':
     optional: true
-
-  '@skeletonlabs/floating-ui-svelte@0.3.9(svelte@5.57.1(@typescript-eslint/types@8.70.0))':
-    dependencies:
-      '@floating-ui/dom': 1.8.0
-      '@floating-ui/utils': 0.2.12
-      svelte: 5.57.1(@typescript-eslint/types@8.70.0)
 
   '@softwaretechnik/dbml-renderer@1.0.31':
     dependencies:
