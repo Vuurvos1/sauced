@@ -80,9 +80,6 @@ importers:
       drizzle-zod:
         specifier: 'catalog:'
         version: 0.8.3(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.11)(@types/pg@8.23.1)(better-sqlite3@11.1.2)(gel@2.1.0)(kysely@0.29.6)(pg@8.12.0)(postgres@3.4.9))(zod@4.6.5)
-      focus-trap:
-        specifier: ^7.8.0
-        version: 7.8.0
       postgres:
         specifier: 'catalog:'
         version: 3.4.9
@@ -3209,9 +3206,6 @@ packages:
 
   flatted@3.4.4:
     resolution: {integrity: sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==}
-
-  focus-trap@7.8.0:
-    resolution: {integrity: sha512-/yNdlIkpWbM0ptxno3ONTuf+2g318kh2ez3KSeZN5dZ8YC6AAmgeWz+GasYYiBJPFaYcSAPeu4GfhUaChzIJXA==}
 
   for-in@0.1.8:
     resolution: {integrity: sha512-F0to7vbBSHP8E3l6dCjxNOLuSFAACIxFy3UehTUlG7svlXi37HHsDkyVcHo0Pq8QwrE+pXvWSVX3ZT1T9wAZ9g==}
@@ -7560,10 +7554,6 @@ snapshots:
       keyv: 4.5.4
 
   flatted@3.4.4: {}
-
-  focus-trap@7.8.0:
-    dependencies:
-      tabbable: 6.5.0
 
   for-in@0.1.8: {}
 

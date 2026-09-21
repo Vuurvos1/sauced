@@ -529,7 +529,6 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 ### Smaller UX TODOs already in the code
 
 - [ ] Confirm dialog before deleting a check-in (`profile/[slug]/+page.svelte:87`).
-- [ ] Body scroll lock in `dialog.svelte:16`.
 - [ ] Custom wishlist grid (`wishlist/+page.svelte:16`).
 - [ ] Turn the settings success message into a toast (`settings/+page.svelte:80`).
 - [ ] Error handling + shallow routing / no-JS fallback on the sauce page

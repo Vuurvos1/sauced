@@ -61,7 +61,6 @@
 		"dayjs": "^1.11.23",
 		"drizzle-orm": "catalog:",
 		"drizzle-zod": "catalog:",
-		"focus-trap": "^7.8.0",
 		"postgres": "catalog:",
 		"resend": "^4.8.0",
 		"svelte-sonner": "^0.3.28",

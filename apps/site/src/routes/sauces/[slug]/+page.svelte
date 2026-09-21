@@ -64,7 +64,7 @@
 						{userCheckin ? 'Checked-in' : 'Check-in'}
 					</button>
 
-					<Dialog bind:open>
+					<Dialog title="Check-in" bind:open>
 						<form
 							method="post"
 							action="?/review"
