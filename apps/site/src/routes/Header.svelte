@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Search, UserRound, Flame, Store, Factory } from '@o7/icon/lucide';
+	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
 	import {
 		autoUpdate,
 		offset,
@@ -23,50 +23,76 @@
 
 	let open = $state(false);
 
-	let isLoading = $state(false);
 	let searchResults = $state<SearchResponse>({
 		makers: [],
 		stores: [],
 		sauces: []
 	});
-	let loadingTimeout: ReturnType<typeof setTimeout>;
+	/** The query the current results answer; it trails `search` while a request is in flight. */
+	let resultsQuery = $state('');
+	let pending = $state(false);
+	let showSkeleton = $state(false);
+	/** Index of the highlighted result, counting every section as one list; -1 is the input. */
+	let activeIndex = $state(-1);
+	let skeletonTimeout: ReturnType<typeof setTimeout>;
 	let inFlight: AbortController | undefined;
 
 	const emptyResults: SearchResponse = { makers: [], stores: [], sauces: [] };
 
+	/** Mirrors MIN_SEARCH_LENGTH in $lib/server/search, which can't be imported here. */
+	const MIN_SEARCH_LENGTH = 2;
+
+	const hasResults = $derived(
+		searchResults.sauces.length > 0 ||
+			searchResults.makers.length > 0 ||
+			searchResults.stores.length > 0
+	);
+
+	/** What's on screen no longer answers what's in the box, so it gets dimmed. */
+	const isStale = $derived(pending && hasResults && resultsQuery !== search.trim());
+
+	function stopLoading() {
+		clearTimeout(skeletonTimeout);
+		pending = false;
+		showSkeleton = false;
+	}
+
 	async function getSearchResults(search: string) {
 		// A request for an older query must never overwrite newer results.
 		inFlight?.abort();
+		clearTimeout(skeletonTimeout);
 
-		if (search.length < 2) {
+		if (search.length < MIN_SEARCH_LENGTH) {
 			searchResults = emptyResults;
-			isLoading = false;
+			resultsQuery = '';
+			stopLoading();
 			return;
 		}
 
 		const controller = new AbortController();
 		inFlight = controller;
+		pending = true;
 
-		// Only show the loading state if the query takes longer than 500ms
-		clearTimeout(loadingTimeout);
-		loadingTimeout = setTimeout(() => {
-			isLoading = true;
-		}, 500);
+		// Skeletons only stand in for an empty panel, and only once the wait is long
+		// enough to notice; results already on screen stay put and dim instead.
+		skeletonTimeout = setTimeout(() => {
+			showSkeleton = !hasResults;
+		}, 150);
 
 		try {
 			const response = await fetch(`/api/v1/search?q=${encodeURIComponent(search)}`, {
 				signal: controller.signal
 			});
 			searchResults = await response.json();
+			resultsQuery = search;
+			activeIndex = -1;
 		} catch (error) {
 			if (controller.signal.aborted) return;
 			console.error('Search error:', error);
 			searchResults = emptyResults;
+			resultsQuery = search;
 		} finally {
-			if (!controller.signal.aborted) {
-				clearTimeout(loadingTimeout);
-				isLoading = false;
-			}
+			if (!controller.signal.aborted) stopLoading();
 		}
 	}
 
@@ -77,7 +103,7 @@
 	});
 
 	// debounced search
-	const update = debounce((v: string) => getSearchResults(v), 250);
+	const update = debounce((v: string) => getSearchResults(v.trim()), 250);
 	$effect(() => {
 		update(search);
 	});
@@ -99,13 +125,121 @@
 	});
 
 	// Interactions
-	const role = useRole(floating.context);
+	const role = useRole(floating.context, { role: 'combobox' });
 	const dismiss = useDismiss(floating.context);
 	const interactions = useInteractions([role, dismiss]);
+
+	// Keyboard navigation walks the sections in the order they render.
+	let input = $state<HTMLInputElement>();
+
+	const makerOffset = $derived(searchResults.sauces.length);
+	const storeOffset = $derived(makerOffset + searchResults.makers.length);
+	const optionCount = $derived(storeOffset + searchResults.stores.length);
+
+	const optionId = (index: number) => `search-option-${index}`;
+
+	/** Arrowing off either end passes through -1, back to what was typed. */
+	function moveActive(delta: number) {
+		const cycle = optionCount + 1;
+		activeIndex = ((activeIndex + 1 + delta + cycle) % cycle) - 1;
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		switch (event.key) {
+			case 'ArrowDown':
+			case 'ArrowUp':
+				if (optionCount === 0) return;
+				// Otherwise the caret would jump to the start or end of the query.
+				event.preventDefault();
+				open = true;
+				moveActive(event.key === 'ArrowDown' ? 1 : -1);
+				return;
+			case 'Enter':
+				// With nothing highlighted the form submits, which is the full results page.
+				if (activeIndex < 0) return;
+				event.preventDefault();
+				// Clicking the link keeps a keyboard pick on the same path as a mouse pick.
+				document.getElementById(optionId(activeIndex))?.querySelector('a')?.click();
+				return;
+			case 'Escape':
+			case 'Tab':
+				// The panel is portaled to the body, so Tab can never reach it anyway.
+				open = false;
+				return;
+		}
+	}
+
+	/** `/` and ⌘K reach the search box from anywhere on the page. */
+	function handleShortcut(event: KeyboardEvent) {
+		const target = event.target as HTMLElement | null;
+		const isTyping =
+			target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
+
+		if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+			event.preventDefault();
+		} else if (
+			event.key === '/' &&
+			!isTyping &&
+			!event.metaKey &&
+			!event.ctrlKey &&
+			!event.altKey
+		) {
+			event.preventDefault();
+		} else {
+			return;
+		}
+
+		input?.focus();
+		input?.select();
+	}
+
+	$effect(() => {
+		if (!open) activeIndex = -1;
+	});
+
+	// Arrowing past the fold has to bring the highlighted result with it.
+	$effect(() => {
+		if (activeIndex >= 0) {
+			document.getElementById(optionId(activeIndex))?.scrollIntoView({ block: 'nearest' });
+		}
+	});
 </script>
 
-{#snippet storeItem(store: SearchResponse['stores'][number])}
-	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+<svelte:window onkeydown={handleShortcut} />
+
+{#snippet skeletonSection(rows: number)}
+	<div class="animate-pulse" aria-hidden="true">
+		<div class="flex items-center gap-2">
+			<div class="size-5 rounded bg-gray-200"></div>
+			<div class="h-5 w-24 rounded bg-gray-200"></div>
+		</div>
+
+		<ul>
+			{#each Array.from({ length: rows }, (_, i) => i) as row (row)}
+				<li class="flex items-center gap-2 p-2">
+					<div class="size-12 shrink-0 rounded bg-gray-200"></div>
+					<div class="flex-1 space-y-2">
+						<div class="h-3.5 w-1/2 rounded bg-gray-200"></div>
+						<div class="h-3 w-1/5 rounded bg-gray-100"></div>
+					</div>
+				</li>
+			{/each}
+		</ul>
+	</div>
+{/snippet}
+
+{#snippet storeItem(store: SearchResponse['stores'][number], index: number)}
+	{@const active = activeIndex === index}
+	<li
+		role="option"
+		id={optionId(index)}
+		aria-selected={active}
+		onmouseenter={() => (activeIndex = index)}
+		class={[
+			'rounded-md p-2 transition-colors duration-75 hover:bg-gray-100',
+			active && 'bg-gray-100'
+		]}
+	>
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
@@ -123,8 +257,18 @@
 	</li>
 {/snippet}
 
-{#snippet makerItem(maker: SearchResponse['makers'][number])}
-	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+{#snippet makerItem(maker: SearchResponse['makers'][number], index: number)}
+	{@const active = activeIndex === index}
+	<li
+		role="option"
+		id={optionId(index)}
+		aria-selected={active}
+		onmouseenter={() => (activeIndex = index)}
+		class={[
+			'rounded-md p-2 transition-colors duration-75 hover:bg-gray-100',
+			active && 'bg-gray-100'
+		]}
+	>
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
@@ -141,8 +285,18 @@
 	</li>
 {/snippet}
 
-{#snippet sauceItem(sauce: SearchResponse['sauces'][number])}
-	<li class="rounded-md p-2 transition-colors hover:bg-gray-100">
+{#snippet sauceItem(sauce: SearchResponse['sauces'][number], index: number)}
+	{@const active = activeIndex === index}
+	<li
+		role="option"
+		id={optionId(index)}
+		aria-selected={active}
+		onmouseenter={() => (activeIndex = index)}
+		class={[
+			'rounded-md p-2 transition-colors duration-75 hover:bg-gray-100',
+			active && 'bg-gray-100'
+		]}
+	>
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
@@ -186,26 +340,35 @@
 			</li>
 
 			<li class="w-full md:col-span-2 md:w-auto">
-				<form data-sveltekit-keepfocus action="/sauces">
+				<form data-sveltekit-keepfocus action="/sauces" onsubmit={() => (open = false)}>
 					<label
 						bind:this={floating.elements.reference}
-						{...interactions.getReferenceProps()}
 						class="relative mx-auto flex w-full max-w-lg flex-row items-center text-base text-black"
 					>
 						<input
+							bind:this={input}
 							bind:value={search}
+							{...interactions.getReferenceProps({
+								onkeydown: handleKeydown,
+								'aria-activedescendant': activeIndex < 0 ? undefined : optionId(activeIndex)
+							})}
 							class="w-full rounded-full bg-white py-1.5 pl-4 pr-12 focus:outline-none"
 							placeholder="Search sauces"
 							autocomplete="off"
 							name="q"
 							type="text"
+							oninput={() => (activeIndex = -1)}
 							onfocus={() => {
 								if (search.length > 2) open = true;
 							}}
 						/>
 						<button type="submit" class="absolute inset-y-0 right-0 flex items-center pr-4">
 							<span class="sr-only">Search</span>
-							<Search size={20}></Search>
+							{#if pending}
+								<LoaderCircle class="animate-spin text-gray-500" size={20}></LoaderCircle>
+							{:else}
+								<Search size={20}></Search>
+							{/if}
 						</button>
 					</label>
 				</form>
@@ -218,22 +381,28 @@
 							use:portal={'body'}
 							style={floating.floatingStyles}
 							{...interactions.getFloatingProps()}
-							class="z-50 max-h-[50vh] w-[calc(100vw-2rem)] max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg"
+							class={[
+								'z-50 max-h-[50vh] w-[calc(100vw-2rem)] max-w-lg divide-y overflow-y-auto rounded border bg-white p-4 text-black shadow-lg transition-opacity',
+								isStale && 'opacity-50'
+							]}
+							aria-busy={pending}
+							aria-label="Search results"
+							onmouseleave={() => (activeIndex = -1)}
 							transition:fade={{ duration: 100 }}
 						>
 							<!-- Sauces -->
-							{#if isLoading}
-								<div class="py-2 text-center">Loading...</div>
+							{#if showSkeleton}
+								{@render skeletonSection(3)}
 							{:else if searchResults.sauces.length > 0}
 								<div>
 									<div class="flex items-center gap-2">
 										<Flame class="text-red-600" size={20}></Flame>
-										<h3 class="text-lg font-medium">Sauces</h3>
+										<h3 id="search-group-sauces" class="text-lg font-medium">Sauces</h3>
 									</div>
 
-									<ul>
-										{#each searchResults.sauces as sauce}
-											{@render sauceItem(sauce)}
+									<ul role="group" aria-labelledby="search-group-sauces">
+										{#each searchResults.sauces as sauce, i}
+											{@render sauceItem(sauce, i)}
 										{/each}
 									</ul>
 									<div class="mt-2 flex pb-2">
@@ -246,22 +415,22 @@
 										</a>
 									</div>
 								</div>
-							{:else if search.length >= 2}
-								<p class="py-2">No sauces found matching "{search}"</p>
+							{:else if resultsQuery.length >= MIN_SEARCH_LENGTH}
+								<p class="py-2">No sauces found matching "{resultsQuery}"</p>
 							{:else}
-								<p class="py-2">Type at least 2 characters to search</p>
+								<p class="py-2">Type at least {MIN_SEARCH_LENGTH} characters to search</p>
 							{/if}
 
-							{#if !isLoading && searchResults.makers.length > 0}
+							{#if !showSkeleton && searchResults.makers.length > 0}
 								<div>
 									<div class="mt-4 flex items-center gap-2">
 										<Factory class="text-amber-600" size={20}></Factory>
-										<h3 class="text-lg font-medium">Makers</h3>
+										<h3 id="search-group-makers" class="text-lg font-medium">Makers</h3>
 									</div>
 
-									<ul>
-										{#each searchResults.makers as maker}
-											{@render makerItem(maker)}
+									<ul role="group" aria-labelledby="search-group-makers">
+										{#each searchResults.makers as maker, i}
+											{@render makerItem(maker, makerOffset + i)}
 										{/each}
 									</ul>
 									<div class="mt-2 flex pb-2">
@@ -276,16 +445,16 @@
 								</div>
 							{/if}
 
-							{#if !isLoading && searchResults.stores.length > 0}
+							{#if !showSkeleton && searchResults.stores.length > 0}
 								<div>
 									<div class="mt-4 flex items-center gap-2">
 										<Store class="text-green-600" size={20}></Store>
-										<h3 class="text-lg font-medium">Stores</h3>
+										<h3 id="search-group-stores" class="text-lg font-medium">Stores</h3>
 									</div>
 
-									<ul>
-										{#each searchResults.stores as store}
-											{@render storeItem(store)}
+									<ul role="group" aria-labelledby="search-group-stores">
+										{#each searchResults.stores as store, i}
+											{@render storeItem(store, storeOffset + i)}
 										{/each}
 									</ul>
 									<div class="mt-2 flex pb-2">
