@@ -101,18 +101,33 @@ async function insertStoreData(scraper, data) {
 			id: hotSauces.sauceId,
 			name: hotSauces.name,
 			description: hotSauces.description,
-			makerId: hotSauces.makerId
+			imageUrl: hotSauces.imageUrl,
+			makerId: hotSauces.makerId,
+			makerName: makers.name
 		})
-		.from(hotSauces);
+		.from(hotSauces)
+		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId));
 
 	const { newSauces, existingSauces } = data.reduce(
 		(acc, sauce) => {
 			const normalizedNewName = normalizeName(sauce.name);
-			const existing = existingSauceNames.find((existing) =>
-				isSimilarName(normalizeName(existing.name), normalizedNewName)
-			);
+			const newMaker = String(sauce.maker ?? '').trim();
 
-			sauce.makerId = makerIds.get(normalizeName(sauce.maker ?? '')) ?? null;
+			const existing = existingSauceNames.find((existing) => {
+				if (!isSimilarName(normalizeName(existing.name), normalizedNewName)) return false;
+
+				// Stripping the brand shortens names, which makes them collide: "Hot Zeg
+				// - Krush" and "Nondedju Pineapple Krush" both reduce to roughly "Krush".
+				// Two known, different brands is positive evidence of two sauces. Only a
+				// guard — matching on the maker instead of the name deduplicates worse,
+				// because the brand strings themselves vary.
+				if (newMaker && existing.makerName && !isSimilarName(existing.makerName, newMaker)) {
+					return false;
+				}
+				return true;
+			});
+
+			sauce.makerId = makerIds.get(normalizeName(newMaker)) ?? null;
 			delete sauce.maker;
 
 			if (existing) {
@@ -150,7 +165,7 @@ async function insertStoreData(scraper, data) {
 		// Sriracha ended up credited to Melinda's that way.
 		const changes = {
 			description: keepDescription ? existing?.description : sauce.description,
-			imageUrl: sauce.imageUrl,
+			...(sauce.imageUrl && !existing?.imageUrl ? { imageUrl: sauce.imageUrl } : {}),
 			...(sauce.makerId && !existing?.makerId ? { makerId: sauce.makerId } : {})
 		};
 
@@ -169,13 +184,25 @@ async function insertStoreData(scraper, data) {
 			.values(newSauces)
 			.onConflictDoNothing()
 			.returning({ id: hotSauces.sauceId, name: hotSauces.name });
+
+		// Carry the id back onto the scraped object rather than matching by name
+		// again below: a second fuzzy pass re-merges what the dedup guard split,
+		// which silently linked the store to the wrong sauce.
+		for (const row of sauces) {
+			const match = newSauces.find((candidate) => candidate.name === row.name);
+			if (match) match.sauceId = row.id;
+		}
 		existingSauceNames.push(...sauces);
 	}
 
 	console.info('Inserting store hot sauce data');
 	for (const sauce of data) {
-		const s = existingSauceNames.find((s) => isSimilarName(s.name, sauce.name));
-		if (!s) {
+		// onConflictDoNothing drops a row whose name or slug is already taken; fall
+		// back to the name so the store still links to something sensible.
+		const sauceId =
+			sauce.sauceId ?? existingSauceNames.find((s) => isSimilarName(s.name, sauce.name))?.id;
+
+		if (!sauceId) {
 			writeFailures++;
 			console.error('Sauce not found', sauce.name);
 			continue;
@@ -184,7 +211,7 @@ async function insertStoreData(scraper, data) {
 		await db
 			.insert(storeHotSauces)
 			.values({
-				sauceId: s.id,
+				sauceId,
 				storeId: store[0].storeId,
 				url: sauce.url
 			})
