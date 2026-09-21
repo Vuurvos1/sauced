@@ -12,6 +12,17 @@
  * `name` must stay stable — `stores.name` is unique and upserted on.
  */
 
+/**
+ * Brands a shop files under another name. Applied to every store, because the
+ * same alias turns up in several: Spicin' Foods is Da Bomb's parent company and
+ * three shops credit it instead of the brand, which stopped four listings of
+ * Beyond Insanity from deduplicating.
+ */
+export const makerAliases = {
+	"Spicin' Foods": 'Da Bomb',
+	'Spicin Foods': 'Da Bomb'
+};
+
 /** @type {import('./').ShopifyScraperConfig[]} */
 export const shopifyStores = [
 	{

@@ -121,6 +121,12 @@ describe('cleanProductName', () => {
 		expect(cleanProductName('Aji Mango Pot Plant (Pre Order)')).toBe('Aji Mango Pot Plant');
 	});
 
+	it('should strip a heat level, which is shop metadata', () => {
+		expect(cleanProductName('Da Bomb – Beyond Insanity (Heat Level 12)')).toBe(
+			'Da Bomb – Beyond Insanity'
+		);
+	});
+
 	it('should leave a clean name untouched', () => {
 		expect(cleanProductName('Naga Viper')).toBe('Naga Viper');
 		expect(cleanProductName('Habanero Hustle')).toBe('Habanero Hustle');
@@ -160,6 +166,17 @@ describe('stripMakerFromName', () => {
 		);
 		expect(stripMakerFromName('Torchbearer Garlic Reaper', 'Torchbearer Sauces')).toBe(
 			'Garlic Reaper'
+		);
+	});
+
+	// Shops punctuate a brand however they like, and some bury it mid-title.
+	// Four listings of Da Bomb's Beyond Insanity stayed four sauces over this.
+	it('should match a brand however it is punctuated, anywhere in the title', () => {
+		expect(stripMakerFromName('Sauce Da’Bomb Beyond Insanity', 'Da Bomb')).toBe(
+			'Sauce Beyond Insanity'
+		);
+		expect(stripMakerFromName("Da' Bomb Beyond Insanity Hot Sauce", 'Da Bomb')).toBe(
+			'Beyond Insanity Hot Sauce'
 		);
 	});
 

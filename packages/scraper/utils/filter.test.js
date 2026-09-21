@@ -200,6 +200,15 @@ describe('isBundleName — accented and compound vocabulary', () => {
 		expect(isBundleName('Garlic Lover’s Bag - Garlic Sauces')).toBe(true);
 	});
 
+	// Snak Club sells Tajín-dusted candy in peach, mango and pineapple.
+	// Plural only: "RING STINGER" is a sauce.
+	it('should drop candy rings but keep a sauce named RING', () => {
+		expect(isBundleName('Tajín Peach Rings 🍍')).toBe(true);
+		expect(isBundleName('Tajín Mango Rings 🍍')).toBe(true);
+		expect(isBundleName('Spicy Peach Rings Chamoy Gummies')).toBe(true);
+		expect(isBundleName('RING STINGER')).toBe(false);
+	});
+
 	it('should match Dutch merch and produce', () => {
 		expect(isBundleName('Chilipeper Sokken Zwart (maat 39/45)')).toBe(true);
 		expect(isBundleName('Gedroogde Madame Jeanette pepers')).toBe(true);

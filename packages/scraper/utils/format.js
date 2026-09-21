@@ -51,7 +51,8 @@ const PROMO = [
 	/\s*[-–—]\s*buy now!?\s*$/gi,
 	/\(\s*pre[- ]?order\s*\)/gi,
 	/\[\s*pre[- ]?order\s*\]/gi,
-	/\b(sold out|out of stock|back in stock)\b/gi
+	/\b(sold out|out of stock|back in stock)\b/gi,
+	/[([]\s*heat\s*level[^)\]]*[)\]]/gi
 ];
 
 /** Separators and punctuation left stranded once a fragment is removed. */
@@ -105,12 +106,26 @@ export function stripMakerFromName(name, maker) {
 	const brand = String(maker ?? '').trim();
 	if (!brand || !title) return title;
 
+	// Shops punctuate a brand however they like — "Da Bomb", "Da' Bomb",
+	// "Da'Bomb" — so match on the letters and let anything sit between them.
+	const loose = (needle) =>
+		needle
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter(Boolean)
+			.map(escapeRegExp)
+			.join('[^\\p{L}\\p{N}]*');
+
 	const attempt = (haystack, needle) => {
-		const b = escapeRegExp(needle);
-		return haystack
-			.replace(new RegExp(`^\\s*${b}\\s*(?:[-–—:|,]\\s*)?`, 'i'), '')
-			.replace(new RegExp(`\\s*(?:[-–—:|,]\\s*)?${b}\\s*$`, 'i'), '')
-			.trim();
+		const b = loose(needle);
+		if (!b) return haystack;
+		return (
+			haystack
+				.replace(new RegExp(`^\\s*${b}\\s*(?:[-–—:|,]\\s*)?`, 'iu'), '')
+				.replace(new RegExp(`\\s*(?:[-–—:|,]\\s*)?${b}\\s*$`, 'iu'), '')
+				// Some shops bury the brand mid-title: "Sauce Da'Bomb Beyond Insanity".
+				.replace(new RegExp(`\\s+${b}\\s+`, 'iu'), ' ')
+				.trim()
+		);
 	};
 
 	let stripped = attempt(title, brand);

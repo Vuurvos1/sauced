@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import scrapers from './scrapers.js';
 import { getDb } from '@app/db';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
-import { normalizeName, isSimilarName, slugifyName } from './utils/index.js';
+import { normalizeName, isSimilarName, slugifyName, foldAccents } from './utils/index.js';
 import { eq, notExists, sql } from 'drizzle-orm';
 
 import 'dotenv/config';
@@ -70,6 +70,31 @@ async function upsertMakers(data) {
 }
 
 /**
+ * Finds a known brand at the head of a title, followed by a separator:
+ * "Da Bomb – Beyond Insanity". Only a brand already in the table counts, so
+ * "DOOMSDAY – 1.6 Million Scoville" keeps its name.
+ *
+ * Requiring the separator is deliberate. Matching any leading words against the
+ * maker table also matches junk brands — "Sauce Seed Ranch" is one — and the
+ * wrong brand then blocks correct merges through the maker guard. Measured: it
+ * fixed one duplicate and split 122 other sauces.
+ *
+ * @param {string} name
+ * @param {Map<string, string>} makerIds normalised brand -> maker id
+ * @returns {{ maker: string, rest: string } | null}
+ */
+function knownMakerPrefix(name, makerIds) {
+	const match = String(name).match(/^(.{2,40}?)\s*[-–—:|]\s*(.+)$/u);
+	if (!match) return null;
+
+	const [, head, rest] = match;
+	if (!makerIds.has(normalizeName(head))) return null;
+	if (!/[a-z0-9]/i.test(foldAccents(rest))) return null;
+
+	return { maker: head.trim(), rest: rest.trim() };
+}
+
+/**
  * @param {import('./index.d').SauceScraper} scraper
  * @param {import('./index.d').Sauce[]} data
  */
@@ -110,8 +135,21 @@ async function insertStoreData(scraper, data) {
 
 	const { newSauces, existingSauces } = data.reduce(
 		(acc, sauce) => {
+			let newMaker = String(sauce.maker ?? '').trim();
+
+			// Shops that publish no brand often lead the title with one:
+			// "Da Bomb – Beyond Insanity". Only strip a prefix that matches a brand
+			// we already know, so "DOOMSDAY – 1.6 Million Scoville" keeps its name.
+			if (!newMaker) {
+				const prefix = knownMakerPrefix(sauce.name, makerIds);
+				if (prefix) {
+					newMaker = prefix.maker;
+					sauce.name = prefix.rest;
+					sauce.slug = slugifyName(prefix.rest);
+				}
+			}
+
 			const normalizedNewName = normalizeName(sauce.name);
-			const newMaker = String(sauce.maker ?? '').trim();
 
 			const existing = existingSauceNames.find((existing) => {
 				if (!isSimilarName(normalizeName(existing.name), normalizedNewName)) return false;

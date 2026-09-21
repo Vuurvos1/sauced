@@ -44,7 +44,7 @@ const MERCH_PATTERNS = [
 	// Dutch compounds again: "Honinglepel".
 	/(lepel)/i,
 	/\b(spoon|spatula|pens?)\b/i,
-	/\b(stickers?|poster|keychain|magnet|tote|pin|badge|calendar|tea\s*towel)\b/i,
+	/\b(stickers?|poster|keychain|magnet|tote|pin|badge|calendar|tea\s*towel|notepad|notebook)\b/i,
 	// A "Lover's Bag - BBQ Sauces" is a bundle and a drawstring bag is merch.
 	/\bbags?\b/i,
 	/\b(playing cards?|card deck|\d+-card)\b/i,
@@ -65,7 +65,8 @@ const GROWING_PATTERNS = [
  * which are close enough to belong in the catalogue.
  */
 const NOT_SAUCE_PATTERNS = [
-	/\b(chips|crisps|kartoffelchips|popcorn|gummy|jerky|bonbons?|snoep)\b/i,
+	// "Rings" plural only: "RING STINGER" is a sauce.
+	/\b(chips|crisps|kartoffelchips|popcorn|gumm(y|ies)|jerky|bonbons?|snoep|rings)\b/i,
 	/\b(kruidenmix|specerijen)\b/i,
 	/\b(ketjap|kecap|sojasaus|soy sauce|vissaus|fish sauce)\b/i,
 	// Coffee beans are not sauce; "Coffee BBQ Sauce" and "Coffee Date hot sauce" are.
