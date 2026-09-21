@@ -42,13 +42,17 @@ const MERCH_PATTERNS = [
 	// Dutch compounds again: "Honinglepel".
 	/(lepel)/i,
 	/\b(spoon|spatula|pens?)\b/i,
-	/\b(stickers?|poster|keychain|magnet|tote|pin|badge|calendar|tea\s*towel)\b/i
+	/\b(stickers?|poster|keychain|magnet|tote|pin|badge|calendar|tea\s*towel)\b/i,
+	// A "Lover's Bag - BBQ Sauces" is a bundle and a drawstring bag is merch.
+	/\bbags?\b/i,
+	/\b(playing cards?|card deck|\d+-card)\b/i,
+	/(speelkaarten|pokerkaarten)/i
 ];
 
 /** Living produce and growing kit — chilli farms shelve these next to the sauce. */
 const GROWING_PATTERNS = [
 	// Plural only: "Seed Ranch" and "Fire Seed Mustard" are sauce brands.
-	/\b(seeds|zaden|seedlings?|propagator|plant food)\b/i,
+	/\b(seeds|zaden|graines|semences|seedlings?|propagator|plant food)\b/i,
 	/\bpot plant\b/i,
 	/\bplants?\b(?!\s*based)/i,
 	/\bfresh\s+[\w\s]*chill?ies\b/i
@@ -59,7 +63,7 @@ const GROWING_PATTERNS = [
  * which are close enough to belong in the catalogue.
  */
 const NOT_SAUCE_PATTERNS = [
-	/\b(chips|crisps|kartoffelchips|popcorn|gummy|jerky|bonbons?)\b/i,
+	/\b(chips|crisps|kartoffelchips|popcorn|gummy|jerky|bonbons?|snoep)\b/i,
 	/\b(kruidenmix|specerijen)\b/i,
 	/\b(ketjap|kecap|sojasaus|soy sauce|vissaus|fish sauce)\b/i,
 	// Coffee beans are not sauce; "Coffee BBQ Sauce" and "Coffee Date hot sauce" are.

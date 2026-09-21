@@ -159,6 +159,19 @@ describe('isBundleName — accented and compound vocabulary', () => {
 		expect(isBundleName('Adobo Rojo BBQ peperpakket')).toBe(true);
 	});
 
+	it('should match French seeds and Dutch sweets', () => {
+		expect(isBundleName('Graines - Dame Blanche 🔥🔥')).toBe(true);
+		expect(isBundleName('Dr Fire Blast Balls Snoep')).toBe(true);
+	});
+
+	// "Hot Sauce" in the name must not rescue merch.
+	it('should match bags and playing cards', () => {
+		expect(isBundleName('Drawstring Character Bag')).toBe(true);
+		expect(isBundleName('Garlic Reaper Hot Sauce Playing Cards – 54-Card Deck')).toBe(true);
+		expect(isBundleName('Dekker Pepper Speelkaarten – 55 kaarten')).toBe(true);
+		expect(isBundleName('Garlic Lover’s Bag - Garlic Sauces')).toBe(true);
+	});
+
 	it('should match Dutch merch and produce', () => {
 		expect(isBundleName('Chilipeper Sokken Zwart (maat 39/45)')).toBe(true);
 		expect(isBundleName('Gedroogde Madame Jeanette pepers')).toBe(true);
