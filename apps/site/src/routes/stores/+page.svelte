@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
 	let { stores, search } = $derived(data);
 </script>
+
+<Meta
+	title={search ? `Stores matching "${search}"` : 'Hot sauce stores'}
+	description="Where to get your favourite hot sauces: every store Sauced tracks stock from."
+	canonical="/stores"
+	noindex={!!search}
+/>
 
 <section>
 	<hgroup class="container flex flex-col items-center gap-2 pb-6">

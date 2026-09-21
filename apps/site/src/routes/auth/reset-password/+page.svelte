@@ -2,9 +2,12 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import TextInput from '$lib/components/form/TextInput.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data, form } = $props();
 </script>
+
+<Meta title="Reset password" noindex />
 
 <section class="mb-12 grid flex-1 place-items-center">
 	<div class="container max-w-xl">

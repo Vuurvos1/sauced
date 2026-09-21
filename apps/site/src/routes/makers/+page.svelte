@@ -1,12 +1,17 @@
 <script lang="ts">
+	import Meta from '$lib/components/Meta.svelte';
+
 	let { data } = $props();
 
 	let { makers, search } = $derived(data);
 </script>
 
-<svelte:head>
-	<title>Hot sauce makers</title>
-</svelte:head>
+<Meta
+	title={search ? `Makers matching "${search}"` : 'Hot sauce makers'}
+	description="The brands behind the bottles: every hot sauce maker on Sauced, and what they make."
+	canonical="/makers"
+	noindex={!!search}
+/>
 
 <section>
 	<hgroup class="container flex flex-col items-center gap-2 pb-6">

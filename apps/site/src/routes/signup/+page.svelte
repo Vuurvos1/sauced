@@ -4,6 +4,7 @@
 	import { Google } from '@o7/icon/remix/solid';
 	import { superForm } from 'sveltekit-superforms';
 	import { authClient } from '$lib/auth-client';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -11,6 +12,12 @@
 
 	const signInWithGoogle = () => authClient.signIn.social({ provider: 'google', callbackURL: '/' });
 </script>
+
+<Meta
+	title="Create an account"
+	description="Create a Sauced account to rate hot sauces, track what you've tried and build a wishlist."
+	noindex
+/>
 
 <section class="mb-12 grid h-full flex-1 place-items-center">
 	<div class="w-full max-w-sm">

@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data, form } = $props();
 </script>
+
+<Meta title="Verify your email" noindex />
 
 <div class="container">
 	<h1 class="mb-6 text-2xl font-bold leading-none">Verify your email</h1>

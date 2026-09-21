@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
 
 	let { data } = $props();
@@ -7,9 +8,11 @@
 	let { maker, sauces } = $derived(data);
 </script>
 
-<svelte:head>
-	<title>{maker.name} — sauces</title>
-</svelte:head>
+<Meta
+	title={maker.name}
+	description={maker.description ||
+		`Every ${maker.name} hot sauce on Sauced, with ratings and where to buy them.`}
+/>
 
 <section>
 	<div class="container flex flex-col items-center gap-2 pb-6">

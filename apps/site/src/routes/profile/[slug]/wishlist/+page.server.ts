@@ -32,5 +32,5 @@ export async function load({ params }) {
 
 	const sauces = dbRes.map((row) => row.hotSauces).filter((sauce) => !!sauce);
 
-	return { sauces: sauces };
+	return { username: user.username, sauces };
 }

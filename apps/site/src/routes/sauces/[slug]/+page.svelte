@@ -6,6 +6,7 @@
 	import StarRater from '$lib/components/StarRater.svelte';
 	import { ListPlus, ListMinus, Check, ArrowUpRight, Trash2 } from '@o7/icon/lucide';
 	import { Dialog } from '$lib/components/dialog/index.js';
+	import Meta from '$lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
@@ -16,7 +17,17 @@
 	let error = $state<string | null>(null);
 
 	let open = $state(false);
+
+	const byMaker = $derived(maker ? ` by ${maker.name}` : '');
 </script>
+
+<Meta
+	title={sauce.name}
+	description={sauce.description ||
+		`Ratings, reviews and where to buy ${sauce.name}${byMaker} on Sauced.`}
+	image={sauce.imageUrl}
+	imageAlt={sauce.name}
+/>
 
 <div class="container">
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">

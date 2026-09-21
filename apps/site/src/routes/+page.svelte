@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
 	let { recentSauces, topSauces, user } = $derived(data);
 </script>
+
+<Meta title="Find and rate hot sauces" brandFirst />
 
 <div class="space-y-12">
 	<section>

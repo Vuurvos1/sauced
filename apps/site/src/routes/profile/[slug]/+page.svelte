@@ -3,6 +3,7 @@
 	import { Trash2, Settings, Trophy } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
 	import StarRating from '$lib/components/StarRating.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 	import { formatTimeAgo } from '$lib/utils/time.js';
 	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
 
@@ -10,6 +11,12 @@
 
 	let { user, session, checkedSauces, reviewCount, sauceTriedCount, achievements } = $derived(data);
 </script>
+
+<Meta
+	title={user.username}
+	description={`${user.username} has tried ${sauceTriedCount} hot sauces and written ${reviewCount} reviews on Sauced.`}
+	noindex
+/>
 
 <div class="container grid gap-6 md:grid-cols-[1fr_2fr] lg:grid-cols-[1fr_3fr]">
 	<div class="space-y-4">

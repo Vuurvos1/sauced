@@ -41,10 +41,6 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Sauced</title>
-</svelte:head>
-
 <div class="flex min-h-screen flex-col">
 	<Header></Header>
 

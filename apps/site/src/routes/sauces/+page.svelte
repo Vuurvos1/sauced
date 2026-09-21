@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -19,7 +20,23 @@
 		url.searchParams.set('page', String(currentPage + 1));
 		return url.toString();
 	});
+
+	const title = $derived(search ? `Results for "${search}"` : 'All hot sauces');
+
+	const description = $derived(
+		search
+			? `${sauceCount} hot sauces matching "${search}".`
+			: `Browse ${sauceCount} hot sauces, newest first, with ratings and where to buy them.`
+	);
+
+	// Query strings aside from the page number would only split a listing's
+	// ranking across near-identical URLs.
+	const canonical = $derived(
+		!search && currentPage > 1 ? `/sauces?page=${currentPage}` : '/sauces'
+	);
 </script>
+
+<Meta {title} {description} {canonical} noindex={!!search} />
 
 <div class="container">
 	<div class="flex flex-row items-center justify-between">

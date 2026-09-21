@@ -3,6 +3,7 @@
 	import { Google } from '@o7/icon/remix/solid';
 	import { superForm } from 'sveltekit-superforms';
 	import { authClient } from '$lib/auth-client';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -10,6 +11,8 @@
 
 	const signInWithGoogle = () => authClient.signIn.social({ provider: 'google', callbackURL: '/' });
 </script>
+
+<Meta title="Sign in" description="Sign in to rate hot sauces and keep a wishlist." noindex />
 
 {#snippet forgotPassword()}
 	<a class="ml-auto font-medium text-blue-700 hover:underline" href="/auth/forgot-password">

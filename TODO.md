@@ -515,11 +515,19 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 
 ### SEO & accessibility
 
-- [ ] **Every page is titled "Sauced"** — the only `<svelte:head>` is in the root layout.
+- [x] **Every page is titled "Sauced"** — the only `<svelte:head>` is in the root layout.
       No per-page titles, meta descriptions or OG/Twitter cards. Sauce detail pages are
-      exactly the pages that should rank.
-- [ ] No `+error.svelte` — users get SvelteKit's bare default.
-- [ ] No `robots.txt` or sitemap (trivially generated from sauce/store/maker slugs).
+      exactly the pages that should rank. Now a `<Meta>` component
+      (`lib/components/Meta.svelte`) on every page: title, description, canonical, OG and
+      Twitter cards, `noindex` on the account, auth and search-result pages.
+- [x] No `+error.svelte` — users get SvelteKit's bare default.
+- [x] No `robots.txt` or sitemap (trivially generated from sauce/store/maker slugs).
+      Both are routes, so they follow the data: 3025 URLs today.
+- [ ] No default OG image — pages without one (home, listings, makers) fall back to a
+      text-only card. Needs a 1200×630 asset; `assets/site-preview.png` is a 1280×1185
+      README screenshot, the wrong shape.
+- [ ] No JSON-LD on sauce pages. `Product` + `AggregateRating` is what earns rating stars
+      in search results, and the ratings are already there.
 - [ ] Heading hierarchy: `SauceGrid` emits an `<h2>` per card and several pages have no
       `<h1>`.
 - [ ] Search dropdown has no keyboard navigation — no arrow keys, no Enter to select.

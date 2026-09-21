@@ -1,6 +1,7 @@
 <script lang="ts">
 	import TextInput from '$lib/components/form/TextInput.svelte';
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 	import { enhance } from '$app/forms';
 	import { redirect } from '@sveltejs/kit';
 	import { z } from 'zod/v4';
@@ -17,6 +18,8 @@
 		redirect(302, '/');
 	}
 </script>
+
+<Meta title="Edit profile" noindex />
 
 <section class="container mb-6">
 	<h1 class="h2">Edit Profile</h1>
