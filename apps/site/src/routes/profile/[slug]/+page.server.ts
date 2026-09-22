@@ -11,65 +11,60 @@ export async function load({ params }) {
 		error(400, 'Invalid user');
 	}
 
-	try {
-		const users = await db
-			.select({
-				id: userTable.id,
-				username: userTable.username
-			})
-			.from(userTable)
-			.where(eq(userTable.username, username))
-			.limit(1);
+	const users = await db
+		.select({
+			id: userTable.id,
+			username: userTable.username
+		})
+		.from(userTable)
+		.where(eq(userTable.username, username))
+		.limit(1);
 
-		if (users.length === 0) {
-			error(404, 'User not found');
-		}
-
-		const user = users[0];
-
-		const hotSauceColumns = getTableColumns(hotSauces);
-		const checkedSauces = await db
-			.select({
-				...hotSauceColumns,
-				rating: checkins.rating,
-				review: checkins.review,
-				checkedAt: checkins.createdAt
-			})
-			.from(checkins)
-			.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
-			.where(eq(checkins.userId, user.id))
-			.orderBy(desc(checkins.createdAt))
-			.limit(12);
-
-		const reviewCount = await db
-			.select({
-				count: count()
-			})
-			.from(checkins)
-			.where(
-				and(eq(checkins.userId, user.id), isNotNull(checkins.review), not(eq(checkins.review, '')))
-			);
-
-		const sauceTriedCount = await db
-			.select({
-				count: count()
-			})
-			.from(checkins)
-			.where(eq(checkins.userId, user.id));
-
-		const achievements = await getAchievements(user);
-
-		return {
-			user,
-			checkedSauces,
-			reviewCount: reviewCount[0].count,
-			sauceTriedCount: sauceTriedCount[0].count,
-			achievements
-		};
-	} catch (err) {
-		console.error(err);
-		error(500, 'Internal server error');
+	if (users.length === 0) {
+		error(404, 'User not found');
 	}
+
+	const user = users[0];
+
+	const hotSauceColumns = getTableColumns(hotSauces);
+	const checkedSauces = await db
+		.select({
+			...hotSauceColumns,
+			rating: checkins.rating,
+			review: checkins.review,
+			checkedAt: checkins.createdAt
+		})
+		.from(checkins)
+		.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
+		.where(eq(checkins.userId, user.id))
+		.orderBy(desc(checkins.createdAt))
+		.limit(12);
+
+	const reviewCount = await db
+		.select({
+			count: count()
+		})
+		.from(checkins)
+		.where(
+			and(eq(checkins.userId, user.id), isNotNull(checkins.review), not(eq(checkins.review, '')))
+		);
+
+	const sauceTriedCount = await db
+		.select({
+			count: count()
+		})
+		.from(checkins)
+		.where(eq(checkins.userId, user.id));
+
+	const achievements = await getAchievements(user);
+
+	return {
+		user,
+		checkedSauces,
+		reviewCount: reviewCount[0].count,
+		sauceTriedCount: sauceTriedCount[0].count,
+		achievements
+	};
 }
 
 export const actions = {
