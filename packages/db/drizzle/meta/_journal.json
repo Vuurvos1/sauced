@@ -57,6 +57,13 @@
       "when": 1790190597291,
       "tag": "0007_married_eternity",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790259544387,
+      "tag": "0008_drop_legacy_passwords",
+      "breakpoints": true
     }
   ]
 }
