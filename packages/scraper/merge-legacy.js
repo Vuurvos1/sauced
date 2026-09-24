@@ -31,7 +31,16 @@ const pairs = await db.execute(sql`
 			SELECT
 				l.hot_sauce_id AS sauce_id,
 				l.store_id,
-				lower(substring(split_part(split_part(l.url, '?', 1), '#', 1) FROM '([^/]+)/*$')) AS handle
+				-- Slugified, because the old Heatsupply scraper stored some handles with
+				-- spaces ("crazy bastard carolina reaper & blueberry") where the shop's
+				-- real one is hyphenated.
+				trim(both '-' from regexp_replace(
+					regexp_replace(
+						lower(substring(split_part(split_part(l.url, '?', 1), '#', 1) FROM '([^/]+)/*$')),
+						'[''’]', '', 'g'
+					),
+					'[^a-z0-9]+', '-', 'g'
+				)) AS handle
 			FROM store_hot_sauces l
 		)
 		SELECT
