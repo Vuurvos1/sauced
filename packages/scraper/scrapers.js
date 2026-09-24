@@ -16,6 +16,14 @@ function register(configs, create) {
 	);
 }
 
+/**
+ * A disabled store stays registered so `scrape <key>` can still reach it; only
+ * `scrape all` skips it.
+ */
+export const enabledKeys = [...shopifyStores, ...wooStores]
+	.filter((config) => !config.disabled)
+	.map((config) => config.key);
+
 /** @type {Record<string, import('./').SauceScraper>} */
 export default {
 	...register(shopifyStores, createShopifyScraper),

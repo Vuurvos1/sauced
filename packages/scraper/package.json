@@ -12,7 +12,6 @@
 		"@app/db": "workspace:^",
 		"dotenv": "^16.6.1",
 		"drizzle-orm": "catalog:",
-		"fuzzysort": "^3.1.0",
 		"jsdom": "^26.1.0",
 		"puppeteer": "^22.15.0",
 		"puppeteer-core": "^22.15.0",

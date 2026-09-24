@@ -1,10 +1,25 @@
 import parser from 'yargs-parser';
 import fs from 'node:fs';
-import scrapers from './scrapers.js';
+import scrapers, { enabledKeys } from './scrapers.js';
+import { sauceAliases } from './stores.js';
 import { getDb } from '@app/db';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
-import { normalizeName, isSimilarName, slugifyName, foldAccents } from './utils/index.js';
-import { eq, notExists, sql } from 'drizzle-orm';
+import {
+	buildAliasMap,
+	buildMakerRegistry,
+	bestDescription,
+	displayName,
+	groupByIdentity,
+	applyRegistry,
+	uniqueSlug
+} from './dedup.js';
+import {
+	canonicalMakerName,
+	canonicalSauceName,
+	sauceDedupKey,
+	slugifyName
+} from './utils/index.js';
+import { eq, inArray, notExists, sql } from 'drizzle-orm';
 
 import 'dotenv/config';
 
@@ -15,116 +30,69 @@ const flags = parser(args, {
 
 const db = getDb(process.env.DATABASE_URL);
 
+/** Rows per multi-row insert — large enough to be few trips, small enough to stay
+ * under Postgres' bind-parameter ceiling. */
+const LINK_CHUNK_SIZE = 1000;
+
 /**
- * Upserts every brand seen in a batch and returns normalised name -> maker id.
- * Existing makers are matched fuzzily first, so "Queen Majesty" and "Queen
- * Majesty Hot Sauce" do not become two brands.
+ * Resolves every canonical brand in the run to a `makers` row, inserting the
+ * ones that are new. Legacy rows that canonicalise the same — "Dawson's" and
+ * "Dawson's Hot Sauce" both exist from earlier runs — collapse onto whichever
+ * sorts first, and the loser is left for the orphan sweep once its sauces move.
  *
- * @param {import('./index.d').Sauce[]} data
- * @returns {Promise<Map<string, string>>}
+ * @param {Map<string, string>} registry
+ * @returns {Promise<Map<string, string>>} canonical key -> maker id
  */
-async function upsertMakers(data) {
+async function resolveMakers(registry) {
 	const existing = await db.select({ id: makers.makerId, name: makers.name }).from(makers);
 
 	/** @type {Map<string, string>} */
-	const byName = new Map();
-	for (const row of existing) byName.set(normalizeName(row.name), row.id);
+	const ids = new Map();
 
-	/** @type {string[]} */
-	const fresh = [];
-	for (const sauce of data) {
-		const name = String(sauce.maker ?? '').trim();
-		if (!name) continue;
-		const key = normalizeName(name);
-		if (byName.has(key)) continue;
-
-		const match = existing.find((row) => isSimilarName(row.name, name));
-		if (match) {
-			byName.set(key, match.id);
-			continue;
+	/** @param {{ id: string, name: string }[]} rows */
+	const remember = (rows) => {
+		for (const row of rows) {
+			const key = canonicalMakerName(row.name);
+			if (key && !ids.has(key)) ids.set(key, row.id);
 		}
-		if (!fresh.some((candidate) => isSimilarName(candidate, name))) fresh.push(name);
-	}
+	};
 
+	remember([...existing].sort((a, b) => a.name.localeCompare(b.name)));
+
+	const fresh = [...registry.entries()].filter(([key]) => !ids.has(key));
 	if (fresh.length > 0) {
+		const taken = new Set(existing.map((row) => slugifyName(row.name)));
 		const inserted = await db
 			.insert(makers)
-			.values(fresh.map((name) => ({ name, slug: slugifyName(name) })))
+			.values(
+				fresh.map(([, display]) => ({ name: display, slug: uniqueSlug(display, null, taken) }))
+			)
 			.onConflictDoNothing()
 			.returning({ id: makers.makerId, name: makers.name });
-		for (const row of inserted) byName.set(normalizeName(row.name), row.id);
+
+		remember(inserted);
 	}
 
-	// Anything dropped by onConflictDoNothing, plus the fuzzy aliases.
-	const all = await db.select({ id: makers.makerId, name: makers.name }).from(makers);
-	for (const sauce of data) {
-		const name = String(sauce.maker ?? '').trim();
-		if (!name) continue;
-		const key = normalizeName(name);
-		if (byName.has(key)) continue;
-		const match = all.find((row) => isSimilarName(row.name, name));
-		if (match) byName.set(key, match.id);
-	}
-
-	return byName;
+	return ids;
 }
 
 /**
- * Finds a known brand at the head of a title, followed by a separator:
- * "Da Bomb – Beyond Insanity". Only a brand already in the table counts, so
- * "DOOMSDAY – 1.6 Million Scoville" keeps its name.
+ * Loads the sauces already stored, keyed the same way this run keys its rows so
+ * a re-run updates rather than duplicates.
  *
- * Requiring the separator is deliberate. Matching any leading words against the
- * maker table also matches junk brands — "Sauce Seed Ranch" is one — and the
- * wrong brand then blocks correct merges through the maker guard. Measured: it
- * fixed one duplicate and split 122 other sauces.
+ * A stored sauce with no maker cannot be keyed globally — that is exactly the
+ * evidence it lacks — so it is keyed to each store that links it, matching how
+ * `sauceDedupKey` scopes a maker-less listing.
  *
- * @param {string} name
- * @param {Map<string, string>} makerIds normalised brand -> maker id
- * @returns {{ maker: string, rest: string } | null}
+ * @param {Map<string, string>} storeKeysById store id -> config key
+ * @returns {Promise<{ byKey: Map<string, import('./index.d').StoredSauce>, slugs: Set<string> }>}
  */
-function knownMakerPrefix(name, makerIds) {
-	const match = String(name).match(/^(.{2,40}?)\s*[-–—:|]\s*(.+)$/u);
-	if (!match) return null;
-
-	const [, head, rest] = match;
-	if (!makerIds.has(normalizeName(head))) return null;
-	if (!/[a-z0-9]/i.test(foldAccents(rest))) return null;
-
-	return { maker: head.trim(), rest: rest.trim() };
-}
-
-/**
- * @param {import('./index.d').SauceScraper} scraper
- * @param {import('./index.d').Sauce[]} data
- */
-async function insertStoreData(scraper, data) {
-	// upsert store data
-	console.info('Upserting store data');
-	const store = await db
-		.insert(stores)
-		.values({
-			name: scraper.name,
-			url: scraper.url
-		})
-		.onConflictDoUpdate({
-			target: stores.name,
-			set: {
-				url: scraper.url
-			}
-		})
-		.returning();
-
-	// Brands arrive spelled differently per shop, so match them the same fuzzy way
-	// sauces are matched rather than trusting the string.
-	console.info('Upserting makers');
-	const makerIds = await upsertMakers(data);
-
-	console.info('Inserting hot sauce data');
-	const existingSauceNames = await db
+async function loadStoredSauces(storeKeysById) {
+	const stored = await db
 		.select({
 			id: hotSauces.sauceId,
 			name: hotSauces.name,
+			slug: hotSauces.slug,
 			description: hotSauces.description,
 			imageUrl: hotSauces.imageUrl,
 			makerId: hotSauces.makerId,
@@ -133,131 +101,193 @@ async function insertStoreData(scraper, data) {
 		.from(hotSauces)
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId));
 
-	const { newSauces, existingSauces } = data.reduce(
-		(acc, sauce) => {
-			let newMaker = String(sauce.maker ?? '').trim();
-
-			// Shops that publish no brand often lead the title with one:
-			// "Da Bomb – Beyond Insanity". Only strip a prefix that matches a brand
-			// we already know, so "DOOMSDAY – 1.6 Million Scoville" keeps its name.
-			if (!newMaker) {
-				const prefix = knownMakerPrefix(sauce.name, makerIds);
-				if (prefix) {
-					newMaker = prefix.maker;
-					sauce.name = prefix.rest;
-					sauce.slug = slugifyName(prefix.rest);
-				}
-			}
-
-			const normalizedNewName = normalizeName(sauce.name);
-
-			const existing = existingSauceNames.find((existing) => {
-				if (!isSimilarName(normalizeName(existing.name), normalizedNewName)) return false;
-
-				// Stripping the brand shortens names, which makes them collide: "Hot Zeg
-				// - Krush" and "Nondedju Pineapple Krush" both reduce to roughly "Krush".
-				// Two known, different brands is positive evidence of two sauces. Only a
-				// guard — matching on the maker instead of the name deduplicates worse,
-				// because the brand strings themselves vary.
-				if (newMaker && existing.makerName && !isSimilarName(existing.makerName, newMaker)) {
-					return false;
-				}
-				return true;
-			});
-
-			sauce.makerId = makerIds.get(normalizeName(newMaker)) ?? null;
-			delete sauce.maker;
-
-			if (existing) {
-				sauce.sauceId = existing.id;
-				acc.existingSauces.push(sauce);
-			} else {
-				acc.newSauces.push(sauce);
-			}
-			return acc;
-		},
-		/** @type {{ newSauces: import('./index.d').Sauce[], existingSauces: (import('./index.d').Sauce)[] }} */
-		({ newSauces: [], existingSauces: [] })
-	);
-
-	console.info('Matched', existingSauces.length, 'existing,', newSauces.length, 'new');
-
-	let writeFailures = 0;
-
-	// A shop that publishes in its own language may fill an empty description, but
-	// must not overwrite an English one — Maison Piquante and Sweet Pepper were
-	// replacing English copy with French on sauces five other shops also stock.
-	const writesEnglish = (scraper.language ?? 'en') === 'en';
-
-	// update existing sauces
-	for (const sauce of existingSauces) {
-		if (!sauce.sauceId) continue;
-
-		const existing = existingSauceNames.find((row) => row.id === sauce.sauceId);
-		const keepDescription = !writesEnglish && Boolean(existing?.description);
-
-		/** Name and slug are identity: rewriting them from another shop's spelling
-		 * collides with the unique indexes, and the slug is already a live URL. */
-		// Fill a missing brand, never replace a known one: the next shop to stock
-		// this sauce would otherwise reattribute it. T-Rex's own Pineapple Sunshine
-		// Sriracha ended up credited to Melinda's that way.
-		const changes = {
-			description: keepDescription ? existing?.description : sauce.description,
-			...(sauce.imageUrl && !existing?.imageUrl ? { imageUrl: sauce.imageUrl } : {}),
-			...(sauce.makerId && !existing?.makerId ? { makerId: sauce.makerId } : {})
-		};
-
-		try {
-			await db.update(hotSauces).set(changes).where(eq(hotSauces.sauceId, sauce.sauceId));
-		} catch (error) {
-			writeFailures++;
-			console.error('Error updating sauce', sauce.name, error);
+	/** @type {Map<string, string[]>} sauce id -> store ids */
+	const links = new Map();
+	if (storeKeysById.size > 0) {
+		const rows = await db
+			.select({ sauceId: storeHotSauces.sauceId, storeId: storeHotSauces.storeId })
+			.from(storeHotSauces)
+			.where(inArray(storeHotSauces.storeId, [...storeKeysById.keys()]));
+		for (const row of rows) {
+			if (!links.has(row.sauceId)) links.set(row.sauceId, []);
+			links.get(row.sauceId).push(row.storeId);
 		}
 	}
 
-	// insert new sauces
-	if (newSauces.length > 0) {
-		const sauces = await db
-			.insert(hotSauces)
-			.values(newSauces)
-			.onConflictDoNothing()
-			.returning({ id: hotSauces.sauceId, name: hotSauces.name });
+	/** @type {Map<string, import('./index.d').StoredSauce>} */
+	const byKey = new Map();
 
-		// Carry the id back onto the scraped object rather than matching by name
-		// again below: a second fuzzy pass re-merges what the dedup guard split,
-		// which silently linked the store to the wrong sauce.
-		for (const row of sauces) {
-			const match = newSauces.find((candidate) => candidate.name === row.name);
-			if (match) match.sauceId = row.id;
-		}
-		existingSauceNames.push(...sauces);
-	}
-
-	console.info('Inserting store hot sauce data');
-	for (const sauce of data) {
-		// onConflictDoNothing drops a row whose name or slug is already taken; fall
-		// back to the name so the store still links to something sensible.
-		const sauceId =
-			sauce.sauceId ?? existingSauceNames.find((s) => isSimilarName(s.name, sauce.name))?.id;
-
-		if (!sauceId) {
-			writeFailures++;
-			console.error('Sauce not found', sauce.name);
+	for (const row of stored) {
+		if (row.makerName) {
+			byKey.set(sauceDedupKey(row.name, row.makerName), row);
 			continue;
 		}
+		for (const storeId of links.get(row.id) ?? []) {
+			const storeKey = storeKeysById.get(storeId);
+			if (storeKey) byKey.set(sauceDedupKey(row.name, null, storeKey), row);
+		}
+	}
 
+	// `slug` is already loaded here, so the caller has no reason to scan the table
+	// a second time just to learn which slugs are taken.
+	return { byKey, slugs: new Set(stored.map((row) => row.slug)) };
+}
+
+/**
+ * Phase 5. Writes the whole run: stores, makers, one row per distinct sauce, and
+ * a link from every listing back to the shop selling it.
+ *
+ * @param {import('./index.d').StoreRun[]} runs
+ * @returns {Promise<number>} listings that could not be written
+ */
+async function writeCatalogue(runs) {
+	const rows = runs.flatMap((run) => run.rows);
+
+	console.info('Building maker registry');
+	const registry = buildMakerRegistry(rows);
+	const recovered = applyRegistry(rows, registry);
+	console.info(
+		'Found',
+		registry.size,
+		'makers,',
+		recovered,
+		'recovered from titles;',
+		rows.filter((row) => row.sauce.maker).length,
+		'of',
+		rows.length,
+		'listings have one'
+	);
+
+	console.info('Upserting stores');
+	/** @type {Map<string, string>} config key -> store id */
+	const storeIds = new Map();
+	for (const run of runs) {
+		const [store] = await db
+			.insert(stores)
+			.values({ name: run.scraper.name, url: run.scraper.url })
+			.onConflictDoUpdate({ target: stores.name, set: { url: run.scraper.url } })
+			.returning();
+		storeIds.set(run.storeKey, store.storeId);
+	}
+
+	const storeKeysById = new Map([...storeIds].map(([key, id]) => [id, key]));
+
+	console.info('Upserting makers');
+	const makerIds = await resolveMakers(registry);
+
+	const groups = groupByIdentity(rows, buildAliasMap(sauceAliases));
+	const { byKey: stored, slugs: takenSlugs } = await loadStoredSauces(storeKeysById);
+	console.info(
+		'Resolved',
+		rows.length,
+		'listings to',
+		groups.size,
+		'sauces;',
+		[...groups.values()].filter((group) => group.rows.length > 1).length,
+		'are stocked more than once'
+	);
+
+	/** @type {Map<string, string>} dedup key -> sauce id */
+	const sauceIds = new Map();
+	let writeFailures = 0;
+
+	console.info('Updating sauces already stored');
+	for (const [key, group] of groups) {
+		const existing = stored.get(key);
+		if (!existing) continue;
+
+		sauceIds.set(key, existing.id);
+
+		const description = bestDescription(group.rows);
+		const keepDescription = Boolean(existing.description) && !description.english;
+		const makerId = makerIds.get(group.makerKey) ?? null;
+		const imageUrl = group.rows.find((row) => row.sauce.imageUrl)?.sauce.imageUrl;
+
+		/** Name and slug are identity: the slug is already a live URL, and another
+		 * shop's spelling of the name is not a reason to move it. */
+		const changes = {
+			...(description.text && !keepDescription ? { description: description.text } : {}),
+			...(imageUrl && !existing.imageUrl ? { imageUrl } : {}),
+			// Fill a missing brand, and repoint a legacy duplicate of the same brand
+			// at the canonical row — but never reattribute to a different brand.
+			...(makerId && makerId !== existing.makerId ? { makerId } : {})
+		};
+
+		if (Object.keys(changes).length === 0) continue;
+
+		try {
+			await db.update(hotSauces).set(changes).where(eq(hotSauces.sauceId, existing.id));
+		} catch (error) {
+			writeFailures++;
+			console.error('Error updating sauce', existing.name, error);
+		}
+	}
+
+	const fresh = [...groups.entries()].filter(([key]) => !stored.has(key));
+
+	if (fresh.length > 0) {
+		console.info('Inserting', fresh.length, 'new sauces');
+
+		const values = fresh.map(([key, group]) => {
+			const name = displayName(group.rows);
+			const maker = registry.get(group.makerKey) ?? null;
+			const description = bestDescription(group.rows);
+			return {
+				key,
+				name,
+				slug: uniqueSlug(name, maker, takenSlugs),
+				description: description.text,
+				imageUrl: group.rows.find((row) => row.sauce.imageUrl)?.sauce.imageUrl ?? null,
+				makerId: makerIds.get(group.makerKey) ?? null
+			};
+		});
+
+		const inserted = await db
+			.insert(hotSauces)
+			.values(values.map(({ key, ...columns }) => columns))
+			.onConflictDoNothing()
+			.returning({ id: hotSauces.sauceId, slug: hotSauces.slug });
+
+		// Match on the slug, not the name: a name is only unique per maker now, and
+		// the slug is the value this run generated.
+		const idsBySlug = new Map(inserted.map((row) => [row.slug, row.id]));
+		for (const value of values) {
+			const id = idsBySlug.get(value.slug);
+			if (id) sauceIds.set(value.key, id);
+			else {
+				writeFailures++;
+				console.error('Sauce dropped on insert:', value.name, `(${value.slug})`);
+			}
+		}
+	}
+
+	console.info('Linking sauces to stores');
+
+	// Keyed by the pair rather than pushed straight into an array: a shop can list
+	// one sauce under two URLs, and Postgres rejects a row touched twice by the
+	// same ON CONFLICT. Last URL wins, as the per-row upsert did.
+	/** @type {Map<string, { sauceId: string, storeId: string, url: string }>} */
+	const links = new Map();
+	for (const [key, group] of groups) {
+		const sauceId = sauceIds.get(key);
+		if (!sauceId) continue;
+
+		for (const row of group.rows) {
+			const storeId = storeIds.get(row.storeKey);
+			links.set(`${sauceId}:${storeId}`, { sauceId, storeId, url: row.sauce.url });
+		}
+	}
+
+	// One round trip per chunk, not per listing: a full run links ~3700 of them,
+	// and a serialised insert apiece is minutes of latency against a hosted server.
+	const batch = [...links.values()];
+	for (let start = 0; start < batch.length; start += LINK_CHUNK_SIZE) {
 		await db
 			.insert(storeHotSauces)
-			.values({
-				sauceId,
-				storeId: store[0].storeId,
-				url: sauce.url
-			})
+			.values(batch.slice(start, start + LINK_CHUNK_SIZE))
 			.onConflictDoUpdate({
 				target: [storeHotSauces.sauceId, storeHotSauces.storeId],
-				set: {
-					url: sauce.url
-				}
+				set: { url: sql`excluded.url` }
 			});
 	}
 
@@ -265,10 +295,12 @@ async function insertStoreData(scraper, data) {
 }
 
 /**
+ * @param {string} storeKey
  * @param {import('./index.d').SauceScraper} scraper
  * @param {import('./index.d').ScrapeSauceOptions} options
+ * @returns {Promise<import('./index.d').StoreRun>}
  */
-async function scrapeStore(scraper, options) {
+async function scrapeStore(storeKey, scraper, options) {
 	console.info(`Running scraper - ${scraper.name} - ${scraper.url}`);
 	let urls = await scraper.getSauceUrls(scraper.url, options);
 
@@ -277,29 +309,24 @@ async function scrapeStore(scraper, options) {
 		urls = urls.sort(() => Math.random() - 0.5).slice(0, 12);
 	}
 
-	/** @type {import('./index.d').Sauce[]} */
-	const data = [];
+	const english = (scraper.language ?? 'en') === 'en';
+
+	/** @type {import('./index.d').ScrapedRow[]} */
+	const rows = [];
 	for (const url of urls) {
 		const sauce = await scraper.scrapeSauce(url, options);
-		if (sauce) data.push(sauce);
+		if (sauce) rows.push({ storeKey, english, sauce });
 	}
 
-	console.info('Found', data.length, 'sauces');
+	console.info('Found', rows.length, 'sauces');
 
 	// A live store never legitimately returns nothing; heatsupply and heatonist
 	// sat broken for weeks behind a green pipeline because this was not checked.
-	if (data.length === 0) {
+	if (rows.length === 0) {
 		throw new Error('returned 0 sauces');
 	}
 
-	if (options.dbInsert) {
-		const writeFailures = await insertStoreData(scraper, data);
-		if (writeFailures > 0) {
-			throw new Error(`${writeFailures} of ${data.length} sauces failed to save`);
-		}
-	}
-
-	return data;
+	return { storeKey, scraper, rows };
 }
 
 async function main() {
@@ -319,7 +346,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const selected = key === 'all' ? Object.keys(scrapers) : [key];
+	const selected = key === 'all' ? enabledKeys : [key];
 
 	/** @type {import('./index.d').ScrapeSauceOptions} */
 	const options = {
@@ -328,14 +355,17 @@ async function main() {
 		dev: flags.dev
 	};
 
-	/** @type {import('./index.d').Sauce[]} */
-	const data = [];
+	// Phase 1. Every store is scraped before anything is resolved: a brand only
+	// one shop publishes is what identifies the same sauce in a shop that
+	// publishes none, so the registry cannot be built store by store.
+	/** @type {import('./index.d').StoreRun[]} */
+	const runs = [];
 	/** @type {string[]} */
 	const failed = [];
 
 	for (const name of selected) {
 		try {
-			data.push(...(await scrapeStore(scrapers[name], options)));
+			runs.push(await scrapeStore(name, scrapers[name], options));
 		} catch (error) {
 			// Run the rest regardless, so one broken store does not hide the others.
 			console.error(`Scraper ${name} failed:`, /** @type {Error} */ (error).message);
@@ -343,30 +373,46 @@ async function main() {
 		}
 	}
 
-	// Dedup can leave a brand behind when all its sauces merge into rows credited
-	// to someone else. An empty brand page is worse than no page.
-	if (options.dbInsert && selected.length > 1) {
-		const orphaned = await db
-			.delete(makers)
-			.where(
-				notExists(
-					db
-						.select({ n: sql`1` })
-						.from(hotSauces)
-						.where(eq(hotSauces.makerId, makers.makerId))
+	if (options.dbInsert && runs.length > 0) {
+		const writeFailures = await writeCatalogue(runs);
+
+		// Dedup can leave a brand behind when all its sauces merge into rows credited
+		// to someone else. An empty brand page is worse than no page.
+		if (selected.length > 1) {
+			const orphaned = await db
+				.delete(makers)
+				.where(
+					notExists(
+						db
+							.select({ n: sql`1` })
+							.from(hotSauces)
+							.where(eq(hotSauces.makerId, makers.makerId))
+					)
 				)
-			)
-			.returning({ id: makers.makerId });
-		if (orphaned.length > 0) console.info('Removed', orphaned.length, 'makers with no sauces');
+				.returning({ id: makers.makerId });
+			if (orphaned.length > 0) console.info('Removed', orphaned.length, 'makers with no sauces');
+		}
+
+		if (writeFailures > 0) {
+			console.error(writeFailures, 'listings failed to save');
+			failed.push('write');
+		}
 	}
 
 	console.info('Writing to data.json');
-	fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
+	fs.writeFileSync(
+		'./data.json',
+		JSON.stringify(
+			runs.flatMap((run) => run.rows.map((row) => row.sauce)),
+			null,
+			2
+		)
+	);
 
 	console.info('done in', Math.round(performance.now() - startTime), 'ms');
 
 	if (failed.length > 0) {
-		console.error('Failed scrapers:', failed.join(', '));
+		console.error('Failed:', failed.join(', '));
 		process.exit(1);
 	}
 

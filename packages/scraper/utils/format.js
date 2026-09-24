@@ -1,5 +1,3 @@
-import fuzzysort from 'fuzzysort';
-
 /**
  * @param {number} num
  */
@@ -83,9 +81,52 @@ export function cleanProductName(name) {
 	return tidied || String(name ?? '').trim();
 }
 
-/** Trade words a shop appends to its own name but leaves off its product titles. */
-const TRADE_SUFFIX =
-	/\s+(hot\s+sauces?|sauces?|sauce\s+co\.?|co\.?|company|ltd\.?|inc\.?|llc|foods?|brand)\s*$/i;
+/**
+ * Words that carry no brand identity, as one vocabulary.
+ *
+ * The same list is needed in three shapes — anchored to a raw title, anchored to
+ * a normalised key, and unanchored anywhere in a key — and three hand-written
+ * regexes drifted: the raw-text one was missing `limited`, `gmbh`, `bv` and the
+ * plural `brands`, so those brands split in two. Building all three from one
+ * source means they cannot disagree again.
+ */
+const NOISE_WORDS = {
+	/** Legal and trading forms a shop appends to a brand. */
+	corporate: [
+		'co',
+		'company',
+		'ltd',
+		'limited',
+		'inc',
+		'incorporated',
+		'llc',
+		'gmbh',
+		'bv',
+		'foods?',
+		'brands?'
+	],
+	/** The product type itself: "Original Hot Sauce" names no maker. */
+	type: ['hot\\s+sauces?', 'sauces?']
+};
+
+/** @param {string[]} words */
+const alternation = (words) => `(${words.join('|')})`;
+
+/** Anchored to the end of a name already put through `normalizeName`. */
+const suffixOf = (words) => new RegExp(`\\s+${alternation(words)}$`);
+
+/** Anywhere in a name already put through `normalizeName`. */
+const anywhereIn = (words) => new RegExp(`\\b${alternation(words)}\\b`, 'g');
+
+/** Anchored to the end of a raw title, which still has case and punctuation. */
+const rawSuffixOf = (words) => new RegExp(`\\s+${alternation(words)}\\.?\\s*$`, 'i');
+
+/**
+ * Trade words a shop appends to its own name but leaves off its product titles.
+ * `sauce co` is listed ahead of the parts so "High Desert Sauce Co" loses both
+ * in the single pass this is used for.
+ */
+const TRADE_SUFFIX = rawSuffixOf(['sauce\\s+co', ...NOISE_WORDS.type, ...NOISE_WORDS.corporate]);
 
 /** @param {string} value */
 function escapeRegExp(value) {
@@ -176,15 +217,117 @@ export function slugifyName(name) {
 }
 
 /**
- * @param {string} existingName
- * @param {string} newName
- * @param {number} threshold - Similarity score threshold [1, 0]: 1 is a perfect match. 0.5 is a good match. 0 is no match.
+ * "Heartbeat Hot Sauce Co." and "Heartbeat" are one maker.
  */
-export function isSimilarName(existingName, newName, threshold = 0.6) {
-	const name1 = normalizeName(existingName);
-	const name2 = normalizeName(newName);
-	const result1 = fuzzysort.single(name1, name2);
-	const result2 = fuzzysort.single(name2, name1);
-	const bestScore = Math.max(result1?.score ?? -Infinity, result2?.score ?? -Infinity);
-	return bestScore > threshold;
+const CORP_SUFFIX = suffixOf(NOISE_WORDS.corporate);
+
+/**
+ * Deliberately not "chilli sauce" — the chilli is often part of the name, and
+ * matching the pair reduced "Mic's Chilli Sauce" to "mic" while "Mic's Chilli"
+ * stayed whole, splitting the brand in two.
+ */
+const TYPE_SUFFIX = suffixOf(NOISE_WORDS.type);
+
+/** `normalizeName` turns "Marie Sharp's" into "marie sharp s". */
+const POSSESSIVE_SUFFIX = /\s+s$/;
+
+/**
+ * Strips the given suffixes until none match, so "Heartbeat Hot Sauce Co" loses
+ * both "co" and "hot sauce" — one pass alone leaves "heartbeat hot", because
+ * the corporate suffix eats the "sauce" the type suffix needed.
+ *
+ * @param {string} value a normalised name
+ * @param {RegExp[]} patterns
+ */
+function trimSuffixes(value, patterns) {
+	let current = value;
+	let previous;
+	do {
+		previous = current;
+		for (const pattern of patterns) {
+			const next = current.replace(pattern, '').trim();
+			// Never trim a name to nothing: "Sauce Shop" and "K-Sauce" are brands,
+			// not suffixes, and an empty key would merge every one of them.
+			if (next.length >= 2) current = next;
+		}
+	} while (current !== previous);
+	return current;
+}
+
+/**
+ * The identity of a brand, with the spellings shops vary folded onto one key:
+ * "Torchbearer Sauces", "TorchBearer" and "Torchbearer" all canonicalise the
+ * same, as do "Marie Sharp" and "Marie Sharp's".
+ *
+ * @param {string | null | undefined} maker
+ */
+export function canonicalMakerName(maker) {
+	return trimSuffixes(normalizeName(String(maker ?? '')), [
+		CORP_SUFFIX,
+		TYPE_SUFFIX,
+		POSSESSIVE_SUFFIX
+	]);
+}
+
+/**
+ * The product type wherever a shop puts it, not only at the end: "Hot Sauce
+ * Original" and "Sauce Red Habanero" lead with it, and "Steve-O's Hot Sauce
+ * Butthole Destroyer" buries it in the middle.
+ */
+const TYPE_WORDS = anywhereIn(NOISE_WORDS.type);
+
+/**
+ * Punctuation that joins a word rather than separating one, in every quote mark
+ * a shop might type. Dropped outright, so "Zuzu's" keys as "zuzus" and can meet
+ * a shop that writes "Zuzus" — turning it into a space leaves a stray "s" token
+ * that matches neither.
+ */
+const WORD_JOINERS = /['’‘`ʼ]/g;
+
+/**
+ * The identity of a sauce: the name with its brand and its product type removed,
+ * so "Beyond Insanity", "Beyond Insanity Hot Sauce" and "Da Bomb – Beyond
+ * Insanity" are one sauce.
+ *
+ * Order matters at every step:
+ *
+ * 1. fold accents, before the brand is stripped, so an accented spelling of the
+ *    brand still matches — `stripMakerFromName` otherwise needs its own fallback,
+ *    which only works when folding preserves length;
+ * 2. remove the brand, which is why this needs the maker at all;
+ * 3. lower case, and drop the apostrophes that join a word;
+ * 4. remove the product type anywhere it appears;
+ * 5. every other punctuation mark becomes a space, never nothing: deleting the
+ *    hyphen in "Fire-Roasted" splits it from "Fire Roasted", one sauce;
+ * 6. collapse runs of space and trim.
+ *
+ * The corporate and possessive suffixes are deliberately left alone — a sauce
+ * may legitimately be called "Zuzu's" or "Soul Food".
+ *
+ * @param {string} name
+ * @param {string | null | undefined} maker
+ */
+export function canonicalSauceName(name, maker) {
+	const folded = foldAccents(String(name ?? ''));
+	const withoutMaker = stripMakerFromName(folded, foldAccents(String(maker ?? '')));
+	const withoutType = withoutMaker.toLowerCase().replace(WORD_JOINERS, '').replace(TYPE_WORDS, ' ');
+	// A sauce called nothing but its type keeps its name rather than becoming "",
+	// which would merge every such listing a maker sells.
+	return normalizeName(withoutType) || normalizeName(withoutMaker);
+}
+
+/**
+ * The key two listings must share to be the same sauce. Equality, not a score:
+ * fuzzy matching a name against every other name merged "Habanero" with 88
+ * unrelated products, because fuzzysort ranks subsequences for a search box.
+ *
+ * A listing whose shop names no brand is keyed to its store, so it stays its own
+ * sauce rather than merging into whichever name it happens to resemble.
+ *
+ * @param {string} name
+ * @param {string | null | undefined} maker
+ * @param {string} [storeKey] used in place of an unknown maker
+ */
+export function sauceDedupKey(name, maker, storeKey = '') {
+	return `${canonicalMakerName(maker) || `?${storeKey}`} :: ${canonicalSauceName(name, maker)}`;
 }
