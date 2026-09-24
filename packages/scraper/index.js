@@ -368,7 +368,9 @@ async function main() {
 			runs.push(await scrapeStore(name, scrapers[name], options));
 		} catch (error) {
 			// Run the rest regardless, so one broken store does not hide the others.
-			console.error(`Scraper ${name} failed:`, /** @type {Error} */ (error).message);
+			const { message, cause } = /** @type {Error} */ (error);
+			// Node's `fetch failed` hides the network error (reset, timeout, TLS) in `cause`.
+			console.error(`Scraper ${name} failed:`, message, cause ?? '');
 			failed.push(name);
 		}
 	}
