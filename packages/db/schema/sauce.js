@@ -6,6 +6,7 @@ import {
 	timestamp,
 	varchar,
 	primaryKey,
+	unique,
 	boolean,
 	pgEnum,
 	uuid,
@@ -43,7 +44,7 @@ export const hotSauces = pgTable(
 	'hot_sauces',
 	{
 		sauceId: uuid('id').primaryKey().defaultRandom(),
-		name: text('name').notNull().unique(),
+		name: text('name').notNull(),
 		slug: text('slug').notNull().unique(),
 		description: text('description').default(''),
 		imageUrl: text('image_url'),
@@ -60,6 +61,11 @@ export const hotSauces = pgTable(
 			.$onUpdate(() => new Date())
 	},
 	(table) => [
+		// Two makers legitimately ship a sauce of the same name — "Garlic Habanero"
+		// is both The Pepper Ninja's and Torchbearer's. A global unique on the name
+		// made the second one vanish into onConflictDoNothing. The slug stays
+		// globally unique because it is the public URL.
+		unique('hot_sauces_maker_name_unique').on(table.makerId, table.name),
 		index('slug_idx').on(table.slug),
 		index('hot_sauces_name_trgm_idx').using(
 			'gin',

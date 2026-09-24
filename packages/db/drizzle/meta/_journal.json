@@ -50,6 +50,13 @@
       "when": 1790007924525,
       "tag": "0006_maker_slug",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790190597291,
+      "tag": "0007_married_eternity",
+      "breakpoints": true
     }
   ]
 }
