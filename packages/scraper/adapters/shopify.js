@@ -1,5 +1,6 @@
 import {
 	decodeEntities,
+	isExcludedCategory,
 	shouldSkipProduct,
 	slugifyName,
 	stripHtml,
@@ -55,6 +56,7 @@ export function createShopifyScraper(config) {
 		collection,
 		exclude = [],
 		excludeVendors = [],
+		excludeCategories = [],
 		houseBrand,
 		renameMakers = {},
 		stripFromName,
@@ -87,7 +89,10 @@ export function createShopifyScraper(config) {
 			// Bundle filtering reads the original title — the suffix can carry the
 			// word that marks it as merch.
 			const rawTitle = decodeEntities(String(product.title ?? '')).trim();
-			if (!product.handle || shouldSkipProduct(rawTitle, exclude)) return null;
+			const description = stripHtml(product.body_html);
+			if (!product.handle || shouldSkipProduct(rawTitle, exclude, description)) return null;
+			if (isExcludedCategory([String(product.product_type ?? '')], rawTitle, excludeCategories))
+				return null;
 
 			const title = cleanTitle(rawTitle, stripFromName);
 			if (!title) return null;
@@ -104,7 +109,7 @@ export function createShopifyScraper(config) {
 			return {
 				name: sauceName,
 				slug: slugifyName(sauceName),
-				description: stripHtml(product.body_html),
+				description,
 				url: `${trimTrailingSlash(storeUrl)}/products/${product.handle}`,
 				imageUrl: product.images?.[0]?.src ?? null,
 				maker: vendor

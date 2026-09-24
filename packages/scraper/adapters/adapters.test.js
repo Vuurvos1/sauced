@@ -160,13 +160,13 @@ describe('createWooScraper', () => {
 			images: []
 		},
 		{
-			name: 'Chutney',
-			slug: 'chutney',
+			name: 'Scotch Bonnet Sauce',
+			slug: 'scotch-bonnet-sauce',
 			parent: 0,
-			permalink: 'https://woo.test/product/chutney/',
-			short_description: '<p>Jam</p>',
+			permalink: 'https://woo.test/product/scotch-bonnet-sauce/',
+			short_description: '<p>Fiery</p>',
 			images: [],
-			categories: [{ slug: 'jam' }]
+			categories: [{ slug: 'hot-sauce' }]
 		}
 	]);
 
@@ -207,7 +207,7 @@ describe('createWooScraper', () => {
 		const scraper = createWooScraper({ key: WOO_KEY, name: 'Woo Shop', url });
 		const sauces = await scrapeAll(scraper);
 
-		expect(sauces.find((s) => s.name === 'Chutney')?.maker).toBeNull();
+		expect(sauces.find((s) => s.name === 'Scotch Bonnet Sauce')?.maker).toBeNull();
 	});
 
 	it('uses houseBrand when the shop makes its own sauce', async () => {
@@ -219,6 +219,6 @@ describe('createWooScraper', () => {
 		});
 		const sauces = await scrapeAll(scraper);
 
-		expect(sauces.find((s) => s.name === 'Chutney')?.maker).toBe('Woo Shop');
+		expect(sauces.find((s) => s.name === 'Scotch Bonnet Sauce')?.maker).toBe('Woo Shop');
 	});
 });

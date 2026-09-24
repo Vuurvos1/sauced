@@ -1,5 +1,6 @@
 import {
 	decodeEntities,
+	isExcludedCategory,
 	shouldSkipProduct,
 	slugifyName,
 	stripHtml,
@@ -9,6 +10,12 @@ import { cleanTitle, createCatalogueScraper } from './catalogue.js';
 
 /** wc/store/v1 rejects per_page above 100. */
 const PAGE_SIZE = 100;
+
+/**
+ * Product types the Store API reports that are never a single bottle. This is
+ * the shop stating it outright, so it needs no name heuristic behind it.
+ */
+const BUNDLED_TYPES = new Set(['bundle', 'grouped', 'subscription', 'gift-card']);
 
 /** Shops name their brand taxonomy in their own language. */
 const BRAND_TAXONOMY = /\b(merk|brand|marque|marke|marca)\b/i;
@@ -51,6 +58,7 @@ export function createWooScraper(config) {
 		description,
 		exclude = [],
 		includeCategories = [],
+		excludeCategories = [],
 		brandTaxonomy,
 		lang,
 		houseBrand,
@@ -86,8 +94,16 @@ export function createWooScraper(config) {
 			// collapse into duplicate sauces.
 			if (product.parent) return null;
 
+			// A bundle the shop has declared as one — no title ever says so.
+			if (BUNDLED_TYPES.has(String(product.type))) return null;
+			if (Array.isArray(product.grouped_products) && product.grouped_products.length > 0) {
+				return null;
+			}
+
 			const rawTitle = decodeEntities(String(product.name ?? '')).trim();
-			if (!product.permalink || shouldSkipProduct(rawTitle, exclude)) return null;
+			// short_description is the product blurb; description is the full page copy.
+			const description = stripHtml(product.short_description || product.description);
+			if (!product.permalink || shouldSkipProduct(rawTitle, exclude, description)) return null;
 
 			const title = cleanTitle(rawTitle, stripFromName);
 			if (!title) return null;
@@ -100,6 +116,11 @@ export function createWooScraper(config) {
 				if (!inWanted) return null;
 			}
 
+			const categoryLabels = (Array.isArray(product.categories) ? product.categories : []).flatMap(
+				(category) => [String(category?.slug ?? ''), decodeEntities(String(category?.name ?? ''))]
+			);
+			if (isExcludedCategory(categoryLabels, rawTitle, excludeCategories)) return null;
+
 			const rawMaker = extractMaker(product, brandTaxonomy, houseBrand);
 			const maker = rawMaker ? (renameMakers[rawMaker] ?? rawMaker) : null;
 			const sauceName = stripMakerFromName(title, maker);
@@ -107,8 +128,7 @@ export function createWooScraper(config) {
 			return {
 				name: sauceName,
 				slug: slugifyName(sauceName),
-				// short_description is the product blurb; description is the full page copy.
-				description: stripHtml(product.short_description || product.description),
+				description,
 				url: product.permalink,
 				imageUrl: product.images?.[0]?.src ?? null,
 				maker
