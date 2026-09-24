@@ -45,7 +45,7 @@
 <section>
 	<div class="container">
 		{#if sauces.length > 0}
-			<SauceGrid {sauces} section="maker"></SauceGrid>
+			<SauceGrid {sauces} section="maker" showMaker={false}></SauceGrid>
 		{:else}
 			<p class="text-gray-500">No sauces from this maker yet.</p>
 		{/if}

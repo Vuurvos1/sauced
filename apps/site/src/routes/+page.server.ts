@@ -2,26 +2,29 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { checkins, hotSauces } from '@app/db/schema';
+import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
+	const hotSauceColumns = getTableColumns(hotSauces);
 	const recentSauces = await db
-		.select()
+		.select({ ...hotSauceColumns, makerName: makers.name })
 		.from(hotSauces)
+		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
 		.orderBy(desc(hotSauces.createdAt))
 		.limit(12);
 
-	const hotSauceColumns = getTableColumns(hotSauces);
 	const topSauces = await db
 		.select({
 			...hotSauceColumns,
+			makerName: makers.name,
 			avgRating: avg(checkins.rating).mapWith(Number),
 			ratingCount: count(checkins.rating)
 		})
 		.from(hotSauces)
 		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
-		.groupBy(hotSauces.sauceId)
+		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+		.groupBy(hotSauces.sauceId, makers.name)
 		.orderBy(desc(count(checkins.rating)), desc(avg(checkins.rating)))
 		.limit(8);
 

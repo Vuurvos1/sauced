@@ -7,7 +7,7 @@
 
 	let { store, sauces } = $derived(data);
 
-	const gridSauces = $derived(sauces.map((sauce) => sauce.sauce));
+	const gridSauces = $derived(sauces.map((row) => ({ ...row.sauce, makerName: row.makerName })));
 
 	const logo = $derived(`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`);
 </script>

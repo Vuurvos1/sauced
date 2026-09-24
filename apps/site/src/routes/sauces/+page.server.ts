@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { hotSauces, checkins } from '@app/db/schema';
+import { hotSauces, checkins, makers } from '@app/db/schema';
 import { type Actions } from '@sveltejs/kit';
 import { eq, avg, count, desc, getTableColumns } from 'drizzle-orm';
 import {
@@ -34,6 +34,7 @@ export async function load({ url }) {
 		const sauceQuery = executor
 			.select({
 				...hotSauceColumns,
+				makerName: makers.name,
 				avgRating: avg(checkins.rating)
 			})
 			.from(hotSauces)
@@ -41,7 +42,8 @@ export async function load({ url }) {
 			.limit(pageSize)
 			.offset((page - 1) * pageSize) // TODO: check if filtering before or after the join is faster
 			.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
-			.groupBy(hotSauces.sauceId)
+			.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+			.groupBy(hotSauces.sauceId, makers.name)
 			.orderBy(...order);
 
 		return Promise.all([sauceCountQuery, sauceQuery]);

@@ -3,15 +3,20 @@
 	import StarRating from './StarRating.svelte';
 	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
 
-	type SauceRating = HotSauce & { avgRating?: string | number | null };
+	type SauceRating = HotSauce & {
+		avgRating?: string | number | null;
+		makerName?: string | null;
+	};
 
 	interface Props {
 		sauces: SauceRating[];
 		/** Disambiguates the same sauce rendered in two grids on one page. */
 		section: string;
+		/** Off on a maker's own page, where every card would repeat its name. */
+		showMaker?: boolean;
 	}
 
-	const { sauces = [], section }: Props = $props();
+	const { sauces = [], section, showMaker = true }: Props = $props();
 </script>
 
 {#snippet sauce(sauce: SauceRating)}
@@ -24,7 +29,12 @@
 				src={sauce.imageUrl}
 				alt={sauce.name}
 			/>
-			<h2 class="mb-2 text-xl font-semibold">{sauce.name}</h2>
+			<h2 class="mb-1 text-xl font-semibold">{sauce.name}</h2>
+
+			<!-- Plain text, not a link: the whole card is already an anchor. -->
+			{#if showMaker && sauce.makerName}
+				<p class="mb-2 text-sm font-medium text-gray-600">{sauce.makerName}</p>
+			{/if}
 
 			<div class="mb-2 flex items-center gap-3 md:flex-row">
 				{#if sauce.avgRating}
