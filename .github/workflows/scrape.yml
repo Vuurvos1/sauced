@@ -15,6 +15,14 @@ on:
         description: 'A store key from stores.js, or "all"'
         required: true
         default: 'all'
+      merge_legacy:
+        type: choice
+        description: 'Afterwards, fold legacy sauces onto their rescraped rows (one-off, needs store "all")'
+        options:
+          - skip
+          - dry-run
+          - apply
+        default: skip
 
 jobs:
   scrape:
@@ -49,5 +57,13 @@ jobs:
           [[ "${{ github.ref }}" == 'refs/heads/main' ]] && dev_flag=''
 
           pnpm scrapers scrape "$store" --dbInsert $dev_flag
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Not run on every scrape: once the legacy rows are gone, a reviewed sauce
+      # sharing a store and handle with an unreviewed one would get merged.
+      - name: Merge legacy sauces
+        if: github.event_name == 'workflow_dispatch' && inputs.merge_legacy != 'skip' && inputs.store == 'all'
+        run: pnpm scrapers merge-legacy ${{ inputs.merge_legacy == 'apply' && '--apply' || '' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

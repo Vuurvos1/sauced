@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"scrape": "node index.js",
+		"merge-legacy": "node merge-legacy.js",
 		"dev": "node --watch index.js",
 		"test": "vitest"
 	},
