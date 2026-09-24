@@ -11,7 +11,7 @@ Grouped by urgency: **Bugs** are wrong today, **Now** unblocks other work,
       `.$onUpdate()` (`packages/db/schema/sauce.js:51-54`). Every scraper run touches
       existing rows, so "newest first" on `/` and `/sauces` is really "most recently
       scraped". Drop `$onUpdate` from `createdAt`.
-- [ ] **Missing profiles return 500 instead of 404.** `error(404)` is thrown inside a
+- [x] **Missing profiles return 500 instead of 404.** `error(404)` is thrown inside a
       `try` whose `catch` swallows it and re-throws `error(500)`
       (`apps/site/src/routes/profile/[slug]/+page.server.ts:16-77`).
 - [ ] **Flagged reviews stay flagged forever.** The review upsert's
@@ -81,23 +81,23 @@ Confirmed live, with platform and catalogue size measured directly.
 
 ### Shopify — `/products.json`
 
-| Store                         | Region | Products | Status |
-| ----------------------------- | ------ | -------- | ------ |
-| t-rexhotsauce.com             | NL     | 5        | done   |
-| scovello.nl                   | NL     | 93       |        |
-| sausmetpit.nl                 | NL     | 60       |        |
-| shop.raijmakersheetmakers.com | NL     | 7        |        |
-| redhotfoods.de                | DE     | 170      |        |
-| heathotsauce.com              | US     | 898      |        |
-| pepperpalace.com              | US     | 201      |        |
-| torchbearersauces.com         | US     | 164      |        |
-| somelikeithot.shop            | UK     | 414      |        |
-| southdevonchillifarm.co.uk    | UK     | 421      |        |
-| onestopchillishop.com         | UK     | 291      |        |
-| condimaniac.com               | UK     | 89       |        |
-| sauceshop.co                  | UK     | 59       |        |
-| pipshotsauce.co.uk            | UK     | 18       |        |
-| sweetpepper.fr                | FR     | 409      |        |
+| Store                         | Region | Products | Status             |
+| ----------------------------- | ------ | -------- | ------------------ |
+| t-rexhotsauce.com             | NL     | 5        | done               |
+| scovello.nl                   | NL     | 93       | disabled (NL copy) |
+| sausmetpit.nl                 | NL     | 60       | disabled (NL copy) |
+| shop.raijmakersheetmakers.com | NL     | 7        | disabled (NL copy) |
+| redhotfoods.de                | DE     | 170      |                    |
+| heathotsauce.com              | US     | 898      |                    |
+| pepperpalace.com              | US     | 201      |                    |
+| torchbearersauces.com         | US     | 164      |                    |
+| somelikeithot.shop            | UK     | 414      |                    |
+| southdevonchillifarm.co.uk    | UK     | 421      |                    |
+| onestopchillishop.com         | UK     | 291      |                    |
+| condimaniac.com               | UK     | 89       |                    |
+| sauceshop.co                  | UK     | 59       |                    |
+| pipshotsauce.co.uk            | UK     | 18       |                    |
+| sweetpepper.fr                | FR     | 409      | disabled           |
 
 ### WooCommerce — `/wp-json/wc/store/v1/products`
 
@@ -105,15 +105,15 @@ Confirmed live, with platform and catalogue size measured directly.
 | ---------------------- | ------ | -------- | ----------------------------- |
 | heatsupply.nl          | NL     | 360      | done (HTML — port to adapter) |
 | chilisaus.be           | BE     | 130      | stub — revive                 |
-| dekkerpepper.nl        | NL     | 81       |                               |
+| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)            |
 | chardys.nl             | NL     | 12       | also a maker                  |
 | hotta.eu               | EU     | 25       |                               |
 | hotsauceemporium.co.uk | UK     | 906      |                               |
-| flowercityflavor.com   | US     | 524      |                               |
+| flowercityflavor.com   | US     | 524      | disabled (images 403)         |
 | hotsaucedepot.com      | US     | 122      |                               |
 | justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm         |
-| shop.chilirezept.de    | DE     | 117      |                               |
-| maisonpiquante.com     | FR     | 295      |                               |
+| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)            |
+| maisonpiquante.com     | FR     | 295      | disabled                      |
 
 ### Needs bespoke work — lower priority
 
@@ -138,21 +138,34 @@ Confirmed live, with platform and catalogue size measured directly.
 
 ## Makers / brands
 
-The `makers` table exists, `packages/scraper/makers.js` has a hand-written list of 4,
-and **nothing ever inserts it** — `makerId` is never set on any sauce. The feeds
-already carry this data, so it can be populated automatically instead of by hand.
+`packages/scraper/makers.js` still holds a hand-written list of 4 that nothing
+imports — dead, and safe to delete. The registry is derived from the feeds now.
 
-- [ ] Populate `makers` from the scrape. Shopify gives `vendor` per product;
+- [x] Populate `makers` from the scrape. Shopify gives `vendor` per product;
       Heatsupply's Woo exposes a `pa_merk-hot-sauce` attribute with 34 brands.
-      A harvest across six large Shopify stores yielded **357 distinct vendor strings**.
-- [ ] Set `makerId` on `hotSauces` during insert.
-- [ ] **Normalise brand names on ingest** — the same maker appears under many spellings:
-      `Heartbeat` / `Heartbeat Hot Sauce Co.`, `Queen Majesty` / `Queen Majesty Hot Sauce`,
-      `Bravado` / `Bravado Spice Co.`, `Seed Ranch` / `Seed Ranch Flavor Co.`,
-      `TorchBearer` / `Torchbearer Sauces`, `Mic's Chilli` / `Mic's Chilli Sauce`,
-      `Clark + Hopkins` / `Clark & Hopkins`, `Marie Sharp` / `Marie Sharp's`,
-      `White Whale` / `White Whale Sauces`, `Secret Aardvark` / `Secret Aardvark Trading Co`.
-      The existing `isSimilarName` in `scraper/utils/format.js` is the right tool.
+      **405 canonical makers** over the 25 enabled stores, built in one pass in
+      `dedup.js` before anything is resolved.
+- [x] Set `makerId` on `hotSauces` during insert.
+- [x] **Normalise brand names on ingest** — `canonicalMakerName` folds the trade,
+      corporate and possessive suffixes, so `Heartbeat Hot Sauce Co.`,
+      `Queen Majesty Hot Sauce`, `TorchBearer`, `Mic's Chilli Sauce`,
+      `Clark + Hopkins`, `Marie Sharp's` and `White Whale Sauces` all land on their
+      short form. 454 raw brand strings fold to 405.
+      Not folded, because an extra word sits before the suffix: `Bravado` /
+      `Bravado Spice Co.`, `Seed Ranch` / `Seed Ranch Flavor Co.`, `Secret Aardvark`
+      / `Secret Aardvark Trading Co`, `Pepper North` / `Pepper North Artisan Foods`,
+      `Butterfly Bakery` / `Butterfly Bakery of Vermont`, `Onima` / `Onima Pantry`.
+      17 such pairs; a descriptor list would fix them and needs measuring first.
+- [x] **Filter product noise by the shop's own category.** `isExcludedCategory`
+      (`utils/filter.js`) reads Shopify's `product_type` and Woo's category slugs and
+      names, splitting them into _form_ (gift, bundle, merch, freebie, catering —
+      a sauce-sounding name cannot overrule these) and _type_ (snack, seasoning,
+      jam, paste, pickle, chocolate, cheese — where a name saying "sauce" wins).
+      This is what the names alone could never do: `OKTOBERFEST` is a seasoning,
+      `GARLIC & CHIVE` is cheese, `CHIPOTLE & ORANGE` is chocolate. Per-store
+      `excludeCategories` layers on top and overrides everything.
+      WooCommerce also reports `type: bundle | grouped | subscription | gift-card`
+      outright — 39 products, 3 of which no name pattern caught.
 - [ ] **Filter vendor noise** — `Gift Set`, `Heat`, `Pepper Palace Warehouse`,
       `www.SomeLikeItHot.Shop` are not makers, and `Heinz` / `Hellmann's` / `Develey`
       are not hot sauce.
@@ -239,20 +252,20 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       28 collections including `chilli-seeds`, `plants-seedlings`,
       `growing-equipment`, `chocolate`, `alcohol`, `private-tours` and `vouchers`.
       We ingest the whole farm shop — `Propagator`, `Chilli & Pepper Focus Plant
-  Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
+Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
       Measured against the live API:
 
       | | products |
-              | --- | --- |
-              | whole catalogue (scraped today) | 421 |
-              | `collections/sauces` | 25 |
-              | non-sauce left in that collection | 0 |
-              | real sauces lost by scoping | 0 |
+                                                                                  | --- | --- |
+                                                                                  | whole catalogue (scraped today) | 421 |
+                                                                                  | `collections/sauces` | 25 |
+                                                                                  | non-sauce left in that collection | 0 |
+                                                                                  | real sauces lost by scoping | 0 |
 
-              Verified the last row directly: 20 titles in the full catalogue contain
-              "sauce" and all 20 are already inside the collection. So
-              `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
-              most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
+                                                                                  Verified the last row directly: 20 titles in the full catalogue contain
+                                                                                  "sauce" and all 20 are already inside the collection. So
+                                                                                  `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
+                                                                                  most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
 
 - [ ] **Remaining plants and seeds elsewhere — ~50 rows** once South Devon is scoped
       (One Stop Chilli Shop, Heat Hot Sauce Shop). Small enough for the shared
@@ -307,10 +320,9 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
 - [x] **Spice mixes, pastes and Asian condiments.** `Nomie Veggie Curry Kruidenmix`
       and three more Nomie mixes; 31 rows match ketjap / kecap / sojasaus / vissaus
       / miso. None are hot sauce.
-- [ ] **Sambals — 11 rows.** A product decision rather than a bug: chilli paste, not
-      pourable sauce. `Tomasu Sambal`, `Mama Yu's Sambal`, `Darth Sambal`. Note
-      `Pain Is Good Sambal Hot Sauce` is a sauce and should survive whichever way
-      this goes, so the pattern cannot be a bare `sambal`.
+- [x] **Sambals — 11 rows.** Settled by the guarded `NOT_POURABLE_PATTERNS`
+      (`puree|pastes?`) plus the shared category blocklist: a paste is dropped, and
+      `Pain Is Good Sambal Hot Sauce` survives because the name says "sauce".
 - [x] **The merch pattern misses `longsleeve`** — `De Sambal Longsleeve – Per de Man`
       is a garment in the catalogue. `utils/filter.js` covers `t-shirt`, `hoodie` and
       `sweater` but not this or `trui` (3 rows).
@@ -359,7 +371,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       treating one bottle as one sauce. The second is much cheaper and probably right
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
-  (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+(Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
 - [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
@@ -471,8 +483,10 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 - [ ] Add heat level / Scoville, ingredients, flavour profile and country of origin.
       This unblocks the commented-out "Mild Child", "Pain Seeker", "Global Tongue" and
       "The Collector" achievements in `lib/server/achievements/index.ts`.
-- [ ] `hotSauces.name` is globally unique — two makers can't both sell a "Habanero Hot
-      Sauce". Make it unique per `(makerId, name)`.
+- [x] `hotSauces.name` is globally unique — two makers can't both sell a "Habanero Hot
+      Sauce". Make it unique per `(makerId, name)`. Migration 0007; 67 names are now
+      shared by two or more makers. The slug stays globally unique and disambiguates
+      with the brand (`garlic-habanero-torchbearer`), 141 of them.
 - [ ] `checkins` PK is `(userId, hotSauceId)` — one check-in per sauce ever, so no
       tasting history and no "Double Dip" achievement.
 - [ ] Add price and stock to `storeHotSauces` (the original "keep track of store stock").
@@ -554,12 +568,10 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 - [ ] Design: a little more minimal / playfull / brutalist.
 - [ ] PWA.
 - [ ] Mobile APK.
-- [ ] Save images in bucket 
-      - [ ] turn white backgrounds into pngs
-      - [ ] image optimization
-      - [ ] image caching
-      - [ ] object detection?
-- [ ] Prioritize naming and descriptions from sauce makers where possible 
+- [ ] Save images in bucket - [ ] turn white backgrounds into pngs - [ ] image optimization - [ ] image caching - [ ] object detection?
+- [ ] Prioritize naming and descriptions from sauce makers where possible
+- [ ] keep track of sauce awards
+- [ ] a maker can also be/have a store
 
 ---
 
