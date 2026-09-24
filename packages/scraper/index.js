@@ -85,9 +85,11 @@ async function resolveMakers(registry) {
  * `sauceDedupKey` scopes a maker-less listing.
  *
  * @param {Map<string, string>} storeKeysById store id -> config key
+ * @param {Map<string, string>} aliases from `buildAliasMap`; the stored name can be
+ * either of an alias pair, depending on which shops listed it first
  * @returns {Promise<{ byKey: Map<string, import('./index.d').StoredSauce>, slugs: Set<string> }>}
  */
-async function loadStoredSauces(storeKeysById) {
+async function loadStoredSauces(storeKeysById, aliases) {
 	const stored = await db
 		.select({
 			id: hotSauces.sauceId,
@@ -116,15 +118,17 @@ async function loadStoredSauces(storeKeysById) {
 
 	/** @type {Map<string, import('./index.d').StoredSauce>} */
 	const byKey = new Map();
+	/** @param {string} key @param {import('./index.d').StoredSauce} row */
+	const remember = (key, row) => byKey.set(aliases.get(key) ?? key, row);
 
 	for (const row of stored) {
 		if (row.makerName) {
-			byKey.set(sauceDedupKey(row.name, row.makerName), row);
+			remember(sauceDedupKey(row.name, row.makerName), row);
 			continue;
 		}
 		for (const storeId of links.get(row.id) ?? []) {
 			const storeKey = storeKeysById.get(storeId);
-			if (storeKey) byKey.set(sauceDedupKey(row.name, null, storeKey), row);
+			if (storeKey) remember(sauceDedupKey(row.name, null, storeKey), row);
 		}
 	}
 
@@ -175,8 +179,9 @@ async function writeCatalogue(runs) {
 	console.info('Upserting makers');
 	const makerIds = await resolveMakers(registry);
 
-	const groups = groupByIdentity(rows, buildAliasMap(sauceAliases));
-	const { byKey: stored, slugs: takenSlugs } = await loadStoredSauces(storeKeysById);
+	const aliases = buildAliasMap(sauceAliases);
+	const groups = groupByIdentity(rows, aliases);
+	const { byKey: stored, slugs: takenSlugs } = await loadStoredSauces(storeKeysById, aliases);
 	console.info(
 		'Resolved',
 		rows.length,
