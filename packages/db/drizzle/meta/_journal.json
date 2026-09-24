@@ -64,6 +64,13 @@
       "when": 1790259544387,
       "tag": "0008_drop_legacy_passwords",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790259758694,
+      "tag": "0009_drop_unreviewed_sauces",
+      "breakpoints": true
     }
   ]
 }
