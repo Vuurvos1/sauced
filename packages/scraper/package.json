@@ -4,15 +4,15 @@
 	"private": true,
 	"scripts": {
 		"scrape": "node index.js",
+		"merge-legacy": "node merge-legacy.js",
 		"dev": "node --watch index.js",
 		"test": "vitest"
 	},
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"dotenv": "^16.5.0",
-		"drizzle-orm": "^0.44.2",
-		"fuzzysort": "^3.1.0",
+		"dotenv": "^16.6.1",
+		"drizzle-orm": "catalog:",
 		"jsdom": "^26.1.0",
 		"puppeteer": "^22.15.0",
 		"puppeteer-core": "^22.15.0",
@@ -24,6 +24,6 @@
 	"devDependencies": {
 		"@types/jsdom": "^21.1.7",
 		"@types/yargs-parser": "^21.0.3",
-		"vitest": "^3.2.2"
+		"vitest": "^3.2.7"
 	}
 }

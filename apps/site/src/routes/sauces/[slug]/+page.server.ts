@@ -1,5 +1,13 @@
-import { db } from '$lib/db';
-import { checkins, hotSauces, userTable, wishlist, stores, storeHotSauces } from '@app/db/schema';
+import { db } from '$lib/server/db';
+import {
+	checkins,
+	hotSauces,
+	user as userTable,
+	wishlist,
+	stores,
+	storeHotSauces,
+	makers
+} from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
 
@@ -22,6 +30,16 @@ export async function load({ params, locals: { user } }) {
 
 	const sauce = dbSauce[0];
 	const { sauceId } = sauce;
+
+	// Null for a sauce only ever seen at a retailer whose feed names no brand.
+	const dbMaker = sauce.makerId
+		? await db
+				.select({ name: makers.name, slug: makers.slug })
+				.from(makers)
+				.where(eq(makers.makerId, sauce.makerId))
+				.limit(1)
+		: [];
+	const maker = dbMaker[0] ?? null;
 
 	const dbStores = await db
 		.select({
@@ -67,6 +85,7 @@ export async function load({ params, locals: { user } }) {
 
 		return {
 			sauce,
+			maker,
 			checkins: dbCheckins,
 			stores: dbStores ?? [],
 			userCheckin: userCheckin.length > 0 ? userCheckin[0] : null,
@@ -76,6 +95,7 @@ export async function load({ params, locals: { user } }) {
 
 	return {
 		sauce,
+		maker,
 		checkins: dbCheckins,
 		stores: dbStores ?? [],
 		userCheckin: null,

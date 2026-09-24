@@ -1,5 +1,5 @@
-import { db } from '$lib/db';
-import { hotSauces, userTable, wishlist } from '@app/db/schema';
+import { db } from '$lib/server/db';
+import { hotSauces, makers, user as userTable, wishlist } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -24,13 +24,17 @@ export async function load({ params }) {
 
 	const dbRes = await db
 		.select({
-			hotSauces: hotSauces
+			hotSauces: hotSauces,
+			makerName: makers.name
 		})
 		.from(wishlist)
 		.leftJoin(hotSauces, eq(wishlist.hotSauceId, hotSauces.sauceId))
+		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
 		.where(eq(wishlist.userId, user.id));
 
-	const sauces = dbRes.map((row) => row.hotSauces).filter((sauce) => !!sauce);
+	const sauces = dbRes.flatMap((row) =>
+		row.hotSauces ? [{ ...row.hotSauces, makerName: row.makerName }] : []
+	);
 
-	return { sauces: sauces };
+	return { username: user.username, sauces };
 }

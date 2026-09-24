@@ -1,0 +1,28 @@
+{
+	"useTabs": true,
+	"singleQuote": true,
+	"trailingComma": "none",
+	"printWidth": 100,
+	"svelte": true,
+	"sortPackageJson": false,
+	"sortTailwindcss": {
+		"tailwindConfig": "./apps/site/tailwind.config.js",
+		"functions": ["clsx", "cn", "twMerge"]
+	},
+	"ignorePatterns": [
+		".DS_Store",
+		".svelte-kit",
+		"node_modules",
+		"/build",
+		"/package",
+		".env",
+		".env.*",
+		"!.env.example",
+		"vite.config.js*",
+		"pnpm-lock.yaml",
+		"pnpm-workspace.yaml",
+		"package-lock.json",
+		"yarn.lock",
+		"packages/db/drizzle/meta"
+	]
+}

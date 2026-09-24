@@ -15,7 +15,7 @@
 	Delete Account
 </button>
 
-<Dialog bind:open>
+<Dialog title="Delete Account" bind:open>
 	<form
 		method="POST"
 		action="?/deleteAccount"

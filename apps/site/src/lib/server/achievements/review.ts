@@ -1,4 +1,4 @@
-import { db } from '$lib/db';
+import { db } from '$lib/server/db';
 import { checkins, hotSauces } from '@app/db/schema';
 import { eq, and, count, isNotNull, ne } from 'drizzle-orm';
 

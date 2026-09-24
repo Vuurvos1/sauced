@@ -1,10 +1,18 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/form/TextInput.svelte';
 	import { Google } from '@o7/icon/remix/solid';
+	import { superForm } from 'sveltekit-superforms';
+	import { authClient } from '$lib/auth-client';
+	import Meta from '$lib/components/Meta.svelte';
 
-	let { form } = $props();
+	let { data } = $props();
+
+	const { form, errors, message, enhance, submitting } = superForm(data.form);
+
+	const signInWithGoogle = () => authClient.signIn.social({ provider: 'google', callbackURL: '/' });
 </script>
+
+<Meta title="Sign in" description="Sign in to rate hot sauces and keep a wishlist." noindex />
 
 {#snippet forgotPassword()}
 	<a class="ml-auto font-medium text-blue-700 hover:underline" href="/auth/forgot-password">
@@ -17,21 +25,34 @@
 		<div>
 			<h1 class="h1 mb-4 text-center">Sign in</h1>
 			<form class="flex flex-col gap-4" method="POST" action="?/login" use:enhance>
-				<TextInput label="Email" name="email" required></TextInput>
+				<TextInput
+					label="Email"
+					name="email"
+					required
+					bind:value={$form.email}
+					errorMessage={$errors.email?.[0]}
+				/>
 
 				<TextInput
 					label="Password"
 					type="password"
 					name="password"
-					minlength={6}
 					required
 					postLabel={forgotPassword}
-				></TextInput>
+					bind:value={$form.password}
+					errorMessage={$errors.password?.[0]}
+				/>
 
-				<button class="btn w-full" type="submit">Continue</button>
+				<button class="btn w-full" type="submit" disabled={$submitting}>
+					{#if $submitting}
+						Signing in...
+					{:else}
+						Continue
+					{/if}
+				</button>
 
-				{#if form?.message}
-					<p class="text-red-500">{form.message}</p>
+				{#if $message}
+					<p class="text-center text-red-500">{$message}</p>
 				{/if}
 			</form>
 		</div>
@@ -43,10 +64,10 @@
 		</div>
 
 		<div class="flex flex-wrap gap-4">
-			<a href="/login/google" class="btn btn-outline w-full">
+			<button type="button" class="btn btn-outline w-full" onclick={signInWithGoogle}>
 				<Google size="24" stroke="2" />
 				<span>Google</span>
-			</a>
+			</button>
 		</div>
 
 		<p class="mt-8 text-center">

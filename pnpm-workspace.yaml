@@ -1,3 +1,9 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+
+catalog:
+  drizzle-orm: ^0.45.2
+  drizzle-zod: ^0.8.3
+  drizzle-kit: ^0.31.10
+  postgres: ^3.4.9

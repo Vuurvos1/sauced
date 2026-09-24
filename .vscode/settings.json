@@ -1,0 +1,17 @@
+{
+	"editor.defaultFormatter": "oxc.oxc-vscode",
+	"editor.formatOnSave": true,
+
+	// The Svelte extension formats .svelte with its own bundled prettier, so it has
+	// to be taken off the job explicitly or it wins over oxfmt.
+	"svelte.plugin.svelte.format.enable": false,
+
+	"[svelte]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[javascript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[typescript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[json]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[jsonc]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[css]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[markdown]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+	"[yaml]": { "editor.defaultFormatter": "oxc.oxc-vscode" }
+}

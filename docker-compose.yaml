@@ -16,5 +16,22 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  db-test:
+    image: postgres:16
+    container_name: sauced_postgres_test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sauced_test
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data
+
 volumes:
   pgdata:

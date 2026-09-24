@@ -22,6 +22,55 @@
       "when": 1744317345596,
       "tag": "0002_shiny_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776950665023,
+      "tag": "0003_white_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789889869551,
+      "tag": "0004_even_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789932578673,
+      "tag": "0005_unaccent_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790007924525,
+      "tag": "0006_maker_slug",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790190597291,
+      "tag": "0007_married_eternity",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790259544387,
+      "tag": "0008_drop_legacy_passwords",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790259758694,
+      "tag": "0009_drop_unreviewed_sauces",
+      "breakpoints": true
     }
   ]
 }

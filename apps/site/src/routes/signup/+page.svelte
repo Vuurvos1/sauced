@@ -1,32 +1,78 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/form/TextInput.svelte';
+	import PasswordRequirements from '$lib/components/form/PasswordRequirements.svelte';
 	import { Google } from '@o7/icon/remix/solid';
+	import { superForm } from 'sveltekit-superforms';
+	import { authClient } from '$lib/auth-client';
+	import Meta from '$lib/components/Meta.svelte';
 
-	let { form } = $props();
+	let { data } = $props();
+
+	const { form, errors, message, enhance, submitting } = superForm(data.form);
+
+	const signInWithGoogle = () => authClient.signIn.social({ provider: 'google', callbackURL: '/' });
 </script>
+
+<Meta
+	title="Create an account"
+	description="Create a Sauced account to rate hot sauces, track what you've tried and build a wishlist."
+	noindex
+/>
 
 <section class="mb-12 grid h-full flex-1 place-items-center">
 	<div class="w-full max-w-sm">
 		<h1 class="h1 mb-4 text-center">Create an account</h1>
 		<form class="flex flex-col gap-4" method="POST" action="?/signup" use:enhance>
-			<TextInput label="Username" name="username" minlength={1} maxlength={30} required></TextInput>
-
-			<TextInput label="Email" type="email" name="email" required></TextInput>
+			<TextInput
+				label="Username"
+				name="username"
+				minlength={1}
+				maxlength={30}
+				required
+				bind:value={$form.username}
+				errorMessage={$errors.username?.[0]}
+			/>
 
 			<TextInput
-				label="Password"
-				type="password"
-				name="password"
-				minlength={6}
-				maxlength={255}
+				label="Email"
+				type="email"
+				name="email"
 				required
-			></TextInput>
+				bind:value={$form.email}
+				errorMessage={$errors.email?.[0]}
+			/>
 
-			<button class="btn w-full" type="submit">Continue</button>
+			<div class="group">
+				<TextInput
+					label="Password"
+					type="password"
+					name="password"
+					minlength={8}
+					maxlength={255}
+					required
+					bind:value={$form.password}
+					errorMessage={$errors.password?.[0]}
+				/>
 
-			{#if form?.message}
-				<p class="text-red-500">{form.message}</p>
+				<div
+					class="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity,margin-top] duration-200 ease-out group-focus-within:mt-1 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100"
+				>
+					<div class="overflow-hidden">
+						<PasswordRequirements password={$form.password} />
+					</div>
+				</div>
+			</div>
+
+			<button class="btn w-full" type="submit" disabled={$submitting}>
+				{#if $submitting}
+					Creating account...
+				{:else}
+					Continue
+				{/if}
+			</button>
+
+			{#if $message}
+				<p class="text-center text-red-500">{$message}</p>
 			{/if}
 		</form>
 
@@ -37,10 +83,10 @@
 		</div>
 
 		<div class="flex flex-wrap gap-4">
-			<a href="/login/google" class="btn btn-outline w-full">
+			<button type="button" class="btn btn-outline w-full" onclick={signInWithGoogle}>
 				<Google size="24" stroke="2" />
 				<span>Google</span>
-			</a>
+			</button>
 		</div>
 
 		<p class="mt-8 text-center">

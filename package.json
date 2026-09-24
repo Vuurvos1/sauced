@@ -8,22 +8,21 @@
 		"scrapers": "pnpm --filter @app/scraper -- ",
 		"build": "turbo run build",
 		"lint": "turbo run lint",
-		"format": "prettier --write .",
-		"docker:up": "docker compose up -d"
+		"format": "oxfmt",
+		"docker:up": "docker compose up -d",
+		"format:check": "oxfmt --check"
 	},
 	"devDependencies": {
-		"prettier": "^3.5.3",
-		"prettier-plugin-svelte": "^3.4.0",
-		"turbo": "^2.5.4"
+		"oxfmt": "^0.68.0",
+		"turbo": "^2.11.2"
 	},
 	"type": "module",
-	"packageManager": "pnpm@9.4.0",
+	"packageManager": "pnpm@10.18.0",
 	"engines": {
-		"node": ">=20"
+		"node": ">=24"
 	},
 	"pnpm": {
 		"overrides": {
-			"drizzle-orm": "^0.44.2",
 			"vitest": "^3.2.2"
 		}
 	}

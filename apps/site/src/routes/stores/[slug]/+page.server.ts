@@ -1,5 +1,5 @@
-import { db } from '$lib/db';
-import { hotSauces, stores, storeHotSauces } from '@app/db/schema';
+import { db } from '$lib/server/db';
+import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -19,10 +19,12 @@ export async function load({ params }) {
 	const dbStoreSauces = await db
 		.select({
 			sauce: hotSauces,
-			storeInfo: storeHotSauces
+			storeInfo: storeHotSauces,
+			makerName: makers.name
 		})
 		.from(hotSauces)
 		.innerJoin(storeHotSauces, eq(hotSauces.sauceId, storeHotSauces.sauceId))
+		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
 		.where(eq(storeHotSauces.storeId, dbStore[0].storeId))
 		// .orderBy(storeHotSauces.createdAt.desc())
 		.limit(52);

@@ -1,62 +1,87 @@
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/db';
-import { checkins, hotSauces, stores } from '@app/db/schema';
-import { avg, desc, eq, count, ilike } from 'drizzle-orm';
+import { checkins, hotSauces, makers, stores } from '@app/db/schema';
+import { avg, desc, eq, count } from 'drizzle-orm';
+import {
+	MIN_SEARCH_LENGTH,
+	matchSimilarity,
+	matchTier,
+	matchesQuery,
+	normalizeQuery,
+	sauceMatchesQuery,
+	withFuzzyMatching
+} from '$lib/server/search';
 import type { SearchResponse } from '$lib/types/api';
 
-export async function GET({ url }) {
-	const query = url.searchParams.get('q');
+const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
-	if (!query || query.length < 2) {
-		return json({
-			makers: [],
-			stores: [],
-			sauces: []
-		} satisfies SearchResponse);
+const RESULT_LIMIT = 8;
+
+export async function GET({ url }) {
+	const query = normalizeQuery(url.searchParams.get('q'));
+
+	if (query.length < MIN_SEARCH_LENGTH) {
+		return json(EMPTY satisfies SearchResponse);
 	}
 
 	try {
-		const searchResults = await db
-			.select({
-				sauceId: hotSauces.sauceId,
-				name: hotSauces.name,
-				description: hotSauces.description,
-				slug: hotSauces.slug,
-				imageUrl: hotSauces.imageUrl,
-				avgRating: avg(checkins.rating).mapWith(Number),
-				ratingCount: count(checkins.rating)
-			})
-			.from(hotSauces)
-			.where(ilike(hotSauces.name, `%${query}%`)) // TODO: turn into a fuzzy search
-			.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
-			.groupBy(hotSauces.sauceId)
-			.orderBy(desc(count(checkins.rating)), desc(avg(checkins.rating)))
-			.limit(8);
+		const [sauceResults, storeResults, makerResults] = await withFuzzyMatching(async (tx) => {
+			const sauceQuery = tx
+				.select({
+					sauceId: hotSauces.sauceId,
+					name: hotSauces.name,
+					description: hotSauces.description,
+					slug: hotSauces.slug,
+					imageUrl: hotSauces.imageUrl,
+					avgRating: avg(checkins.rating).mapWith(Number),
+					ratingCount: count(checkins.rating)
+				})
+				.from(hotSauces)
+				.where(sauceMatchesQuery(query))
+				.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
+				.groupBy(hotSauces.sauceId)
+				.orderBy(
+					desc(matchTier(hotSauces.name, query)),
+					desc(matchSimilarity(hotSauces.name, query)),
+					desc(count(checkins.rating)),
+					desc(avg(checkins.rating))
+				)
+				.limit(RESULT_LIMIT);
 
-		const storesResults = await db
-			.select({
-				id: stores.storeId,
-				name: stores.name,
-				description: stores.description
-			})
-			.from(stores)
-			.where(ilike(stores.name, `%${query}%`))
-			.limit(8);
+			const storeQuery = tx
+				.select({
+					id: stores.storeId,
+					name: stores.name,
+					description: stores.description
+				})
+				.from(stores)
+				.where(matchesQuery(stores.name, query))
+				.orderBy(desc(matchTier(stores.name, query)), desc(matchSimilarity(stores.name, query)))
+				.limit(RESULT_LIMIT);
+
+			const makerQuery = tx
+				.select({
+					id: makers.makerId,
+					name: makers.name,
+					slug: makers.slug,
+					sauceCount: count(hotSauces.sauceId)
+				})
+				.from(makers)
+				.where(matchesQuery(makers.name, query))
+				.leftJoin(hotSauces, eq(hotSauces.makerId, makers.makerId))
+				.groupBy(makers.makerId)
+				.orderBy(desc(matchTier(makers.name, query)), desc(count(hotSauces.sauceId)))
+				.limit(RESULT_LIMIT);
+
+			return Promise.all([sauceQuery, storeQuery, makerQuery]);
+		});
 
 		return json({
-			makers: [],
-			stores: storesResults,
-			sauces: searchResults
+			makers: makerResults,
+			stores: storeResults,
+			sauces: sauceResults
 		} satisfies SearchResponse);
 	} catch (error) {
 		console.error('Search error:', error);
-		return json(
-			{
-				makers: [],
-				stores: [],
-				sauces: []
-			} satisfies SearchResponse,
-			{ status: 500 }
-		);
+		return json(EMPTY satisfies SearchResponse, { status: 500 });
 	}
 }

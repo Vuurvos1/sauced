@@ -1,21 +1,27 @@
 <script lang="ts">
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
 
 	let { data } = $props();
 
 	let { store, sauces } = $derived(data);
 
-	const gridSauces = $derived(sauces.map((sauce) => sauce.sauce));
+	const gridSauces = $derived(sauces.map((row) => ({ ...row.sauce, makerName: row.makerName })));
+
+	const logo = $derived(`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`);
 </script>
+
+<Meta
+	title={store.name}
+	description={store.description || `The hot sauces ${store.name} stocks, rated on Sauced.`}
+	image={logo}
+	imageAlt={store.name}
+/>
 
 <section>
 	<div class="container flex flex-col items-center gap-2 pb-6">
-		<img
-			src={`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`}
-			alt={store.name}
-			class="aspect-[3/2] h-32 w-auto object-contain"
-		/>
+		<img src={logo} alt={store.name} class="aspect-[3/2] h-32 w-auto object-contain" />
 
 		<!-- <h1 class="h1 mb-6 text-center">
 			<a href={store.url}>{store.name}</a>
@@ -40,6 +46,6 @@
 	<div class="container">
 		<!-- <h2 class="h2 mb-4">Their Sauces</h2> -->
 
-		<SauceGrid sauces={gridSauces}></SauceGrid>
+		<SauceGrid sauces={gridSauces} section="store"></SauceGrid>
 	</div>
 </section>

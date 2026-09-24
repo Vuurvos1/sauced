@@ -11,14 +11,18 @@ on:
   workflow_dispatch:
     inputs:
       store:
-        type: choice
-        description: 'Select the store to scrape'
+        type: string
+        description: 'A store key from stores.js, or "all"'
         required: true
-        default: 'trex'
+        default: 'all'
+      merge_legacy:
+        type: choice
+        description: 'Afterwards, fold legacy sauces onto their rescraped rows (one-off, needs store "all")'
         options:
-          - 'trex'
-          - 'heatsupply'
-          - 'heatonist'
+          - skip
+          - dry-run
+          - apply
+        default: skip
 
 jobs:
   scrape:
@@ -37,22 +41,29 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm --filter "@app/db" install
+        run: pnpm --filter "@app/scraper..." install --frozen-lockfile
 
-      - name: Run scraper
+      - name: Run scrapers
+        # `all` is resolved by the CLI, which runs every store before failing so
+        # one broken adapter does not hide the state of the others.
+        # Only main gets full catalogues; everywhere else takes the 12-sauce sample.
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            # Run all scrapers on dev branch
-            pnpm scrapers scrape trex --dbInsert --dev
-            pnpm scrapers scrape heatsupply --dbInsert --dev
-            pnpm scrapers scrape heatonist --dbInsert --dev
-          else
-            # Run single scraper on manual trigger
-            pnpm scrapers scrape ${{ github.event.inputs.store }} --dbInsert
-          fi
+          store='${{ github.event_name == 'workflow_dispatch' && inputs.store || 'all' }}'
+          dev_flag='--dev'
+          [[ "${{ github.ref }}" == 'refs/heads/main' ]] && dev_flag=''
+
+          pnpm scrapers scrape "$store" --dbInsert $dev_flag
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Not run on every scrape: once the legacy rows are gone, a reviewed sauce
+      # sharing a store and handle with an unreviewed one would get merged.
+      - name: Merge legacy sauces
+        if: github.event_name == 'workflow_dispatch' && inputs.merge_legacy != 'skip' && inputs.store == 'all'
+        run: pnpm scrapers merge-legacy ${{ inputs.merge_legacy == 'apply' && '--apply' || '' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

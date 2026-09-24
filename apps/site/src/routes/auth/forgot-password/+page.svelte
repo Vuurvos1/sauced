@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import TextInput from '$lib/components/form/TextInput.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 </script>
+
+<Meta title="Forgot password" noindex />
 
 <section class="mb-12 grid h-full flex-1 place-items-center">
 	<div class="container max-w-xl">

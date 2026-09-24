@@ -1,10 +1,17 @@
 <script lang="ts">
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
-	let { sauces } = $derived(data);
+	let { username, sauces } = $derived(data);
 </script>
+
+<Meta
+	title={`${username}'s wishlist`}
+	description={`The hot sauces ${username} wants to try.`}
+	noindex
+/>
 
 <div>
 	<section class="container">
@@ -14,7 +21,7 @@
 
 		{#if sauces && sauces.length > 0}
 			<!-- TODO: make custom wishlist grid -->
-			<SauceGrid {sauces}></SauceGrid>
+			<SauceGrid {sauces} section="wishlist"></SauceGrid>
 		{:else}
 			<p>No sauces found</p>
 		{/if}

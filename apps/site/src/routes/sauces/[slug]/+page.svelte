@@ -6,24 +6,48 @@
 	import StarRater from '$lib/components/StarRater.svelte';
 	import { ListPlus, ListMinus, Check, ArrowUpRight, Trash2 } from '@o7/icon/lucide';
 	import { Dialog } from '$lib/components/dialog/index.js';
+	import Meta from '$lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 
-	let { sauce, session, user, wishlisted, stores } = $derived(data);
+	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
 	let checkins = $state(data.checkins);
 	let userCheckin = $state(data.userCheckin);
 	let error = $state<string | null>(null);
 
 	let open = $state(false);
+
+	const byMaker = $derived(maker ? ` by ${maker.name}` : '');
 </script>
+
+<Meta
+	title={sauce.name}
+	description={sauce.description ||
+		`Ratings, reviews and where to buy ${sauce.name}${byMaker} on Sauced.`}
+	image={sauce.imageUrl}
+	imageAlt={sauce.name}
+/>
 
 <div class="container">
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-		<img class="aspect-square object-contain xl:col-span-3" src={sauce.imageUrl} alt={sauce.name} />
+		<img
+			class="sauce-hero aspect-square object-contain xl:col-span-3"
+			src={sauce.imageUrl}
+			alt={sauce.name}
+		/>
 
 		<div class="xl:col-span-2">
-			<h1 class="h1 mb-3">{sauce.name}</h1>
+			<h1 class="h1 mb-1">{sauce.name}</h1>
+
+			{#if maker}
+				<a
+					class="mb-3 inline-block font-medium text-gray-600 underline-offset-2 hover:underline"
+					href="/makers/{maker.slug}"
+				>
+					{maker.name}
+				</a>
+			{/if}
 
 			<p class="mb-5 text-gray-500">{sauce.description}</p>
 
@@ -51,7 +75,7 @@
 						{userCheckin ? 'Checked-in' : 'Check-in'}
 					</button>
 
-					<Dialog bind:open>
+					<Dialog title="Check-in" bind:open>
 						<form
 							method="post"
 							action="?/review"
@@ -106,8 +130,7 @@
 									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
-									value={userCheckin?.review ?? ''}
-								></textarea>
+									value={userCheckin?.review ?? ''}></textarea>
 							</div>
 
 							{#if error}
@@ -225,3 +248,9 @@
 		{/if}
 	</section>
 </div>
+
+<style>
+	.sauce-hero {
+		view-transition-name: sauce-image;
+	}
+</style>

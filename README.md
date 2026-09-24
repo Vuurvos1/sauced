@@ -31,7 +31,15 @@ Start the database using [Docker](https://www.docker.com/) with the following co
 pnpm docker:up
 ```
 
-Run the scraper with the following command:
+Apply the database migrations:
+
+```bash
+pnpm db migrate
+```
+
+See the [db README](./packages/db/README.md) for details on generating new migrations after schema changes.
+
+Seed the database by running a scraper with the following command.
 More information about scrapers can be found in the [scrapers README](./packages/scraper/README.md).
 
 ```bash

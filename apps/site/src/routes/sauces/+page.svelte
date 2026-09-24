@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import SauceGrid from '$lib/components/SauceGrid.svelte';
+	import Meta from '$lib/components/Meta.svelte';
 
 	let { data } = $props();
 
-	let { sauces, sauceCount, pageSize } = $derived(data);
+	let { sauces, sauceCount, pageSize, search } = $derived(data);
 
 	const currentPage = $derived(Math.max(Number(page.url.searchParams.get('page')) || 1, 1));
 
@@ -19,16 +20,36 @@
 		url.searchParams.set('page', String(currentPage + 1));
 		return url.toString();
 	});
+
+	const title = $derived(search ? `Results for "${search}"` : 'All hot sauces');
+
+	const description = $derived(
+		search
+			? `${sauceCount} hot sauces matching "${search}".`
+			: `Browse ${sauceCount} hot sauces, newest first, with ratings and where to buy them.`
+	);
+
+	// Query strings aside from the page number would only split a listing's
+	// ranking across near-identical URLs.
+	const canonical = $derived(
+		!search && currentPage > 1 ? `/sauces?page=${currentPage}` : '/sauces'
+	);
 </script>
 
+<Meta {title} {description} {canonical} noindex={!!search} />
+
 <div class="container">
-	<div class="flex flex-row items-center justify-between">
-		<h1 class="h1">Sauces</h1>
+	<div class="mb-3 flex flex-row items-center justify-between">
+		<h1 class="h1">{search ? `Results for "${search}"` : 'Sauces'}</h1>
 
 		<p class="text-gray-500">Showing {sauceCount} sauces</p>
 	</div>
 
-	<SauceGrid {sauces}></SauceGrid>
+	{#if sauceCount === 0 && search}
+		<p class="py-8 text-center text-gray-600">No sauces found matching "{search}"</p>
+	{:else}
+		<SauceGrid {sauces} section="all"></SauceGrid>
+	{/if}
 
 	<div class="flex flex-row justify-end gap-6 py-4">
 		<a

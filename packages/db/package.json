@@ -12,16 +12,25 @@
 		"migrate": "drizzle-kit migrate"
 	},
 	"type": "module",
+	"exports": {
+		".": "./index.js",
+		"./schema": "./schema/index.js",
+		"./types": "./types.ts"
+	},
+	"peerDependencies": {
+		"drizzle-orm": "catalog:",
+		"drizzle-zod": "catalog:"
+	},
 	"dependencies": {
-		"dotenv": "^16.5.0",
-		"drizzle-orm": "^0.44.2",
-		"drizzle-zod": "^0.7.1",
-		"postgres": "^3.4.7"
+		"dotenv": "^16.6.1",
+		"postgres": "catalog:"
 	},
 	"devDependencies": {
-		"@softwaretechnik/dbml-renderer": "^1.0.30",
+		"@softwaretechnik/dbml-renderer": "^1.0.31",
 		"dotenv-cli": "^7.4.4",
 		"drizzle-dbml-generator": "^0.10.0",
-		"drizzle-kit": "^0.30.6"
+		"drizzle-kit": "catalog:",
+		"drizzle-orm": "catalog:",
+		"drizzle-zod": "catalog:"
 	}
 }
