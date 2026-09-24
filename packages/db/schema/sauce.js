@@ -51,10 +51,7 @@ export const hotSauces = pgTable(
 		makerId: uuid('maker_id').references(() => makers.makerId, {
 			onDelete: 'set null'
 		}),
-		createdAt: timestamp('created_at')
-			.notNull()
-			.defaultNow()
-			.$onUpdate(() => new Date()),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at')
 			.notNull()
 			.defaultNow()
