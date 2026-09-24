@@ -154,6 +154,9 @@ export const shopifyStores = [
 	},
 	{
 		key: 'somelikeithot',
+		// The .shop registry answers NXDOMAIN for the domain as of 2026-09-24, so
+		// it has lapsed or been suspended. Re-enable if it resolves again.
+		disabled: true,
 		name: 'Some Like It Hot',
 		url: 'https://somelikeithot.shop',
 		excludeCategories: ['keto bone broth', 'pesto'],
