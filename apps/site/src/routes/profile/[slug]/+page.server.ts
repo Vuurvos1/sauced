@@ -27,7 +27,7 @@ export async function load({ params }) {
 	const user = users[0];
 
 	const hotSauceColumns = getTableColumns(hotSauces);
-	const checkedSauces = await db
+	const checkedSaucesQuery = db
 		.select({
 			...hotSauceColumns,
 			rating: checkins.rating,
@@ -40,7 +40,7 @@ export async function load({ params }) {
 		.orderBy(desc(checkins.createdAt))
 		.limit(12);
 
-	const reviewCount = await db
+	const reviewCountQuery = db
 		.select({
 			count: count()
 		})
@@ -49,14 +49,19 @@ export async function load({ params }) {
 			and(eq(checkins.userId, user.id), isNotNull(checkins.review), not(eq(checkins.review, '')))
 		);
 
-	const sauceTriedCount = await db
+	const sauceTriedCountQuery = db
 		.select({
 			count: count()
 		})
 		.from(checkins)
 		.where(eq(checkins.userId, user.id));
 
-	const achievements = await getAchievements(user);
+	const [checkedSauces, reviewCount, sauceTriedCount, achievements] = await Promise.all([
+		checkedSaucesQuery,
+		reviewCountQuery,
+		sauceTriedCountQuery,
+		getAchievements(user)
+	]);
 
 	return {
 		user,

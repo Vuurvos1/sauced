@@ -8,13 +8,14 @@
 	import { Dialog } from '$lib/components/dialog/index.js';
 	import Meta from '$lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
+	import { reviewSchema, REVIEW_MAX_LENGTH } from '$lib/validation';
+	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
 
 	let { data } = $props();
 
 	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
-	let checkins = $state(data.checkins);
-	let userCheckin = $state(data.userCheckin);
-	let error = $state<string | null>(null);
+	let checkins = $derived(data.checkins);
+	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
 	let open = $state(false);
 
@@ -70,74 +71,61 @@
 					</form>
 
 					<!-- TODO: add shallow routing/non js option -->
-					<button onclick={() => (open = !open)} type="submit" class="btn">
+					<button
+						onclick={() => {
+							upsertReview.fields.set({ id: sauce.sauceId, content: userCheckin?.review ?? '' });
+							open = true;
+						}}
+						type="button"
+						class="btn"
+					>
 						<Check class={`${userCheckin ? 'text-green-500' : ''}`} size={20}></Check>
 						{userCheckin ? 'Checked-in' : 'Check-in'}
 					</button>
 
 					<Dialog title="Check-in" bind:open>
 						<form
-							method="post"
-							action="?/review"
-							use:enhance={({ formData }) => {
-								if (!user) return () => {};
-
-								const baseCheckin = { ...userCheckin };
-
-								const newRating = Number(formData.get('rating'));
-								const newReview = formData.get('content') as string;
-
-								if (newRating < 1 || newRating > 5) {
-									error = 'Please enter a valid rating';
-									return;
-								}
-
-								if (!userCheckin) {
-									// @ts-expect-error - only needed fields
-									userCheckin = {
-										rating: newRating,
-										review: newReview,
-										updatedAt: new Date()
-									};
-								} else {
-									userCheckin.rating = newRating;
-									userCheckin.review = newReview;
-								}
-
-								// open = false;
-
-								return ({ result }) => {
-									if (result.type === 'success') {
-										error = null;
-										toast.success('Check-in submitted successfully');
+							{...upsertReview.preflight(reviewSchema).enhance(async ({ fields, submit }) => {
+								const { rating, content } = fields.value();
+								try {
+									const ok = await submit().updates(
+										getUserCheckin(sauce.sauceId).withOverride((current) => ({
+											// A first check-in has no row yet; the page only reads these fields
+											...current!,
+											rating: Number(rating),
+											review: content ?? '',
+											updatedAt: new Date()
+										}))
+									);
+									if (ok) {
 										open = false;
-									} else if (result.type === 'failure') {
-										// @ts-expect-error - copy of userCheckin
-										userCheckin = baseCheckin;
-										error = (result.data as { error: string })?.error ?? 'An error occurred';
+										toast.success('Check-in submitted successfully');
 									}
-								};
-							}}
+								} catch {
+									toast.error('Failed to save check-in');
+								}
+							})}
 						>
-							<input type="hidden" name="id" value={sauce.sauceId} />
+							<input {...upsertReview.fields.id.as('hidden', sauce.sauceId)} />
 
 							<div class="mb-5 flex flex-col gap-4">
 								<StarRater rating={userCheckin?.rating ?? 0}></StarRater>
 
 								<label for="content">Review</label>
 								<textarea
+									{...upsertReview.fields.content.as('text')}
+									id="content"
 									class="resize-none rounded border p-2"
-									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
-									value={userCheckin?.review ?? ''}></textarea>
+									maxlength={REVIEW_MAX_LENGTH}></textarea>
 							</div>
 
-							{#if error}
+							{#each upsertReview.fields.allIssues() ?? [] as issue}
 								<div class="mb-6 rounded bg-red-50 p-3 text-sm text-red-600">
-									{error}
+									{issue.message}
 								</div>
-							{/if}
+							{/each}
 
 							<div class="flex flex-row-reverse gap-4">
 								<button type="submit" class="btn">Check-in</button>
@@ -197,18 +185,16 @@
 
 				{#if user && checkin.username === user.username}
 					<form
-						method="post"
-						action="?/removeCheckIn"
-						use:enhance={() => {
-							return ({ result }) => {
-								if (result.type === 'success') {
-									userCheckin = null;
-									toast.success('Check-in removed successfully');
-								}
-							};
-						}}
+						{...removeCheckin.enhance(async ({ submit }) => {
+							try {
+								await submit().updates(getUserCheckin(sauce.sauceId).withOverride(() => null));
+								toast.success('Check-in removed successfully');
+							} catch {
+								toast.error('Failed to remove check-in');
+							}
+						})}
 					>
-						<input type="hidden" name="sauceId" value={sauce.sauceId} />
+						<input {...removeCheckin.fields.id.as('hidden', sauce.sauceId)} />
 						<button
 							type="submit"
 							class="text-gray-400 transition-colors hover:text-red-600"
