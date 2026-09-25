@@ -32,7 +32,7 @@ export const actions: Actions = {
 		const username = usernameResult.data;
 
 		try {
-			await db.update(user).set({ username }).where(eq(user.id, locals.session.userId));
+			await auth.api.updateUser({ body: { username }, headers: request.headers });
 		} catch (error) {
 			console.error(error);
 			return fail(500, { messages: ['Failed to update username'] });
