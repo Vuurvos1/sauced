@@ -32,16 +32,15 @@ export async function load({ params, locals: { user } }) {
 	const { sauceId } = sauce;
 
 	// Null for a sauce only ever seen at a retailer whose feed names no brand.
-	const dbMaker = sauce.makerId
-		? await db
+	const makerQuery = sauce.makerId
+		? db
 				.select({ name: makers.name, slug: makers.slug })
 				.from(makers)
 				.where(eq(makers.makerId, sauce.makerId))
 				.limit(1)
 		: [];
-	const maker = dbMaker[0] ?? null;
 
-	const dbStores = await db
+	const storesQuery = db
 		.select({
 			store: stores,
 			url: storeHotSauces.url,
@@ -54,7 +53,7 @@ export async function load({ params, locals: { user } }) {
 		);
 
 	// querry all reviews for a sauce, that are not flagged or are from the user
-	const dbCheckins = await db
+	const checkinsQuery = db
 		.select({
 			username: userTable.username,
 			checkins: checkins
@@ -70,36 +69,35 @@ export async function load({ params, locals: { user } }) {
 		)
 		.limit(24);
 
-	if (user) {
-		const dbUserCheckinPromise = db
-			.select()
-			.from(checkins)
-			.where(and(eq(checkins.hotSauceId, sauceId), eq(checkins.userId, user.id)));
+	const userCheckinQuery = user
+		? db
+				.select()
+				.from(checkins)
+				.where(and(eq(checkins.hotSauceId, sauceId), eq(checkins.userId, user.id)))
+		: [];
 
-		const dbWishlistPromise = db
-			.select({})
-			.from(wishlist)
-			.where(and(eq(wishlist.hotSauceId, sauceId), eq(wishlist.userId, user.id)));
+	const wishlistQuery = user
+		? db
+				.select({})
+				.from(wishlist)
+				.where(and(eq(wishlist.hotSauceId, sauceId), eq(wishlist.userId, user.id)))
+		: [];
 
-		const [userCheckin, dbWishlist] = await Promise.all([dbUserCheckinPromise, dbWishlistPromise]);
-
-		return {
-			sauce,
-			maker,
-			checkins: dbCheckins,
-			stores: dbStores ?? [],
-			userCheckin: userCheckin.length > 0 ? userCheckin[0] : null,
-			wishlisted: dbWishlist.length > 0
-		};
-	}
+	const [dbMaker, dbStores, dbCheckins, userCheckin, dbWishlist] = await Promise.all([
+		makerQuery,
+		storesQuery,
+		checkinsQuery,
+		userCheckinQuery,
+		wishlistQuery
+	]);
 
 	return {
 		sauce,
-		maker,
+		maker: dbMaker.length > 0 ? dbMaker[0] : null,
 		checkins: dbCheckins,
-		stores: dbStores ?? [],
-		userCheckin: null,
-		wishlisted: false
+		stores: dbStores,
+		userCheckin: userCheckin.length > 0 ? userCheckin[0] : null,
+		wishlisted: dbWishlist.length > 0
 	};
 }
 
