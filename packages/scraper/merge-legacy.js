@@ -9,13 +9,17 @@
  * data and the other without.
  *
  * Dry run by default; `--apply` writes. The legacy slug moves onto the new row,
- * so the URLs people already shared keep working.
+ * so the URLs people already shared keep working — unless the old scraper wrote
+ * it with spaces or punctuation, which no one could have shared cleanly anyway.
  */
 import parser from 'yargs-parser';
 import { getDb } from '@app/db';
 import { sql } from 'drizzle-orm';
 
 import 'dotenv/config';
+
+/** The shape slugifyName() produces; the old scrapers did not always. */
+const CLEAN_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const flags = parser(process.argv.slice(2), { boolean: ['apply'] });
 const db = getDb(process.env.DATABASE_URL);
@@ -82,9 +86,8 @@ const unresolved = [
 ];
 
 for (const { legacy, target } of merges.values()) {
-	console.info(
-		`${legacy.store}: "${legacy.legacy_name}" -> "${target.name}" (/${legacy.legacy_slug})`
-	);
+	const slug = CLEAN_SLUG.test(legacy.legacy_slug) ? legacy.legacy_slug : target.slug;
+	console.info(`${legacy.store}: "${legacy.legacy_name}" -> "${target.name}" (/${slug})`);
 }
 for (const pair of unresolved) {
 	const reason =
@@ -119,7 +122,7 @@ await db.transaction(async (tx) => {
 		// Cascades the legacy check-ins, wishlist entries and store links.
 		await tx.execute(sql`DELETE FROM hot_sauces WHERE id = ${legacy.legacy_id}`);
 
-		if (!reslugged.has(target.id)) {
+		if (CLEAN_SLUG.test(legacy.legacy_slug) && !reslugged.has(target.id)) {
 			await tx.execute(
 				sql`UPDATE hot_sauces SET slug = ${legacy.legacy_slug}, updated_at = now() WHERE id = ${target.id}`
 			);

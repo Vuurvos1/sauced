@@ -211,7 +211,11 @@ async function writeCatalogue(runs) {
 		/** Name and slug are identity: the slug is already a live URL, and another
 		 * shop's spelling of the name is not a reason to move it. */
 		const changes = {
-			...(description.text && !keepDescription ? { description: description.text } : {}),
+			// Compared first: rewriting identical text made this one round trip per
+			// stored sauce, most of a full run's time.
+			...(description.text && !keepDescription && description.text !== existing.description
+				? { description: description.text }
+				: {}),
 			...(imageUrl && !existing.imageUrl ? { imageUrl } : {}),
 			// Fill a missing brand, and repoint a legacy duplicate of the same brand
 			// at the canonical row — but never reattribute to a different brand.
