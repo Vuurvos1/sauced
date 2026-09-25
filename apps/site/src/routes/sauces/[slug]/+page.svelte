@@ -8,6 +8,7 @@
 	import { Dialog } from '$lib/components/dialog/index.js';
 	import Meta from '$lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
+	import { reviewSchema, REVIEW_MAX_LENGTH } from '$lib/validation';
 
 	let { data } = $props();
 
@@ -79,18 +80,22 @@
 						<form
 							method="post"
 							action="?/review"
-							use:enhance={({ formData }) => {
+							use:enhance={({ formData, cancel }) => {
 								if (!user) return () => {};
 
 								const baseCheckin = { ...userCheckin };
 
-								const newRating = Number(formData.get('rating'));
-								const newReview = formData.get('content') as string;
-
-								if (newRating < 1 || newRating > 5) {
-									error = 'Please enter a valid rating';
+								const parsed = reviewSchema.safeParse({
+									rating: formData.get('rating'),
+									content: formData.get('content') ?? ''
+								});
+								if (!parsed.success) {
+									error = parsed.error.issues[0].message;
+									cancel();
 									return;
 								}
+
+								const { rating: newRating, content: newReview } = parsed.data;
 
 								if (!userCheckin) {
 									// @ts-expect-error - only needed fields
@@ -130,6 +135,7 @@
 									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
+									maxlength={REVIEW_MAX_LENGTH}
 									value={userCheckin?.review ?? ''}></textarea>
 							</div>
 

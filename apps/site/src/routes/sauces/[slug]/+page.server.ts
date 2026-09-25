@@ -10,6 +10,7 @@ import {
 } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
+import { reviewSchema } from '$lib/validation';
 
 // TODO: fix tensorflow issues
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -118,14 +119,17 @@ export const actions = {
 			});
 		}
 
-		const rating = Number(data.get('rating'));
-		if (rating < 1 || rating > 5) {
+		const parsed = reviewSchema.safeParse({
+			rating: data.get('rating'),
+			content: data.get('content') ?? ''
+		});
+		if (!parsed.success) {
 			return fail(400, {
-				error: 'Please enter a valid rating'
+				error: parsed.error.issues[0].message
 			});
 		}
 
-		const review = String(data.get('content'));
+		const { rating, content: review } = parsed.data;
 
 		let flagged = false;
 		if (review) {
