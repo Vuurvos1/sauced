@@ -10,11 +10,6 @@ import {
 } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
-import { reviewSchema } from '$lib/validation';
-
-// TODO: fix tensorflow issues
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as tf from '@tensorflow/tfjs';
 
 export async function load({ params, locals: { user } }) {
 	const slug = params.slug;
@@ -70,13 +65,6 @@ export async function load({ params, locals: { user } }) {
 		)
 		.limit(24);
 
-	const userCheckinQuery = user
-		? db
-				.select()
-				.from(checkins)
-				.where(and(eq(checkins.hotSauceId, sauceId), eq(checkins.userId, user.id)))
-		: [];
-
 	const wishlistQuery = user
 		? db
 				.select({})
@@ -84,11 +72,10 @@ export async function load({ params, locals: { user } }) {
 				.where(and(eq(wishlist.hotSauceId, sauceId), eq(wishlist.userId, user.id)))
 		: [];
 
-	const [dbMaker, dbStores, dbCheckins, userCheckin, dbWishlist] = await Promise.all([
+	const [dbMaker, dbStores, dbCheckins, dbWishlist] = await Promise.all([
 		makerQuery,
 		storesQuery,
 		checkinsQuery,
-		userCheckinQuery,
 		wishlistQuery
 	]);
 
@@ -97,84 +84,11 @@ export async function load({ params, locals: { user } }) {
 		maker: dbMaker.length > 0 ? dbMaker[0] : null,
 		checkins: dbCheckins,
 		stores: dbStores,
-		userCheckin: userCheckin.length > 0 ? userCheckin[0] : null,
 		wishlisted: dbWishlist.length > 0
 	};
 }
 
 export const actions = {
-	review: async ({ request, locals: { session, user } }) => {
-		if (!session || !user) {
-			return fail(401, {
-				error: 'Unauthorized'
-			});
-		}
-
-		const data = await request.formData();
-
-		const sauceId = data.get('id') as string | null;
-		if (!sauceId) {
-			return fail(400, {
-				error: 'Invalid sauce'
-			});
-		}
-
-		const parsed = reviewSchema.safeParse({
-			rating: data.get('rating'),
-			content: data.get('content') ?? ''
-		});
-		if (!parsed.success) {
-			return fail(400, {
-				error: parsed.error.issues[0].message
-			});
-		}
-
-		const { rating, content: review } = parsed.data;
-
-		let flagged = false;
-		if (review) {
-			// loading this model takes around 4-5 seconds, so only load if needed
-			const toxicity = await import('@tensorflow-models/toxicity');
-			const model = await toxicity.load(0.9, ['toxicity']);
-
-			const predictions = await model.classify(review);
-
-			for (const prediction of predictions) {
-				if (prediction.results[0].match) {
-					flagged = true;
-					break;
-				}
-			}
-		}
-
-		try {
-			await db
-				.insert(checkins)
-				.values([
-					{
-						hotSauceId: sauceId,
-						review,
-						userId: user.id,
-						rating,
-						flagged
-					}
-				])
-				.onConflictDoUpdate({
-					target: [checkins.userId, checkins.hotSauceId],
-					set: {
-						review,
-						rating
-					}
-				});
-		} catch (err) {
-			console.error(err);
-			return fail(500, {
-				error: 'Failed to save review'
-			});
-		}
-
-		return {};
-	},
 	wishlist: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -212,29 +126,6 @@ export const actions = {
 		} catch (err) {
 			console.error(err);
 			return fail(500, { error: 'Failed to add to wishlist' });
-		}
-
-		return {};
-	},
-	removeCheckIn: async ({ request, locals: { session, user } }) => {
-		if (!session || !user) {
-			return fail(401, { error: 'Unauthorized' });
-		}
-
-		const data = await request.formData();
-		const sauceId = (data.get('sauceId') || '') as string;
-
-		if (!sauceId) {
-			return fail(400, { error: 'Missing sauceId' });
-		}
-
-		try {
-			await db
-				.delete(checkins)
-				.where(and(eq(checkins.hotSauceId, sauceId), eq(checkins.userId, user.id)));
-		} catch (err) {
-			console.error(err);
-			return fail(500, { error: 'Failed to delete check-in' });
 		}
 
 		return {};

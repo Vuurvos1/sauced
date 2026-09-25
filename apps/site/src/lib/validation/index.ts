@@ -38,7 +38,12 @@ export const REVIEW_MAX_LENGTH = 2000;
 const ratingError = 'Please enter a valid rating';
 
 export const reviewSchema = z.object({
-	rating: z.coerce.number(ratingError).int(ratingError).min(1, ratingError).max(5, ratingError),
+	id: z.uuid(),
+	rating: z.coerce
+		.number<string>(ratingError)
+		.int(ratingError)
+		.min(1, ratingError)
+		.max(5, ratingError),
 	content: z
 		.string()
 		.trim()
