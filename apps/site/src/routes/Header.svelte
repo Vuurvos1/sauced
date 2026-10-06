@@ -3,9 +3,9 @@
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
 	import { Popover } from 'bits-ui';
 	import { fade } from 'svelte/transition';
-	import { debounce } from '$lib/utils/debounce.svelte';
-	import type { SearchResponse } from '$lib/types/api';
-	import { skipViewTransition } from '$lib/view-transition.svelte';
+	import { debounce } from '#lib/utils/debounce.svelte.js';
+	import type { SearchResponse } from '#lib/types/api.js';
+	import { skipViewTransition } from '#lib/view-transition.svelte.js';
 
 	let {
 		data: { session }
@@ -404,7 +404,7 @@
 
 			<li class="w-full md:col-span-2 md:w-auto">
 				<Popover.Root bind:open>
-					<form data-sveltekit-keepfocus action="/sauces" onsubmit={() => (open = false)}>
+					<form data-sveltekit-reset="false" action="/sauces" onsubmit={() => (open = false)}>
 						<label
 							bind:this={anchor}
 							class="relative mx-auto flex w-full max-w-lg flex-row items-center text-base text-black"

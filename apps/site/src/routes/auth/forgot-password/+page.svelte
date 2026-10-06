@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import TextInput from '$lib/components/form/TextInput.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import TextInput from '#lib/components/form/TextInput.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 </script>
 
 <Meta title="Forgot password" noindex />

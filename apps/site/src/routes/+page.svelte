@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import SauceGrid from '$lib/components/SauceGrid.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import SauceGrid from '#lib/components/SauceGrid.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 

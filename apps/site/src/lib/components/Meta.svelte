@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { PUBLIC_BASE_URL } from '$env/static/public';
-	import { SITE_DESCRIPTION, SITE_NAME, formatTitle, metaDescription } from '$lib/utils/seo';
+	import { PUBLIC_BASE_URL } from '$app/env/public';
+	import { SITE_DESCRIPTION, SITE_NAME, formatTitle, metaDescription } from '#lib/utils/seo.js';
 
 	let {
 		title,
@@ -11,16 +11,17 @@
 		canonical,
 		noindex = false,
 		brandFirst = false
+
+		/** Absolute, or root-relative to this site. */
+		/** Defaults to the current path; pass one to fold query strings into a single URL. */
+		/** Lead with the site name instead of trailing it — for the home page. */
 	}: {
 		title?: string;
 		description?: string | null;
-		/** Absolute, or root-relative to this site. */
 		image?: string | null;
 		imageAlt?: string;
-		/** Defaults to the current path; pass one to fold query strings into a single URL. */
 		canonical?: string;
 		noindex?: boolean;
-		/** Lead with the site name instead of trailing it — for the home page. */
 		brandFirst?: boolean;
 	} = $props();
 

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
+import { auth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 

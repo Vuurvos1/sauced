@@ -1,7 +1,7 @@
 <script lang="ts">
-	import TextInput from '$lib/components/form/TextInput.svelte';
+	import TextInput from '#lib/components/form/TextInput.svelte';
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 	import { enhance } from '$app/forms';
 	import { redirect } from '@sveltejs/kit';
 	import { z } from 'zod/v4';

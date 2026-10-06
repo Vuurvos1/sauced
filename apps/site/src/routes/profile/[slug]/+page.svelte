@@ -2,10 +2,10 @@
 	import { BeamAvatar } from '@app/boring-avatars';
 	import { Trash2, Settings, Trophy } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
-	import StarRating from '$lib/components/StarRating.svelte';
-	import Meta from '$lib/components/Meta.svelte';
-	import { formatTimeAgo } from '$lib/utils/time.js';
-	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
+	import StarRating from '#lib/components/StarRating.svelte';
+	import Meta from '#lib/components/Meta.svelte';
+	import { formatTimeAgo } from '#lib/utils/time.js';
+	import { claimOnNavigate, sauceImageName } from '#lib/view-transition.svelte.js';
 
 	let { data } = $props();
 

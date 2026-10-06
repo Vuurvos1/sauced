@@ -1,5 +1,5 @@
-import { PUBLIC_BASE_URL } from '$env/static/public';
-import { db } from '$lib/server/db';
+import { PUBLIC_BASE_URL } from '$app/env/public';
+import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores } from '@app/db/schema';
 import { asc } from 'drizzle-orm';
 
