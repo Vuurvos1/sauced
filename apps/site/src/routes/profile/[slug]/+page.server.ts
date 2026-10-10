@@ -1,7 +1,7 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, user as userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
-import { getAchievements } from '$lib/server/achievements';
+import { getAchievements } from '#lib/server/achievements/index.js';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
 
 export async function load({ params }) {

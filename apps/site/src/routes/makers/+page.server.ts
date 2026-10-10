@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { hotSauces, makers } from '@app/db/schema';
 import { count, desc, eq } from 'drizzle-orm';
 import {
@@ -8,7 +8,7 @@ import {
 	matchesQuery,
 	normalizeQuery,
 	withFuzzyMatching
-} from '$lib/server/search';
+} from '#lib/server/search.js';
 
 export async function load({ url }) {
 	const search = normalizeQuery(url.searchParams.get('q'));

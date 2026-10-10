@@ -1,9 +1,9 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
+import { auth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { user } from '@app/db/schema';
 import { eq } from 'drizzle-orm';
-import { usernameSchema } from '$lib/validation/index.js';
+import { usernameSchema } from '#lib/validation/index.js';
 
 export async function load({ locals }) {
 	if (!locals.user) {

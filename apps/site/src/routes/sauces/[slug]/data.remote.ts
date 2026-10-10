@@ -1,7 +1,7 @@
 import { form, getRequestEvent, query } from '$app/server';
-import { reviewSchema } from '$lib/validation';
+import { reviewSchema } from '#lib/validation/index.js';
 import { z } from 'zod/v4';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { checkins } from '@app/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';

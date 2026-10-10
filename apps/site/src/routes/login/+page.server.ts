@@ -1,10 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { emailSchema, loginPasswordSchema } from '$lib/validation';
+import { emailSchema, loginPasswordSchema } from '#lib/validation/index.js';
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod/v4';
-import { auth } from '$lib/server/auth';
+import { auth } from '#lib/server/auth.js';
 import { APIError } from 'better-auth/api';
 
 const loginSchema = z.object({

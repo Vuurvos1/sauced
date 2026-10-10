@@ -1,6 +1,6 @@
 <script lang="ts">
-	import SauceGrid from '$lib/components/SauceGrid.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import SauceGrid from '#lib/components/SauceGrid.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 

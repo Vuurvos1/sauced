@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { BeamAvatar } from '@app/boring-avatars';
-	import dayjs from '$lib/dayjs';
-	import StarRating from '$lib/components/StarRating.svelte';
-	import StarRater from '$lib/components/StarRater.svelte';
+	import dayjs from '#lib/dayjs.js';
+	import StarRating from '#lib/components/StarRating.svelte';
+	import StarRater from '#lib/components/StarRater.svelte';
 	import { ListPlus, ListMinus, Check, ArrowUpRight, Trash2 } from '@o7/icon/lucide';
-	import { Dialog } from '$lib/components/dialog/index.js';
-	import Meta from '$lib/components/Meta.svelte';
+	import { Dialog } from '#lib/components/dialog/index.js';
+	import Meta from '#lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
-	import { reviewSchema, REVIEW_MAX_LENGTH } from '$lib/validation';
+	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
 	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
 
 	let { data } = $props();
@@ -73,7 +73,11 @@
 					<!-- TODO: add shallow routing/non js option -->
 					<button
 						onclick={() => {
-							upsertReview.fields.set({ id: sauce.sauceId, content: userCheckin?.review ?? '' });
+							upsertReview.fields.set({
+								id: sauce.sauceId,
+								rating: userCheckin ? String(userCheckin.rating) : '',
+								content: userCheckin?.review ?? ''
+							});
 							open = true;
 						}}
 						type="button"
@@ -109,7 +113,7 @@
 							<input {...upsertReview.fields.id.as('hidden', sauce.sauceId)} />
 
 							<div class="mb-5 flex flex-col gap-4">
-								<StarRater rating={userCheckin?.rating ?? 0}></StarRater>
+								<StarRater field={upsertReview.fields.rating}></StarRater>
 
 								<label for="content">Review</label>
 								<textarea

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HotSauce } from '@app/db/types';
 	import StarRating from './StarRating.svelte';
-	import { claimOnNavigate, sauceImageName } from '$lib/view-transition.svelte';
+	import { claimOnNavigate, sauceImageName } from '#lib/view-transition.svelte.js';
 
 	type SauceRating = HotSauce & {
 		avgRating?: string | number | null;

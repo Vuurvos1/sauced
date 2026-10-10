@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
