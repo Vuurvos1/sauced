@@ -10,6 +10,7 @@ import {
 } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
+import { z } from 'zod/v4';
 
 export async function load({ params, locals: { user } }) {
 	const slug = params.slug;
@@ -96,10 +97,11 @@ export const actions = {
 
 		const data = await request.formData();
 
-		const sauceId = data.get('id') as string | null;
-		if (!sauceId) {
+		const parsedId = z.uuid().safeParse(data.get('id'));
+		if (!parsedId.success) {
 			return fail(400, { error: 'Invalid sauce' });
 		}
+		const sauceId = parsedId.data;
 
 		const wish = data.get('wishlist');
 

@@ -3,6 +3,7 @@ import { checkins, hotSauces, user as userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { getAchievements } from '#lib/server/achievements/index.js';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
+import { z } from 'zod/v4';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -79,11 +80,11 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const sauceId = (data.get('sauceId') || '') as string;
-
-		if (!sauceId) {
-			return fail(400, { error: 'Missing sauceId' });
+		const parsedId = z.uuid().safeParse(data.get('sauceId'));
+		if (!parsedId.success) {
+			return fail(400, { error: 'Invalid sauceId' });
 		}
+		const sauceId = parsedId.data;
 
 		try {
 			await db
