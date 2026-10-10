@@ -31,9 +31,9 @@ export async function GET({ setHeaders }) {
 			.from(makers)
 			.orderBy(asc(makers.slug)),
 		db
-			.select({ name: stores.name, updatedAt: stores.updatedAt })
+			.select({ slug: stores.slug, updatedAt: stores.updatedAt })
 			.from(stores)
-			.orderBy(asc(stores.name))
+			.orderBy(asc(stores.slug))
 	]);
 
 	const entries: Entry[] = [
@@ -43,11 +43,7 @@ export async function GET({ setHeaders }) {
 		{ path: '/stores' },
 		...sauceRows.map((row) => ({ path: `/sauces/${row.slug}`, lastmod: row.updatedAt })),
 		...makerRows.map((row) => ({ path: `/makers/${row.slug}`, lastmod: row.updatedAt })),
-		// Store pages are still keyed on the name rather than a slug.
-		...storeRows.map((row) => ({
-			path: `/stores/${encodeURIComponent(row.name)}`,
-			lastmod: row.updatedAt
-		}))
+		...storeRows.map((row) => ({ path: `/stores/${row.slug}`, lastmod: row.updatedAt }))
 	];
 
 	setHeaders({

@@ -50,6 +50,7 @@ export async function GET({ url }) {
 				.select({
 					id: stores.storeId,
 					name: stores.name,
+					slug: stores.slug,
 					description: stores.description
 				})
 				.from(stores)

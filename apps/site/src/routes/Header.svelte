@@ -306,7 +306,7 @@
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
-			href={`/stores/${store.name}`}
+			href={`/stores/${store.slug}`}
 		>
 			<img
 				class="aspect-square size-12 object-contain"

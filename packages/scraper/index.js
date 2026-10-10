@@ -165,10 +165,15 @@ async function writeCatalogue(runs) {
 	console.info('Upserting stores');
 	/** @type {Map<string, string>} config key -> store id */
 	const storeIds = new Map();
+	const existingStores = await db.select({ name: stores.name, slug: stores.slug }).from(stores);
+	const storeSlugs = new Map(existingStores.map((row) => [row.name, row.slug]));
+	const takenStoreSlugs = new Set(storeSlugs.values());
 	for (const run of runs) {
+		const slug =
+			storeSlugs.get(run.scraper.name) ?? uniqueSlug(run.scraper.name, null, takenStoreSlugs);
 		const [store] = await db
 			.insert(stores)
-			.values({ name: run.scraper.name, url: run.scraper.url })
+			.values({ name: run.scraper.name, slug, url: run.scraper.url })
 			.onConflictDoUpdate({ target: stores.name, set: { url: run.scraper.url } })
 			.returning();
 		storeIds.set(run.storeKey, store.storeId);
