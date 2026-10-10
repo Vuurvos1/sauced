@@ -71,6 +71,13 @@
       "when": 1790259758694,
       "tag": "0009_drop_unreviewed_sauces",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791643336893,
+      "tag": "0010_store_slug",
+      "breakpoints": true
     }
   ]
 }

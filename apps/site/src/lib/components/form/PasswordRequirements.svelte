@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { passwordRules } from '$lib/validation';
+	import { passwordRules } from '#lib/validation/index.js';
 
 	let { password = '' }: { password?: string } = $props();
 </script>

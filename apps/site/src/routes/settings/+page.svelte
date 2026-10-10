@@ -1,9 +1,8 @@
 <script lang="ts">
-	import TextInput from '$lib/components/form/TextInput.svelte';
+	import TextInput from '#lib/components/form/TextInput.svelte';
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 	import { enhance } from '$app/forms';
-	import { redirect } from '@sveltejs/kit';
 	import { z } from 'zod/v4';
 
 	let { data } = $props();
@@ -12,11 +11,6 @@
 
 	let formErrors: string[] = $state([]);
 	let isSuccess = $state(false);
-
-	// svelte-ignore state_referenced_locally
-	if (!user) {
-		redirect(302, '/');
-	}
 </script>
 
 <Meta title="Edit profile" noindex />

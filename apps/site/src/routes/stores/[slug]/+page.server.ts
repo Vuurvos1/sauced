@@ -1,17 +1,25 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
 export async function load({ params }) {
-	const storeName = params.slug;
+	const slug = params.slug;
 
-	if (!storeName) {
-		error(400, 'Invalid store name');
+	if (!slug) {
+		error(400, 'Invalid store');
 	}
 
-	const dbStore = await db.select().from(stores).where(eq(stores.name, storeName));
+	const dbStore = await db.select().from(stores).where(eq(stores.slug, slug)).limit(1);
 	if (dbStore.length === 0) {
+		// Store pages used to be keyed on the name, and those URLs are indexed.
+		const [legacy] = await db
+			.select({ slug: stores.slug })
+			.from(stores)
+			.where(eq(stores.name, slug))
+			.limit(1);
+		if (legacy) redirect(301, `/stores/${legacy.slug}`);
+
 		error(404, 'Store not found');
 	}
 

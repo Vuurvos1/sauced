@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { hotSauces, checkins, makers } from '@app/db/schema';
 import { type Actions } from '@sveltejs/kit';
 import { eq, avg, count, desc, getTableColumns } from 'drizzle-orm';
@@ -9,7 +9,7 @@ import {
 	normalizeQuery,
 	sauceMatchesQuery,
 	withFuzzyMatching
-} from '$lib/server/search';
+} from '#lib/server/search.js';
 
 export async function load({ url }) {
 	const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);

@@ -23,7 +23,10 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"vitest": "^3.2.2"
+			"vitest": "^5.0.3"
+		},
+		"patchedDependencies": {
+			"@o7/icon@0.3.98": "patches/@o7__icon@0.3.98.patch"
 		}
 	}
 }

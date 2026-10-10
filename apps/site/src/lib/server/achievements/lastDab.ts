@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces } from '@app/db/schema';
 import { eq, like, and } from 'drizzle-orm';
 

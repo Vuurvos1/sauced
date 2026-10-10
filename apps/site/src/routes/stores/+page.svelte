@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -39,7 +39,7 @@
 				<li
 					class="group relative flex flex-col items-center gap-4 rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
 				>
-					<a href={`/stores/${store.name}`} class="flex w-full flex-col items-center gap-4">
+					<a href={`/stores/${store.slug}`} class="flex w-full flex-col items-center gap-4">
 						<div class="flex h-32 items-center justify-center rounded-md p-4">
 							<img
 								src={`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`}

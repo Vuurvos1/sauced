@@ -6,7 +6,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { eq } from 'drizzle-orm';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { user, session, account, verification, schema } from '@app/db';
+import { user, session, account, verification, hotSauces, schema } from '@app/db';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +15,11 @@ export const CANONICAL_USER = {
 	password: 'TestPassword123',
 	name: 'Test User',
 	username: 'testuser'
+} as const;
+
+export const TEST_SAUCE = {
+	name: 'E2E Test Sauce',
+	slug: 'e2e-test-sauce'
 } as const;
 
 export default async function globalSetup() {
@@ -69,6 +74,9 @@ export default async function globalSetup() {
 		});
 
 		await db.update(user).set({ emailVerified: true }).where(eq(user.email, CANONICAL_USER.email));
+
+		// Check-ins cascade from the user delete above, so the sauce can persist.
+		await db.insert(hotSauces).values(TEST_SAUCE).onConflictDoNothing();
 	} finally {
 		await client.end();
 	}

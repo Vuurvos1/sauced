@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { checkins, hotSauces, makers, stores } from '@app/db/schema';
 import { avg, desc, eq, count } from 'drizzle-orm';
 import {
@@ -9,8 +8,8 @@ import {
 	normalizeQuery,
 	sauceMatchesQuery,
 	withFuzzyMatching
-} from '$lib/server/search';
-import type { SearchResponse } from '$lib/types/api';
+} from '#lib/server/search.js';
+import type { SearchResponse } from '#lib/types/api.js';
 
 const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
@@ -20,7 +19,7 @@ export async function GET({ url }) {
 	const query = normalizeQuery(url.searchParams.get('q'));
 
 	if (query.length < MIN_SEARCH_LENGTH) {
-		return json(EMPTY satisfies SearchResponse);
+		return Response.json(EMPTY satisfies SearchResponse);
 	}
 
 	try {
@@ -51,6 +50,7 @@ export async function GET({ url }) {
 				.select({
 					id: stores.storeId,
 					name: stores.name,
+					slug: stores.slug,
 					description: stores.description
 				})
 				.from(stores)
@@ -75,13 +75,13 @@ export async function GET({ url }) {
 			return Promise.all([sauceQuery, storeQuery, makerQuery]);
 		});
 
-		return json({
+		return Response.json({
 			makers: makerResults,
 			stores: storeResults,
 			sauces: sauceResults
 		} satisfies SearchResponse);
 	} catch (error) {
 		console.error('Search error:', error);
-		return json(EMPTY satisfies SearchResponse, { status: 500 });
+		return Response.json(EMPTY satisfies SearchResponse, { status: 500 });
 	}
 }

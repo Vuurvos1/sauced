@@ -1,8 +1,9 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, user as userTable } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
-import { getAchievements } from '$lib/server/achievements';
+import { getAchievements } from '#lib/server/achievements/index.js';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
+import { z } from 'zod/v4';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -27,7 +28,7 @@ export async function load({ params }) {
 	const user = users[0];
 
 	const hotSauceColumns = getTableColumns(hotSauces);
-	const checkedSauces = await db
+	const checkedSaucesQuery = db
 		.select({
 			...hotSauceColumns,
 			rating: checkins.rating,
@@ -40,7 +41,7 @@ export async function load({ params }) {
 		.orderBy(desc(checkins.createdAt))
 		.limit(12);
 
-	const reviewCount = await db
+	const reviewCountQuery = db
 		.select({
 			count: count()
 		})
@@ -49,14 +50,19 @@ export async function load({ params }) {
 			and(eq(checkins.userId, user.id), isNotNull(checkins.review), not(eq(checkins.review, '')))
 		);
 
-	const sauceTriedCount = await db
+	const sauceTriedCountQuery = db
 		.select({
 			count: count()
 		})
 		.from(checkins)
 		.where(eq(checkins.userId, user.id));
 
-	const achievements = await getAchievements(user);
+	const [checkedSauces, reviewCount, sauceTriedCount, achievements] = await Promise.all([
+		checkedSaucesQuery,
+		reviewCountQuery,
+		sauceTriedCountQuery,
+		getAchievements(user)
+	]);
 
 	return {
 		user,
@@ -74,11 +80,11 @@ export const actions = {
 		}
 
 		const data = await request.formData();
-		const sauceId = (data.get('sauceId') || '') as string;
-
-		if (!sauceId) {
-			return fail(400, { error: 'Missing sauceId' });
+		const parsedId = z.uuid().safeParse(data.get('sauceId'));
+		if (!parsedId.success) {
+			return fail(400, { error: 'Invalid sauceId' });
 		}
+		const sauceId = parsedId.data;
 
 		try {
 			await db

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { clamp } from '$lib/utils/index';
+	import { clamp } from '#lib/utils/index.js';
 
 	interface Props {
 		rating: number;

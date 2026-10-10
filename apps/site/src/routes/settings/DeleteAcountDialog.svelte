@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Dialog from '$lib/components/dialog/dialog.svelte';
+	import Dialog from '#lib/components/dialog/dialog.svelte';
 	import { TriangleAlert } from '@o7/icon';
 	import { enhance } from '$app/forms';
 

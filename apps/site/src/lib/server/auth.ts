@@ -1,8 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from '$lib/server/db';
-import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from '$env/static/private';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { db } from '#lib/server/db.js';
+import { BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from '$app/env/private';
+import { PUBLIC_BASE_URL } from '$app/env/public';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { haveIBeenPwned, lastLoginMethod } from 'better-auth/plugins';
@@ -12,9 +12,16 @@ export const auth = betterAuth({
 	// Without this the origin is inferred from the incoming request, which makes
 	// OAuth callbacks and redirects unreliable behind a proxy.
 	baseURL: PUBLIC_BASE_URL,
+	secret: BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, {
 		provider: 'pg'
 	}),
+	session: {
+		cookieCache: {
+			enabled: true,
+			maxAge: 5 * 60
+		}
+	},
 	user: {
 		additionalFields: {
 			username: {

@@ -1,20 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
+import { auth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
 	const hotSauceColumns = getTableColumns(hotSauces);
-	const recentSauces = await db
+	const recentSaucesQuery = db
 		.select({ ...hotSauceColumns, makerName: makers.name })
 		.from(hotSauces)
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
 		.orderBy(desc(hotSauces.createdAt))
 		.limit(12);
 
-	const topSauces = await db
+	const topSaucesQuery = db
 		.select({
 			...hotSauceColumns,
 			makerName: makers.name,
@@ -27,6 +27,8 @@ export const load: PageServerLoad = async () => {
 		.groupBy(hotSauces.sauceId, makers.name)
 		.orderBy(desc(count(checkins.rating)), desc(avg(checkins.rating)))
 		.limit(8);
+
+	const [recentSauces, topSauces] = await Promise.all([recentSaucesQuery, topSaucesQuery]);
 
 	return {
 		recentSauces,

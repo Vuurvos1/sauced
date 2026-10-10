@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import SauceGrid from '$lib/components/SauceGrid.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import SauceGrid from '#lib/components/SauceGrid.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -10,13 +10,13 @@
 	const currentPage = $derived(Math.max(Number(page.url.searchParams.get('page')) || 1, 1));
 
 	const previousUrl = $derived.by(() => {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.set('page', String(currentPage - 1));
 		return url.toString();
 	});
 
 	const nextUrl = $derived.by(() => {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.set('page', String(currentPage + 1));
 		return url.toString();
 	});
