@@ -522,9 +522,10 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 
 ### Performance
 
-- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs-node` plus
-      the toxicity model loads inline when posting a review (4-5s cold) and bloats the
-      Vercel function. Background job or a hosted moderation API. Kills the
+- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs` plus
+      the toxicity model loads inline when posting a review (4-6s cold) and bloats the
+      Vercel function. (`@tensorflow/tfjs-node` was installed but never imported, so it
+      never ran; it was dropped for the `tar`/`adm-zip` advisories it pulled in.) Background job or a hosted moderation API. Kills the
       `// TODO: fix tensorflow issues` eslint-disabled import.
 - [x] Parallelise the sauce detail load — sauce, stores and check-ins run sequentially.
       Maker, stores, check-ins and wishlist now load in one `Promise.all`.
