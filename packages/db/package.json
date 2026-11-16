@@ -23,13 +23,12 @@
 		"drizzle-zod": "catalog:"
 	},
 	"dependencies": {
-		"dotenv": "^16.6.1",
 		"postgres": "catalog:"
 	},
 	"devDependencies": {
 		"@electric-sql/pglite": "catalog:",
 		"@softwaretechnik/dbml-renderer": "^1.0.31",
-		"dotenv-cli": "^7.4.4",
+		"dotenv-cli": "^11.1.0",
 		"drizzle-dbml-generator": "^0.10.0",
 		"drizzle-kit": "catalog:",
 		"drizzle-orm": "catalog:",

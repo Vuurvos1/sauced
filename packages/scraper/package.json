@@ -11,7 +11,7 @@
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"dotenv": "^16.6.1",
+		"dotenv": "^18.0.10",
 		"drizzle-orm": "catalog:",
 		"yargs-parser": "^21.1.1"
 	},
