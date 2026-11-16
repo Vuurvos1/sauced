@@ -32,7 +32,7 @@
 		"drizzle-kit": "catalog:",
 		"eslint": "^9.39.5",
 		"eslint-plugin-svelte": "^3.24.1",
-		"globals": "^15.15.0",
+		"globals": "^17.14.0",
 		"postcss": "^8.5.33",
 		"svelte": "^5.57.3",
 		"svelte-check": "^4.7.8",
