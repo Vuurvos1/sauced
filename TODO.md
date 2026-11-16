@@ -128,19 +128,19 @@ Confirmed live, with platform and catalogue size measured directly.
 
 ### WooCommerce — `/wp-json/wc/store/v1/products`
 
-| Store                  | Region | Products | Status                        |
-| ---------------------- | ------ | -------- | ----------------------------- |
-| heatsupply.nl          | NL     | 360      | done (HTML — port to adapter) |
-| chilisaus.be           | BE     | 130      | stub — revive                 |
-| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)            |
-| chardys.nl             | NL     | 12       | also a maker                  |
-| hotta.eu               | EU     | 25       |                               |
-| hotsauceemporium.co.uk | UK     | 906      |                               |
-| flowercityflavor.com   | US     | 524      | disabled (images 403)         |
-| hotsaucedepot.com      | US     | 122      |                               |
-| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm         |
-| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)            |
-| maisonpiquante.com     | FR     | 295      | disabled                      |
+| Store                  | Region | Products | Status                |
+| ---------------------- | ------ | -------- | --------------------- |
+| heatsupply.nl          | NL     | 360      | done                  |
+| chilisaus.be           | BE     | 130      | stub — revive         |
+| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)    |
+| chardys.nl             | NL     | 12       | also a maker          |
+| hotta.eu               | EU     | 25       |                       |
+| hotsauceemporium.co.uk | UK     | 906      |                       |
+| flowercityflavor.com   | US     | 524      | disabled (images 403) |
+| hotsaucedepot.com      | US     | 122      |                       |
+| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm |
+| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)    |
+| maisonpiquante.com     | FR     | 295      | disabled              |
 
 ### Needs bespoke work — lower priority
 
