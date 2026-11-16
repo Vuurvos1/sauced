@@ -14,11 +14,6 @@
 		"dotenv": "^16.6.1",
 		"drizzle-orm": "catalog:",
 		"jsdom": "^26.1.0",
-		"puppeteer": "^22.15.0",
-		"puppeteer-core": "^22.15.0",
-		"puppeteer-extra": "^3.3.6",
-		"puppeteer-extra-plugin-adblocker": "^2.13.6",
-		"puppeteer-extra-plugin-stealth": "^2.11.2",
 		"yargs-parser": "^21.1.1"
 	},
 	"devDependencies": {
