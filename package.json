@@ -14,7 +14,7 @@
 	},
 	"devDependencies": {
 		"oxfmt": "^0.68.0",
-		"turbo": "^2.11.2"
+		"turbo": "^2.11.11"
 	},
 	"type": "module",
 	"packageManager": "pnpm@10.18.0",
