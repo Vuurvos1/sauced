@@ -75,19 +75,25 @@ Shipped in #28. 27 stores registered, all verified live: 5424 products, no failu
 
 ### CI
 
-- [ ] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
+- [x] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
       `scrape.yml` exist. A PR workflow running `turbo lint build` + vitest + Playwright
-      is the single highest-value addition to this repo.
-- [ ] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
+      is the single highest-value addition to this repo. `ci.yml`: lint, `svelte-check`,
+      both Vitest suites, and Playwright against a production build and a `postgres:16`
+      service.
+- [x] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
       `lib/server/search.ts`, `lib/validation`, `utils/name.ts`, `scraper/utils/format.js`.
+      `search.test.ts` runs against in-memory Postgres (`@app/db/testing`, PGlite).
+- [ ] Unit tests for `lib/validation` and `utils/name.ts`. Anything else that needs a
+      database can reuse `createTestDb()` from `@app/db/testing`.
 - [ ] Playwright covers login and check-ins — add wishlist toggle, search and
       pagination.
-- [ ] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
+- [x] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
       check-in test take 23–30s on their first run (Vite compiling routes on first
       request) against Playwright's 30s default, so one of them intermittently times out.
       The symptom is `page.goto: net::ERR_ABORTED; maybe frame was detached?` on the first
       navigation; against an already-running dev server the suite passes in ~15s.
-      Warm the server in `global-setup` or run e2e against `vite preview`.
+      Warm the server in `global-setup` or run e2e against `vite preview`. Playwright now
+      builds and runs `vite preview`.
 - [ ] Wire `lint` / `test` turbo tasks for `packages/db` and `packages/scraper`.
 - [x] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
       `.svelte.ts` parse errors) so CI can enforce lint.
