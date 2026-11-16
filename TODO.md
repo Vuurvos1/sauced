@@ -82,6 +82,10 @@ Shipped in #28. 27 stores registered, all verified live: 5424 products, no failu
       `lib/server/search.ts`, `lib/validation`, `utils/name.ts`, `scraper/utils/format.js`.
 - [ ] Playwright covers login and check-ins — add wishlist toggle, search and
       pagination.
+- [ ] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
+      check-in test take 23–30s on their first run (Vite compiling routes on first
+      request) against Playwright's 30s default, so one of them intermittently times out.
+      Warm the server in `global-setup` or run e2e against `vite preview`.
 - [ ] Wire `lint` / `test` turbo tasks for `packages/db` and `packages/scraper`.
 - [ ] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
       `.svelte.ts` parse errors) so CI can enforce lint.
@@ -607,7 +611,7 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 - [ ] **Drop the `@o7/icon` patch** (`patches/@o7__icon@0.3.98.patch`) once upstream
       fixes SvelteKit 3 SSR (ottomated/o7-icon#4). Remove the `patchedDependencies`
       entry in the root `package.json` in the same change as the version bump.
-- [ ] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
-      it once a release lists Kit 3.
+- [x] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
+      it once a release lists Kit 3. 1.7.25 lists `^2 || ^3`.
 - [ ] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
       (mostly missing `{#each}` keys) and it needs a `**/*.svelte.ts` parser block.
