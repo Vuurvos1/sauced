@@ -17,6 +17,7 @@
 	},
 	"devDependencies": {
 		"@app/boring-avatars": "workspace:^",
+		"@electric-sql/pglite": "catalog:",
 		"@eslint/js": "^9.39.5",
 		"@playwright/test": "^1.63.0",
 		"@softwaretechnik/dbml-renderer": "^1.0.31",

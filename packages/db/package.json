@@ -15,7 +15,8 @@
 	"exports": {
 		".": "./index.js",
 		"./schema": "./schema/index.js",
-		"./types": "./types.ts"
+		"./types": "./types.ts",
+		"./testing": "./testing.js"
 	},
 	"peerDependencies": {
 		"drizzle-orm": "catalog:",
@@ -26,6 +27,7 @@
 		"postgres": "catalog:"
 	},
 	"devDependencies": {
+		"@electric-sql/pglite": "catalog:",
 		"@softwaretechnik/dbml-renderer": "^1.0.31",
 		"dotenv-cli": "^7.4.4",
 		"drizzle-dbml-generator": "^0.10.0",
