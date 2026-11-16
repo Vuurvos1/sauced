@@ -19,8 +19,6 @@
 		postLabel,
 		...restProps
 	}: Props = $props();
-
-	let valueLength = $derived(value?.length);
 </script>
 
 <label

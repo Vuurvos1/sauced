@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import SauceGrid from '#lib/components/SauceGrid.svelte';
 	import Meta from '#lib/components/Meta.svelte';
 
@@ -15,7 +16,7 @@
 
 <div>
 	<section class="container">
-		<a href="../">Back</a>
+		<a href={resolve('/profile/[slug]', { slug: username })}>Back</a>
 
 		<h1 class="text-4xl font-semibold">Wishlist</h1>
 

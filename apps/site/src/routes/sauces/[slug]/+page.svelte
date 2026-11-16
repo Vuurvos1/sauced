@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { BeamAvatar } from '@app/boring-avatars';
 	import dayjs from '#lib/dayjs.js';
@@ -44,7 +45,7 @@
 			{#if maker}
 				<a
 					class="mb-3 inline-block font-medium text-gray-600 underline-offset-2 hover:underline"
-					href="/makers/{maker.slug}"
+					href={resolve('/makers/[slug]', { slug: maker.slug })}
 				>
 					{maker.name}
 				</a>
@@ -125,7 +126,7 @@
 									maxlength={REVIEW_MAX_LENGTH}></textarea>
 							</div>
 
-							{#each upsertReview.fields.allIssues() ?? [] as issue}
+							{#each upsertReview.fields.allIssues() ?? [] as issue, i (i)}
 								<div class="mb-6 rounded bg-red-50 p-3 text-sm text-red-600">
 									{issue.message}
 								</div>
@@ -150,12 +151,12 @@
 				<h2 class="mb-2 text-xl font-semibold">Where to get</h2>
 				{#if stores.length > 0}
 					<ul class="flex flex-wrap gap-2">
-						{#each stores as store}
+						{#each stores as store (store.store.storeId)}
 							<li>
 								<a
 									class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors hover:bg-gray-50"
 									target="_blank"
-									rel="noopener noreferrer"
+									rel="external noopener noreferrer"
 									href={store.url}
 								>
 									<span>{store.store.name}</span>
@@ -182,7 +183,8 @@
 							{dayjs(checkin.checkins.updatedAt).format('MMMM D, YYYY')}
 						</time>
 						{#if checkin.username}
-							<a href={`/profile/${checkin.username}`}>{checkin.username}</a>
+							<a href={resolve('/profile/[slug]', { slug: checkin.username })}>{checkin.username}</a
+							>
 						{/if}
 					</div>
 				</div>
@@ -231,7 +233,7 @@
 					{@render checkinSnippet({ username: user.username, checkins: userCheckin })}
 				{/if}
 
-				{#each checkins as checkin}
+				{#each checkins as checkin (checkin.checkins.userId)}
 					{@render checkinSnippet(checkin)}
 				{/each}
 			</ul>

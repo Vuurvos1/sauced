@@ -85,9 +85,11 @@ Shipped in #28. 27 stores registered, all verified live: 5424 products, no failu
 - [ ] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
       check-in test take 23–30s on their first run (Vite compiling routes on first
       request) against Playwright's 30s default, so one of them intermittently times out.
+      The symptom is `page.goto: net::ERR_ABORTED; maybe frame was detached?` on the first
+      navigation; against an already-running dev server the suite passes in ~15s.
       Warm the server in `global-setup` or run e2e against `vite preview`.
 - [ ] Wire `lint` / `test` turbo tasks for `packages/db` and `packages/scraper`.
-- [ ] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
+- [x] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
       `.svelte.ts` parse errors) so CI can enforce lint.
 - [x] Playwright: no test exercises the check-in form, which the SvelteKit 3 upgrade
       rewired (`StarRater` now binds to the remote form field). `tests/checkin.test.ts`.
@@ -613,5 +615,9 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
       entry in the root `package.json` in the same change as the version bump.
 - [x] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
       it once a release lists Kit 3. 1.7.25 lists `^2 || ^3`.
-- [ ] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
+- [x] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
       (mostly missing `{#each}` keys) and it needs a `**/*.svelte.ts` parser block.
+      3.24 also adds `no-navigation-without-resolve`: internal links now go through
+      `resolve()`, external ones carry `rel="external"`, and the five query-string links
+      (header search, `/sauces` pagination) use `resolve()` behind an eslint-disable.
+      Replace those if `resolve()` ever accepts a query string.

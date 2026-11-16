@@ -5,7 +5,7 @@
 </script>
 
 <ul class="space-y-0.5 text-sm">
-	{#each passwordRules as rule}
+	{#each passwordRules as rule (rule.label)}
 		{@const met = rule.test(password)}
 		<li
 			class={met ? 'text-green-700' : 'text-gray-500'}

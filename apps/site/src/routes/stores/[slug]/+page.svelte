@@ -32,7 +32,7 @@
 		<a
 			href={store.url}
 			target="_blank"
-			rel="noopener noreferrer"
+			rel="external noopener noreferrer"
 			class="hover:text-primary-600 inline-flex items-center gap-1.5 text-sm text-gray-600"
 		>
 			<Globe size={16} />

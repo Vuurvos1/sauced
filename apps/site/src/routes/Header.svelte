@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
 	import { Popover } from 'bits-ui';
@@ -201,18 +202,20 @@
 			</div>
 
 			<ul role="group" aria-labelledby="search-group-sauces">
-				{#each searchResults.sauces as sauce, i}
+				{#each searchResults.sauces as sauce, i (sauce.slug)}
 					{@render sauceItem(sauce, i)}
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
+				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`/sauces?q=${encodeURIComponent(search)}`}
+					href={`${resolve('/sauces')}?q=${encodeURIComponent(search)}`}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{:else if resultsQuery.length >= MIN_SEARCH_LENGTH}
@@ -229,18 +232,20 @@
 			</div>
 
 			<ul role="group" aria-labelledby="search-group-makers">
-				{#each searchResults.makers as maker, i}
+				{#each searchResults.makers as maker, i (maker.slug)}
 					{@render makerItem(maker, makerOffset + i)}
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
+				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`/makers?q=${encodeURIComponent(search)}`}
+					href={`${resolve('/makers')}?q=${encodeURIComponent(search)}`}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{/if}
@@ -253,18 +258,20 @@
 			</div>
 
 			<ul role="group" aria-labelledby="search-group-stores">
-				{#each searchResults.stores as store, i}
+				{#each searchResults.stores as store, i (store.slug)}
 					{@render storeItem(store, storeOffset + i)}
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
+				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`/stores?q=${encodeURIComponent(search)}`}
+					href={`${resolve('/stores')}?q=${encodeURIComponent(search)}`}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{/if}
@@ -306,7 +313,7 @@
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
-			href={`/stores/${store.slug}`}
+			href={resolve('/stores/[slug]', { slug: store.slug })}
 		>
 			<img
 				class="aspect-square size-12 object-contain"
@@ -335,7 +342,7 @@
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
-			href={`/makers/${maker.slug}`}
+			href={resolve('/makers/[slug]', { slug: maker.slug })}
 		>
 			<div>
 				<div class="font-medium">{maker.name}</div>
@@ -363,7 +370,7 @@
 		<a
 			onclick={() => (open = false)}
 			class="flex items-center gap-2"
-			href={`/sauces/${sauce.slug}`}
+			href={resolve('/sauces/[slug]', { slug: sauce.slug })}
 		>
 			<img class="aspect-square size-12 object-contain" src={sauce.imageUrl} alt={sauce.name} />
 			<div>
@@ -385,7 +392,7 @@
 			<li>
 				<a
 					class="flex w-fit flex-row items-center gap-2.5 font-logo text-2xl"
-					href="/"
+					href={resolve('/')}
 					onclick={skipViewTransition}
 				>
 					<svg class="size-8" fill="none" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
@@ -482,7 +489,7 @@
 			</li>
 
 			<li class="md:ml-auto">
-				<a aria-label="profile" href={session ? '/profile' : '/login'}>
+				<a aria-label="profile" href={session ? resolve('/profile') : resolve('/login')}>
 					<UserRound size={24}></UserRound>
 				</a>
 			</li>

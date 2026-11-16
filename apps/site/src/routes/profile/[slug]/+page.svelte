@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { BeamAvatar } from '@app/boring-avatars';
 	import { Trash2, Settings, Trophy } from '@o7/icon/lucide';
 	import { enhance } from '$app/forms';
@@ -30,7 +31,7 @@
 			</div>
 
 			{#if session?.userId === user.id}
-				<a class="btn btn-outline px-4 py-1" href={`/settings`}>
+				<a class="btn btn-outline px-4 py-1" href={resolve('/settings')}>
 					<Settings size={20}></Settings>
 					Edit profile
 				</a>
@@ -56,7 +57,7 @@
 			<h2 class="h2">Achievements</h2>
 
 			<ul class="flex flex-col gap-4">
-				{#each achievements as achievement}
+				{#each achievements as achievement (achievement.id)}
 					<li class="flex items-center gap-2">
 						{#if achievement.image}
 							<img class="h-12 w-12 rounded-full" src={achievement.image} alt={achievement.name} />
@@ -89,7 +90,7 @@
 
 				{#if checkedSauces.length > 0}
 					<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-4">
-						{#each checkedSauces as sauce}
+						{#each checkedSauces as sauce (sauce.slug)}
 							<li class="group relative">
 								<!-- TODO: add confirm dialog -->
 								<form
@@ -107,7 +108,7 @@
 
 								<a
 									class="card block h-full"
-									href={`/sauces/${sauce.slug}`}
+									href={resolve('/sauces/[slug]', { slug: sauce.slug })}
 									onclick={(e) => claimOnNavigate(e, 'checkins', sauce.slug)}
 								>
 									<img

@@ -19,7 +19,7 @@
 		onmouseleave={() => (hoverRating = 0)}
 		class="flex flex-row gap-2 text-gray-300"
 	>
-		{#each { length: 5 } as _, i}
+		{#each { length: 5 }, i (i)}
 			<label
 				onmouseenter={() => (hoverRating = i + 1)}
 				class:text-yellow-500={i < hoverRating || (i < rating && hoverRating === 0)}
