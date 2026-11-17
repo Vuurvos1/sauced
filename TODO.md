@@ -398,7 +398,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       treating one bottle as one sauce. The second is much cheaper and probably right
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
-(Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+  (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
 - [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
