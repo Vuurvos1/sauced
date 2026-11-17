@@ -626,5 +626,5 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
       (mostly missing `{#each}` keys) and it needs a `**/*.svelte.ts` parser block.
       3.24 also adds `no-navigation-without-resolve`: internal links now go through
       `resolve()`, external ones carry `rel="external"`, and the five query-string links
-      (header search, `/sauces` pagination) use `resolve()` behind an eslint-disable.
-      Replace those if `resolve()` ever accepts a query string.
+      (header search, `/sauces` pagination) pass it to `resolve()`, which takes one
+      since Kit 3.3.

@@ -10,13 +10,10 @@
 
 	const currentPage = $derived(Math.max(Number(page.url.searchParams.get('page')) || 1, 1));
 
-	function pageUrl(pageNumber: number) {
+	function pageQuery(pageNumber: number) {
 		const params = { ...Object.fromEntries(page.url.searchParams), page: String(pageNumber) };
-		return `${resolve('/sauces')}?${new URLSearchParams(params)}`;
+		return new URLSearchParams(params).toString();
 	}
-
-	const previousUrl = $derived(pageUrl(currentPage - 1));
-	const nextUrl = $derived(pageUrl(currentPage + 1));
 
 	const title = $derived(search ? `Results for "${search}"` : 'All hot sauces');
 
@@ -49,28 +46,24 @@
 	{/if}
 
 	<div class="flex flex-row justify-end gap-6 py-4">
-		<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 		<a
-			href={previousUrl}
+			href={resolve(`/sauces?${pageQuery(currentPage - 1)}`)}
 			class={currentPage < 2 ? 'pointer-events-none cursor-not-allowed opacity-70' : ''}
 		>
 			Prev
 		</a>
-		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 
 		<span>
 			{currentPage} / {Math.ceil(sauceCount / pageSize)}
 		</span>
 
-		<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 		<a
-			href={nextUrl}
+			href={resolve(`/sauces?${pageQuery(currentPage + 1)}`)}
 			class={currentPage > Math.ceil(sauceCount / pageSize) - 1
 				? 'pointer-events-none cursor-not-allowed opacity-70'
 				: ''}
 		>
 			Next
 		</a>
-		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	</div>
 </div>

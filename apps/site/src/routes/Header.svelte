@@ -207,15 +207,13 @@
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
-				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`${resolve('/sauces')}?q=${encodeURIComponent(search)}`}
+					href={resolve(`/sauces?q=${encodeURIComponent(search)}`)}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{:else if resultsQuery.length >= MIN_SEARCH_LENGTH}
@@ -237,15 +235,13 @@
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
-				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`${resolve('/makers')}?q=${encodeURIComponent(search)}`}
+					href={resolve(`/makers?q=${encodeURIComponent(search)}`)}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{/if}
@@ -263,15 +259,13 @@
 				{/each}
 			</ul>
 			<div class="mt-2 flex pb-2">
-				<!-- eslint-disable svelte/no-navigation-without-resolve -- resolve() can't take a query string -->
 				<a
-					href={`${resolve('/stores')}?q=${encodeURIComponent(search)}`}
+					href={resolve(`/stores?q=${encodeURIComponent(search)}`)}
 					class="ml-auto text-gray-600 hover:underline"
 					onclick={() => (open = false)}
 				>
 					View all results
 				</a>
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</div>
 		</div>
 	{/if}
