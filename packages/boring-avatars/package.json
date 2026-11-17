@@ -39,9 +39,6 @@
 		"vite": "^8.3.8"
 	},
 	"type": "module",
-	"dependencies": {
-		"boring-avatars": "^1.11.2"
-	},
 	"imports": {
 		"#lib": "./src/lib/index.ts",
 		"#lib/*": "./src/lib/*"

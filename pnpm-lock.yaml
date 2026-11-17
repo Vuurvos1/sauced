@@ -68,9 +68,6 @@ importers:
       bits-ui:
         specifier: ^1.8.0
         version: 1.8.0(svelte@5.57.3(@typescript-eslint/types@8.73.0))
-      boring-avatars:
-        specifier: ^1.11.2
-        version: 1.11.2
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -129,9 +126,6 @@ importers:
       autoprefixer:
         specifier: ^10.6.2
         version: 10.6.2(postcss@8.5.33)
-      drizzle-kit:
-        specifier: 'catalog:'
-        version: 0.31.11
       eslint:
         specifier: ^9.39.5
         version: 9.39.5(jiti@1.21.7)
@@ -176,10 +170,6 @@ importers:
         version: 4.6.7
 
   packages/boring-avatars:
-    dependencies:
-      boring-avatars:
-        specifier: ^1.11.2
-        version: 1.11.2
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.5
@@ -2118,9 +2108,6 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
-
-  boring-avatars@1.11.2:
-    resolution: {integrity: sha512-3+wkwPeObwS4R37FGXMYViqc4iTrIRj5yzfX9Qy4mnpZ26sX41dGMhsAgmKks1r/uufY1pl4vpgzMWHYfJRb2A==}
 
   brace-expansion@1.1.22:
     resolution: {integrity: sha512-CKLDTuSsN0+r1ThM0WkzzBI7dnPI6xEGfa/JnVYIK9JNBA1N1NyPwXVHor//NKD/y3sDxp764sZdLhFK7pH8XQ==}
@@ -5525,8 +5512,6 @@ snapshots:
     optional: true
 
   blake3-wasm@2.1.5: {}
-
-  boring-avatars@1.11.2: {}
 
   brace-expansion@1.1.22:
     dependencies:
