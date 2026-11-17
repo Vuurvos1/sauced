@@ -75,15 +75,27 @@ Shipped in #28. 27 stores registered, all verified live: 5424 products, no failu
 
 ### CI
 
-- [ ] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
+- [x] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
       `scrape.yml` exist. A PR workflow running `turbo lint build` + vitest + Playwright
-      is the single highest-value addition to this repo.
-- [ ] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
+      is the single highest-value addition to this repo. `ci.yml`: lint, `svelte-check`,
+      both Vitest suites, and Playwright against a production build and a `postgres:16`
+      service.
+- [x] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
       `lib/server/search.ts`, `lib/validation`, `utils/name.ts`, `scraper/utils/format.js`.
+      `search.test.ts` runs against in-memory Postgres (`@app/db/testing`, PGlite).
+- [ ] Unit tests for `lib/validation` and `utils/name.ts`. Anything else that needs a
+      database can reuse `createTestDb()` from `@app/db/testing`.
 - [ ] Playwright covers login and check-ins — add wishlist toggle, search and
       pagination.
+- [x] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
+      check-in test take 23–30s on their first run (Vite compiling routes on first
+      request) against Playwright's 30s default, so one of them intermittently times out.
+      The symptom is `page.goto: net::ERR_ABORTED; maybe frame was detached?` on the first
+      navigation; against an already-running dev server the suite passes in ~15s.
+      Warm the server in `global-setup` or run e2e against `vite preview`. Playwright now
+      builds and runs `vite preview`.
 - [ ] Wire `lint` / `test` turbo tasks for `packages/db` and `packages/scraper`.
-- [ ] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
+- [x] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
       `.svelte.ts` parse errors) so CI can enforce lint.
 - [x] Playwright: no test exercises the check-in form, which the SvelteKit 3 upgrade
       rewired (`StarRater` now binds to the remote form field). `tests/checkin.test.ts`.
@@ -116,19 +128,19 @@ Confirmed live, with platform and catalogue size measured directly.
 
 ### WooCommerce — `/wp-json/wc/store/v1/products`
 
-| Store                  | Region | Products | Status                        |
-| ---------------------- | ------ | -------- | ----------------------------- |
-| heatsupply.nl          | NL     | 360      | done (HTML — port to adapter) |
-| chilisaus.be           | BE     | 130      | stub — revive                 |
-| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)            |
-| chardys.nl             | NL     | 12       | also a maker                  |
-| hotta.eu               | EU     | 25       |                               |
-| hotsauceemporium.co.uk | UK     | 906      |                               |
-| flowercityflavor.com   | US     | 524      | disabled (images 403)         |
-| hotsaucedepot.com      | US     | 122      |                               |
-| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm         |
-| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)            |
-| maisonpiquante.com     | FR     | 295      | disabled                      |
+| Store                  | Region | Products | Status                |
+| ---------------------- | ------ | -------- | --------------------- |
+| heatsupply.nl          | NL     | 360      | done                  |
+| chilisaus.be           | BE     | 130      | stub — revive         |
+| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)    |
+| chardys.nl             | NL     | 12       | also a maker          |
+| hotta.eu               | EU     | 25       |                       |
+| hotsauceemporium.co.uk | UK     | 906      |                       |
+| flowercityflavor.com   | US     | 524      | disabled (images 403) |
+| hotsaucedepot.com      | US     | 122      |                       |
+| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm |
+| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)    |
+| maisonpiquante.com     | FR     | 295      | disabled              |
 
 ### Needs bespoke work — lower priority
 
@@ -386,7 +398,7 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       treating one bottle as one sauce. The second is much cheaper and probably right
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
-(Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+  (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
 - [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
@@ -510,9 +522,10 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 
 ### Performance
 
-- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs-node` plus
-      the toxicity model loads inline when posting a review (4-5s cold) and bloats the
-      Vercel function. Background job or a hosted moderation API. Kills the
+- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs` plus
+      the toxicity model loads inline when posting a review (4-6s cold) and bloats the
+      Vercel function. (`@tensorflow/tfjs-node` was installed but never imported, so it
+      never ran; it was dropped for the `tar`/`adm-zip` advisories it pulled in.) Background job or a hosted moderation API. Kills the
       `// TODO: fix tensorflow issues` eslint-disabled import.
 - [x] Parallelise the sauce detail load — sauce, stores and check-ins run sequentially.
       Maker, stores, check-ins and wishlist now load in one `Promise.all`.
@@ -607,7 +620,11 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 - [ ] **Drop the `@o7/icon` patch** (`patches/@o7__icon@0.3.98.patch`) once upstream
       fixes SvelteKit 3 SSR (ottomated/o7-icon#4). Remove the `patchedDependencies`
       entry in the root `package.json` in the same change as the version bump.
-- [ ] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
-      it once a release lists Kit 3.
-- [ ] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
+- [x] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
+      it once a release lists Kit 3. 1.7.25 lists `^2 || ^3`.
+- [x] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
       (mostly missing `{#each}` keys) and it needs a `**/*.svelte.ts` parser block.
+      3.24 also adds `no-navigation-without-resolve`: internal links now go through
+      `resolve()`, external ones carry `rel="external"`, and the five query-string links
+      (header search, `/sauces` pagination) pass it to `resolve()`, which takes one
+      since Kit 3.3.

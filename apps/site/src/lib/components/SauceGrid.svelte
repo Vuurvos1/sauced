@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { HotSauce } from '@app/db/types';
 	import StarRating from './StarRating.svelte';
 	import { claimOnNavigate, sauceImageName } from '#lib/view-transition.svelte.js';
@@ -22,7 +23,10 @@
 {#snippet sauce(sauce: SauceRating)}
 	<li>
 		<!-- TODO: make relative? -->
-		<a href="/sauces/{sauce.slug}" onclick={(e) => claimOnNavigate(e, section, sauce.slug)}>
+		<a
+			href={resolve('/sauces/[slug]', { slug: sauce.slug })}
+			onclick={(e) => claimOnNavigate(e, section, sauce.slug)}
+		>
 			<img
 				class="mx-auto mb-3 aspect-square max-w-full object-contain"
 				style:view-transition-name={sauceImageName(section, sauce.slug)}
@@ -55,7 +59,7 @@
 <ul
 	class="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))]"
 >
-	{#each sauces as s}
+	{#each sauces as s (s.slug)}
 		{@render sauce(s)}
 	{:else}
 		<li>No sauces found</li>

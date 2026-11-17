@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import TextInput from '#lib/components/form/TextInput.svelte';
 	import { Google } from '@o7/icon/remix/solid';
 	import { superForm } from 'sveltekit-superforms';
@@ -15,7 +16,10 @@
 <Meta title="Sign in" description="Sign in to rate hot sauces and keep a wishlist." noindex />
 
 {#snippet forgotPassword()}
-	<a class="ml-auto font-medium text-blue-700 hover:underline" href="/auth/forgot-password">
+	<a
+		class="ml-auto font-medium text-blue-700 hover:underline"
+		href={resolve('/auth/forgot-password')}
+	>
 		Forgot password
 	</a>
 {/snippet}
@@ -71,7 +75,10 @@
 		</div>
 
 		<p class="mt-8 text-center">
-			Don't have an account? <a class="font-medium text-blue-700 hover:underline" href="/signup">
+			Don't have an account? <a
+				class="font-medium text-blue-700 hover:underline"
+				href={resolve('/signup')}
+			>
 				Create an account
 			</a>
 		</p>

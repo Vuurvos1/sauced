@@ -71,6 +71,9 @@ pnpm site test:unit
 pnpm scrapers test
 ```
 
+The search tests need real Postgres and get it in memory from PGlite (`@app/db/testing`),
+migrated with the same files as production, so they need no database running.
+
 End-to-end tests use [Playwright](https://playwright.dev/) against the test database. They
 read `apps/site/.env.test`, which is committed and already points at it. The command
 starts the test database, applies the migrations and seeds a test user and sauce:
@@ -79,6 +82,13 @@ starts the test database, applies the migrations and seeds a test user and sauce
 pnpm --filter @app/site exec playwright install chromium # first run only
 pnpm site test:integration
 ```
+
+Playwright builds the site and serves it with `vite preview`. While writing tests, start
+`pnpm --filter @app/site exec vite dev --mode test --port 4173` yourself and Playwright
+reuses it instead of rebuilding.
+
+CI (`.github/workflows/ci.yml`) runs all of the above on pull requests and on pushes to
+`main` and `dev`.
 
 Type-check, lint and format:
 

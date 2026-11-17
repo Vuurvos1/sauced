@@ -24,7 +24,7 @@
 	// const maskId = getRandId('mask__beam');
 	const maskId = 'mask__beam';
 
-	const data = generateData(name, colors);
+	const data = $derived(generateData(name, colors));
 
 	function generateData(name: string, colors: string[]) {
 		const numFromName = hashCode(name);

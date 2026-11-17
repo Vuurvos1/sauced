@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import TextInput from '#lib/components/form/TextInput.svelte';
 	import PasswordRequirements from '#lib/components/form/PasswordRequirements.svelte';
 	import { Google } from '@o7/icon/remix/solid';
@@ -90,7 +91,10 @@
 		</div>
 
 		<p class="mt-8 text-center">
-			Already have an account? <a class="font-medium text-blue-700 hover:underline" href="/login">
+			Already have an account? <a
+				class="font-medium text-blue-700 hover:underline"
+				href={resolve('/login')}
+			>
 				Login
 			</a>
 		</p>

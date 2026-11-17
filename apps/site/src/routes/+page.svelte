@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import SauceGrid from '#lib/components/SauceGrid.svelte';
 	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
-	let { recentSauces, topSauces, user } = $derived(data);
+	let { recentSauces, topSauces } = $derived(data);
 </script>
 
 <Meta title="Find and rate hot sauces" brandFirst />
@@ -18,7 +18,7 @@
 			<SauceGrid sauces={recentSauces} section="recent" />
 
 			<div class="mt-4 flex justify-end">
-				<a class="btn" href="/sauces">Check all sauces</a>
+				<a class="btn" href={resolve('/sauces')}>Check all sauces</a>
 			</div>
 		</div>
 	</section>
@@ -30,7 +30,7 @@
 			<SauceGrid sauces={topSauces} section="top" />
 
 			<div class="mt-4 flex justify-end">
-				<a class="btn" href="/sauces">Check all sauces</a>
+				<a class="btn" href={resolve('/sauces')}>Check all sauces</a>
 			</div>
 		</div>
 	</section>

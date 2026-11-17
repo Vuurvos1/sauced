@@ -8,26 +8,26 @@
 		"introspect": "drizzle-kit introspect:pg",
 		"generate": "drizzle-kit generate",
 		"diagram": "node dbml.js && pnpm dbml-renderer -i schema.dbml -o erd.svg",
-		"studio": "dotenv -e .env -- drizzle-kit studio",
+		"studio": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs studio",
 		"migrate": "drizzle-kit migrate"
 	},
 	"type": "module",
 	"exports": {
 		".": "./index.js",
 		"./schema": "./schema/index.js",
-		"./types": "./types.ts"
+		"./types": "./types.ts",
+		"./testing": "./testing.js"
 	},
 	"peerDependencies": {
 		"drizzle-orm": "catalog:",
 		"drizzle-zod": "catalog:"
 	},
 	"dependencies": {
-		"dotenv": "^16.6.1",
 		"postgres": "catalog:"
 	},
 	"devDependencies": {
+		"@electric-sql/pglite": "catalog:",
 		"@softwaretechnik/dbml-renderer": "^1.0.31",
-		"dotenv-cli": "^7.4.4",
 		"drizzle-dbml-generator": "^0.10.0",
 		"drizzle-kit": "catalog:",
 		"drizzle-orm": "catalog:",

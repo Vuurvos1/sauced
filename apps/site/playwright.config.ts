@@ -11,7 +11,12 @@ Object.assign(process.env, loadEnv('test', __dirname, ''));
 
 const config: PlaywrightTestConfig = {
 	webServer: {
-		command: 'pnpm vite dev --mode test --port 4173',
+		// A production build, not the dev server: on a cold dev server the first
+		// navigation in each worker races Vite compiling routes and times out.
+		// While iterating on tests, start `pnpm vite dev --mode test --port 4173`
+		// yourself and it is reused instead.
+		command: 'pnpm vite build --mode test && pnpm vite preview --mode test --port 4173',
+		timeout: 180_000,
 		port: 4173,
 		reuseExistingServer: !process.env.CI
 	},

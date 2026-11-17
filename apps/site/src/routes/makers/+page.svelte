@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
@@ -36,11 +37,11 @@
 		{/if}
 
 		<ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each makers as maker}
+			{#each makers as maker (maker.slug)}
 				<li
 					class="rounded-lg border bg-white shadow-sm transition-shadow focus-within:shadow-md hover:shadow-md"
 				>
-					<a class="flex flex-col gap-1 p-4" href={`/makers/${maker.slug}`}>
+					<a class="flex flex-col gap-1 p-4" href={resolve('/makers/[slug]', { slug: maker.slug })}>
 						<span class="font-medium">{maker.name}</span>
 						<span class="text-sm text-gray-500">
 							{maker.sauceCount}
