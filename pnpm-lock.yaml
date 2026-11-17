@@ -247,13 +247,7 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@cloudflare/workers-types@5.20261117.1)(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.11)(@types/pg@8.23.1)(better-sqlite3@11.1.2)(gel@2.1.0)(kysely@0.29.9)(pg@8.12.0)(postgres@3.4.9)
-      yargs-parser:
-        specifier: ^21.1.1
-        version: 21.1.1
     devDependencies:
-      '@types/yargs-parser':
-        specifier: ^21.0.3
-        version: 21.0.3
       vitest:
         specifier: ^5.0.3
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(jsdom@26.1.0)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15))
@@ -1806,9 +1800,6 @@ packages:
 
   '@types/validator@13.15.10':
     resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
-
-  '@types/yargs-parser@21.0.3':
-    resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
 
   '@typeschema/class-validator@0.3.0':
     resolution: {integrity: sha512-OJSFeZDIQ8EK1HTljKLT5CItM2wsbgczLN8tMEfz3I1Lmhc5TBfkZ0eikFzUC16tI3d1Nag7um6TfCgp2I2Bww==}
@@ -5192,8 +5183,6 @@ snapshots:
 
   '@types/validator@13.15.10':
     optional: true
-
-  '@types/yargs-parser@21.0.3': {}
 
   '@typeschema/class-validator@0.3.0(@types/json-schema@7.0.15)(class-validator@0.14.4)':
     dependencies:
