@@ -21,8 +21,6 @@ import {
 } from './utils/index.js';
 import { eq, inArray, notExists, sql } from 'drizzle-orm';
 
-import 'dotenv/config';
-
 const [, , ...args] = process.argv;
 const flags = parser(args, {
 	boolean: ['noCache', 'dbInsert']

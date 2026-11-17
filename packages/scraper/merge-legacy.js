@@ -16,8 +16,6 @@ import parser from 'yargs-parser';
 import { getDb } from '@app/db';
 import { sql } from 'drizzle-orm';
 
-import 'dotenv/config';
-
 /** The shape slugifyName() produces; the old scrapers did not always. */
 const CLEAN_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 

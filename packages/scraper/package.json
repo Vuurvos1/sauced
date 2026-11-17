@@ -3,15 +3,14 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"scrape": "node index.js",
-		"merge-legacy": "node merge-legacy.js",
-		"dev": "node --watch index.js",
+		"scrape": "node --env-file-if-exists=.env index.js",
+		"merge-legacy": "node --env-file-if-exists=.env merge-legacy.js",
+		"dev": "node --env-file-if-exists=.env --watch index.js",
 		"test": "vitest"
 	},
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"dotenv": "^18.0.10",
 		"drizzle-orm": "catalog:",
 		"yargs-parser": "^21.1.1"
 	},
