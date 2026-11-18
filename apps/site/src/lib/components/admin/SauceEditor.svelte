@@ -45,6 +45,9 @@
 		};
 	};
 
+	// Mirrors the server: the last photo visitors see can't be hidden.
+	const visibleCount = $derived(images.filter((image) => !image.hidden && !image.pending).length);
+
 	let editing = $state<SauceEditorImage | null>(null);
 	let editorOpen = $state(false);
 
@@ -141,7 +144,13 @@
 					{:else}
 						<form method="post" action={action('hide')} use:enhance={stay}>
 							<input type="hidden" name="imageId" value={image.imageId} />
-							<button class="btn btn-outline px-2 py-1 text-sm">Hide</button>
+							<button
+								class="btn btn-outline px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={visibleCount <= 1}
+								title={visibleCount <= 1
+									? 'The only photo can’t be hidden; hide the sauce instead'
+									: undefined}>Hide</button
+							>
 						</form>
 						{#if image.pinned}
 							<form method="post" action={action('unpin')} use:enhance={stay}>

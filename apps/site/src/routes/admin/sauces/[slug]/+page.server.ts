@@ -5,6 +5,7 @@ import { hotSauceImages, hotSauces, makers } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
 import { contentHash, IMAGE_WIDTHS, imageBucket, requireAdmin } from '#lib/server/admin.js';
 import { loadSauceEditor } from '#lib/server/sauce-editor.js';
+import { visibleImage } from '#lib/server/images.js';
 
 async function findSauce(slug: string) {
 	const [sauce] = await db
@@ -132,6 +133,21 @@ export const actions = {
 	},
 	hide: async ({ locals, params, request }) => {
 		requireAdmin(locals);
+		const parsed = imageForm.safeParse(Object.fromEntries(await request.clone().formData()));
+		if (!parsed.success) return fail(400, { error: 'Unknown photo' });
+		const sauce = await findSauce(params.slug);
+
+		// A sauce keeps at least one photo; one with none to show should be hidden itself.
+		// Rejecting a pending photo is fine: visitors never saw it.
+		const visible = await db
+			.select({ imageId: hotSauceImages.imageId })
+			.from(hotSauceImages)
+			.where(and(eq(hotSauceImages.sauceId, sauce.sauceId), visibleImage));
+		const hidingVisible = visible.some((image) => image.imageId === parsed.data.imageId);
+		if (hidingVisible && visible.length <= 1) {
+			return fail(400, { error: 'This is the only photo; hide the sauce instead' });
+		}
+
 		return updateImage(request, params.slug, { hidden: true, pinned: false, pending: false });
 	},
 	show: async ({ locals, params, request }) => {
