@@ -12,21 +12,21 @@
 	import { toast } from 'svelte-sonner';
 	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
 	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
-	import { page } from '$app/state';
 	import { ChevronRight } from '@o7/icon/lucide';
 	import AdminBar from '#lib/components/admin/AdminBar.svelte';
 	import PhotoToolbar from '#lib/components/admin/PhotoToolbar.svelte';
 	import MaskEditor from '#lib/components/admin/MaskEditor.svelte';
-	import { adminAction, stayHere } from '#lib/components/admin/stay.js';
+	import { dialogOpen, isTyping } from '#lib/utils/keyboard.js';
 	import type { SauceEditorImage } from '#lib/server/sauce-editor.js';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let { sauce, images, maker, session, user, wishlisted, stores } = $derived(data);
 
-	// Edit mode is in the URL, so the review queue can link straight into it.
+	// Edit mode is in the URL (?edit), so the review queue can link straight into it;
+	// the server only sends the editor's data then, and only to admins.
 	const editor = $derived(data.editor);
-	const editing = $derived(Boolean(editor) && page.url.searchParams.has('edit'));
+	const editing = $derived(Boolean(editor));
 
 	type Photo = {
 		id: string;
@@ -67,9 +67,7 @@
 
 	function arrowKeys(event: KeyboardEvent) {
 		if (event.metaKey || event.ctrlKey || event.altKey || gallery.length < 2) return;
-		const target = event.target as HTMLElement;
-		if (target.closest('input, textarea, select, [contenteditable]')) return;
-		if (document.querySelector('[role="dialog"]')) return;
+		if (isTyping(event) || dialogOpen()) return;
 		if (event.key === 'ArrowLeft') select(selected - 1);
 		if (event.key === 'ArrowRight') select(selected + 1);
 	}
@@ -90,8 +88,7 @@
 		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) select(selected + (dx < 0 ? 1 : -1));
 	}
 
-	let problem = $state('');
-	const stay = stayHere((message) => (problem = message));
+	const problem = $derived((form as { error?: string } | null)?.error);
 	let detailsForm = $state<HTMLFormElement>();
 	let covering = $state<SauceEditorImage | null>(null);
 	let coverOpen = $state(false);
@@ -127,8 +124,8 @@
 <svelte:window onkeydown={arrowKeys} />
 
 <div class="container">
-	{#if editor}
-		<AdminBar {sauce} next={editor.next} {editing} onError={(message) => (problem = message)} />
+	{#if data.isAdmin}
+		<AdminBar {sauce} next={editor?.next ?? null} {editing} />
 		{#if problem}<p class="mb-4 text-red-600" role="alert">{problem}</p>{/if}
 	{/if}
 
@@ -214,8 +211,8 @@
 				<form
 					id="sauce-details"
 					method="post"
-					action={adminAction(sauce.slug, 'details')}
-					use:enhance={stay}
+					action="?/details&edit=1"
+					use:enhance
 					bind:this={detailsForm}
 				>
 					<h1 class="h1 mb-1">
@@ -413,7 +410,6 @@
 								/>
 							</button>
 							<PhotoToolbar
-								slug={sauce.slug}
 								{image}
 								{visibleCount}
 								canEdit={editor.canEdit}
@@ -421,7 +417,6 @@
 									covering = image;
 									coverOpen = true;
 								}}
-								onError={(message) => (problem = message)}
 							/>
 						</li>
 					{/if}
@@ -502,7 +497,6 @@
 {#if covering}
 	<MaskEditor
 		bind:open={coverOpen}
-		slug={sauce.slug}
 		imageId={covering.imageId}
 		masks={covering.edits?.masks ?? []}
 	/>

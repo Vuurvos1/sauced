@@ -20,8 +20,9 @@ import {
 	slugifyName
 } from './utils/index.js';
 import { eq, inArray, notExists, sql } from 'drizzle-orm';
-import { imageBucketFromEnv, syncImages, writeSauceImages } from './images.js';
-import { IMAGES_PER_STORE } from './adapters/catalogue.js';
+import { imageBucketFromEnv } from '@app/db/bucket';
+import { syncImages, writeSauceImages } from './images.js';
+import { imageList, IMAGES_PER_STORE } from './adapters/catalogue.js';
 
 const { values: flags, positionals } = parseArgs({
 	options: {
@@ -297,7 +298,7 @@ async function writeCatalogue(runs) {
 			links.set(`${sauceId}:${storeId}`, { sauceId, storeId, url: row.sauce.url });
 			// The same shop listing a sauce twice still gets one set of photos.
 			const urls = [...(byStore.get(storeId) ?? []), ...row.sauce.imageUrls];
-			byStore.set(storeId, [...new Set(urls)].slice(0, IMAGES_PER_STORE));
+			byStore.set(storeId, imageList(urls, IMAGES_PER_STORE));
 		}
 		images.set(sauceId, byStore);
 	}
@@ -371,7 +372,7 @@ async function main() {
 
 	// Uploads without scraping: the backfill, or a retry after a store's CDN refused.
 	if (key === 'images') {
-		const bucket = imageBucketFromEnv();
+		const bucket = imageBucketFromEnv(process.env);
 		if (!bucket) {
 			console.error('Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET');
 			process.exit(1);
@@ -435,7 +436,7 @@ async function main() {
 			if (orphaned.length > 0) console.info('Removed', orphaned.length, 'makers with no sauces');
 		}
 
-		const bucket = imageBucketFromEnv();
+		const bucket = imageBucketFromEnv(process.env);
 		if (bucket) await syncImages(db, bucket);
 		else console.info('R2 not configured, skipping image upload');
 

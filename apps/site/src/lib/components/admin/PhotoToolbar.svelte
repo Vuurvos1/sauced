@@ -1,22 +1,35 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SauceEditorImage } from '#lib/server/sauce-editor.js';
-	import { adminAction, stayHere } from './stay.js';
 
 	interface Props {
-		slug: string;
 		image: SauceEditorImage;
 		/** Photos visitors can see; the last one can't be hidden. */
 		visibleCount: number;
 		canEdit: boolean;
 		onCover: () => void;
-		onError: (message: string) => void;
 	}
 
-	let { slug, image, visibleCount, canEdit, onCover, onError }: Props = $props();
-	const stay = $derived(stayHere(onError));
+	let { image, visibleCount, canEdit, onCover }: Props = $props();
 	const lastPhoto = $derived(!image.hidden && !image.pending && visibleCount <= 1);
 </script>
+
+<!-- One of the sauce page's photo actions, applied to this photo. -->
+{#snippet photoAction(action: string, label: string, primary = false, disabledTitle?: string)}
+	<!-- `edit=1` rides along: the action's URL replaces the page's query, and the
+	     page reloads its editor data only in edit mode. -->
+	<form method="post" action={`?/${action}&edit=1`} use:enhance>
+		<input type="hidden" name="imageId" value={image.imageId} />
+		<button
+			class={[
+				'btn px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40',
+				!primary && 'btn-outline'
+			]}
+			disabled={Boolean(disabledTitle)}
+			title={disabledTitle}>{label}</button
+		>
+	</form>
+{/snippet}
 
 <div class="mb-2 flex flex-wrap gap-1 text-xs">
 	{#if image.main}<span class="rounded bg-black px-1.5 py-0.5 text-white">Main</span>{/if}
@@ -39,51 +52,29 @@
 
 <div class="mt-auto flex flex-wrap items-center gap-1 text-sm">
 	{#if image.pending}
-		<form method="post" action={adminAction(slug, 'show')} use:enhance={stay}>
-			<input type="hidden" name="imageId" value={image.imageId} />
-			<button class="btn px-2 py-1 text-sm">Accept</button>
-		</form>
-		<form method="post" action={adminAction(slug, 'hide')} use:enhance={stay}>
-			<input type="hidden" name="imageId" value={image.imageId} />
-			<button class="btn btn-outline px-2 py-1 text-sm">Reject</button>
-		</form>
+		{@render photoAction('show', 'Accept', true)}
+		{@render photoAction('hide', 'Reject')}
 	{:else if image.hidden}
-		<form method="post" action={adminAction(slug, 'show')} use:enhance={stay}>
-			<input type="hidden" name="imageId" value={image.imageId} />
-			<button class="btn btn-outline px-2 py-1 text-sm">Show</button>
-		</form>
+		{@render photoAction('show', 'Show')}
 	{:else}
 		{#if image.pinned}
-			<form method="post" action={adminAction(slug, 'unpin')} use:enhance={stay}>
-				<input type="hidden" name="imageId" value={image.imageId} />
-				<button class="btn btn-outline px-2 py-1 text-sm">Unpin</button>
-			</form>
+			{@render photoAction('unpin', 'Unpin')}
 		{:else if !image.main}
-			<form method="post" action={adminAction(slug, 'pin')} use:enhance={stay}>
-				<input type="hidden" name="imageId" value={image.imageId} />
-				<button class="btn btn-outline px-2 py-1 text-sm">Make main</button>
-			</form>
+			{@render photoAction('pin', 'Make main')}
 		{/if}
-		<form method="post" action={adminAction(slug, 'hide')} use:enhance={stay}>
-			<input type="hidden" name="imageId" value={image.imageId} />
-			<button
-				class="btn btn-outline px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-				disabled={lastPhoto}
-				title={lastPhoto ? 'The only photo can’t be hidden; hide the sauce instead' : undefined}
-				>Hide</button
-			>
-		</form>
+		{@render photoAction(
+			'hide',
+			'Hide',
+			false,
+			lastPhoto ? 'The only photo can’t be hidden; hide the sauce instead' : undefined
+		)}
 	{/if}
-
 	{#if canEdit && image.originalKey}
 		<button type="button" class="btn btn-outline px-2 py-1 text-sm" onclick={onCover}>
 			{image.edits ? 'Edit boxes' : 'Cover…'}
 		</button>
 	{/if}
 	{#if image.edits}
-		<form method="post" action={adminAction(slug, 'unedit')} use:enhance={stay}>
-			<input type="hidden" name="imageId" value={image.imageId} />
-			<button class="btn btn-outline px-2 py-1 text-sm">Undo edit</button>
-		</form>
+		{@render photoAction('unedit', 'Undo edit')}
 	{/if}
 </div>

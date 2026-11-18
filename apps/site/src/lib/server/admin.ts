@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { AwsClient } from 'aws4fetch';
+import { imageBucketFromEnv } from '@app/db/bucket';
 import { eq } from 'drizzle-orm';
 import { user as userTable } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
@@ -31,33 +31,9 @@ export async function requireAdmin(locals: App.Locals) {
 	return locals.user!;
 }
 
-/** Must match IMAGE_WIDTHS in packages/scraper/images.js. */
-export const IMAGE_WIDTHS = [400, 800] as const;
-
+/** The image bucket the photo editor writes to; null when not configured. */
 export function imageBucket() {
-	if (!R2_ENDPOINT || !R2_BUCKET || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) return null;
-	const client = new AwsClient({
-		accessKeyId: R2_ACCESS_KEY_ID,
-		secretAccessKey: R2_SECRET_ACCESS_KEY,
-		service: 's3',
-		region: 'auto'
-	});
-	const base = `${R2_ENDPOINT.replace(/\/$/, '')}/${R2_BUCKET}`;
-
-	return {
-		async put(name: string, body: ArrayBuffer) {
-			const response = await client.fetch(`${base}/${name}`, {
-				method: 'PUT',
-				body,
-				headers: {
-					'Content-Type': 'image/webp',
-					// Named by content, so a file never changes.
-					'Cache-Control': 'public, max-age=31536000, immutable'
-				}
-			});
-			if (!response.ok) throw new Error(`upload responded ${response.status}`);
-		}
-	};
+	return imageBucketFromEnv({ R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY });
 }
 
 /** Hex SHA-256, available in Node and on Workers alike. */

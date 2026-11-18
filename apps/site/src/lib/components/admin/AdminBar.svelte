@@ -2,26 +2,21 @@
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { adminAction, stayHere } from './stay.js';
+	import { dialogOpen, isTyping } from '#lib/utils/keyboard.js';
 
 	interface Props {
 		sauce: { slug: string; reviewedAt: Date | null; hiddenAt: Date | null };
-		/** The next sauce to review, for "& next" and Skip. */
+		/** The next sauce to review, for Skip; loaded in edit mode only. */
 		next: string | null;
 		editing: boolean;
-		onError: (message: string) => void;
 	}
 
-	let { sauce, next, editing, onError }: Props = $props();
-	const stay = $derived(stayHere(onError));
+	let { sauce, next, editing }: Props = $props();
 	let reviewForm = $state<HTMLFormElement>();
 
 	function shortcut(event: KeyboardEvent) {
 		if (!editing || event.metaKey || event.ctrlKey || event.altKey) return;
-		// Not while typing, nor behind the photo editor.
-		const target = event.target as HTMLElement;
-		if (target.closest('input, textarea, select, [contenteditable]')) return;
-		if (document.querySelector('[role="dialog"]')) return;
+		if (isTyping(event) || dialogOpen()) return;
 		if (event.key === 'r' && !sauce.reviewedAt && !sauce.hiddenAt) reviewForm?.requestSubmit();
 		if (event.key === 'n' && next) goto(resolve('/sauces/[slug]?edit=1', { slug: next }));
 	}
@@ -59,29 +54,23 @@
 	{#if editing}
 		<div class="ml-auto flex flex-wrap gap-2">
 			{#if sauce.hiddenAt}
-				<form method="post" action={adminAction(sauce.slug, 'showSauce')} use:enhance={stay}>
+				<form method="post" action="?/showSauce&edit=1" use:enhance>
 					<button class="btn btn-outline bg-white px-3 py-1 text-sm">Put back on the site</button>
 				</form>
 			{:else}
 				{#if sauce.reviewedAt}
-					<form method="post" action={adminAction(sauce.slug, 'unreview')} use:enhance={stay}>
+					<form method="post" action="?/unreview&edit=1" use:enhance>
 						<button class="btn btn-outline bg-white px-3 py-1 text-sm">Unlock</button>
 					</form>
 				{:else}
-					<!-- No `stay`: the action moves on to the next sauce to review. -->
-					<form
-						method="post"
-						action={adminAction(sauce.slug, 'review')}
-						use:enhance={stay}
-						bind:this={reviewForm}
-					>
+					<!-- Moves on to the next sauce to review. -->
+					<form method="post" action="?/review&edit=1" use:enhance bind:this={reviewForm}>
 						<button class="btn px-3 py-1 text-sm">
 							Mark reviewed &amp; next <kbd class="opacity-60">R</kbd>
 						</button>
 					</form>
 				{/if}
-				<form method="post" action={adminAction(sauce.slug, 'hideSauce')} use:enhance={stay}>
-					<input type="hidden" name="stay" value="1" />
+				<form method="post" action="?/hideSauce&edit=1" use:enhance>
 					<button class="btn btn-danger px-3 py-1 text-sm">Hide sauce</button>
 				</form>
 			{/if}

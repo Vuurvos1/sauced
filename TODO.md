@@ -80,6 +80,8 @@ Production is the source of truth for the catalogue and its images; local mirror
       "Cilantro Avocado | Co.". 163 stored names have a `|`; worth a look with
       `pnpm scrapers diff`.
 - [ ] Bucket cleanup: delete files no row references any more.
+- [ ] Public queries filter hidden sauces by hand (`visibleSauce`); a
+      `visible_hot_sauces` view would make it impossible to forget in a new query.
 - [ ] Cut Neon compute hours (it bills for time awake, and any query wakes it):
   - [x] Search as a union of indexed lookups: ~150 ms → ~25 ms per query.
   - [x] Front page lists cached in memory for 5 minutes (`cached()` in

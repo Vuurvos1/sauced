@@ -1,24 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import { IMAGE_WIDTHS, imageSource, perceptualHash, planImages, uploadImage } from './images.js';
+import { IMAGE_WIDTHS } from '@app/db/images';
+import { imageSource, perceptualHash, planImages, uploadImage } from './images.js';
 
 /** @param {{ exists?: boolean }} [options] */
 function fakeBucket({ exists = false } = {}) {
-	/** @type {{ url: string, method: string, headers: Record<string, string>, body?: Buffer }[]} */
-	const requests = [];
-	const client = {
-		/** @param {string} url @param {RequestInit} init */
-		fetch: async (url, init) => {
-			requests.push({
-				url,
-				method: init.method ?? 'GET',
-				headers: /** @type {Record<string, string>} */ (init.headers ?? {}),
-				body: /** @type {Buffer | undefined} */ (init.body)
-			});
-			return new Response(null, { status: init.method === 'HEAD' && !exists ? 404 : 200 });
+	/** @type {{ name: string, body: Buffer }[]} */
+	const puts = [];
+	/** @type {import('@app/db/bucket').ImageBucket} */
+	const bucket = {
+		has: async () => exists,
+		get: async () => new ArrayBuffer(0),
+		put: async (name, body) => {
+			puts.push({ name, body: Buffer.from(body) });
 		}
 	};
-	return { bucket: { client: /** @type {any} */ (client), base: 'https://r2.test/b' }, requests };
+	return { bucket, puts };
 }
 
 async function serveImage() {
@@ -33,33 +30,30 @@ async function serveImage() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('uploadImage', () => {
-	it('uploads each width as immutable WebP, never wider than asked', async () => {
+	it('uploads each width as WebP, never wider than asked', async () => {
 		await serveImage();
-		const { bucket, requests } = fakeBucket();
+		const { bucket, puts } = fakeBucket();
 
 		const { key, phash } = await uploadImage(bucket, 'https://shop.test/a.png');
-		expect(phash).toMatch(/^[0-9a-f]{64}$/);
 
 		expect(key).toMatch(/^sauces\/v1\/[0-9a-f]{32}$/);
-		const puts = requests.filter((r) => r.method === 'PUT');
-		expect(puts.map((r) => r.url)).toEqual(
-			IMAGE_WIDTHS.map((w) => `https://r2.test/b/${key}-${w}.webp`)
-		);
+		expect(phash).toMatch(/^[0-9a-f]{64}$/);
+		expect(puts.map((put) => put.name)).toEqual(IMAGE_WIDTHS.map((w) => `${key}-${w}.webp`));
 		for (const [i, put] of puts.entries()) {
-			expect(put.headers['Cache-Control']).toContain('immutable');
 			const meta = await sharp(put.body).metadata();
 			expect(meta.format).toBe('webp');
 			expect(meta.width).toBe(IMAGE_WIDTHS[i]);
 		}
 	});
 
-	it('skips the upload when the set already exists', async () => {
+	it('skips the upload when the set already exists, but still fingerprints it', async () => {
 		await serveImage();
-		const { bucket, requests } = fakeBucket({ exists: true });
+		const { bucket, puts } = fakeBucket({ exists: true });
 
-		await uploadImage(bucket, 'https://shop.test/a.png');
+		const { phash } = await uploadImage(bucket, 'https://shop.test/a.png');
 
-		expect(requests.filter((r) => r.method === 'PUT')).toHaveLength(0);
+		expect(puts).toHaveLength(0);
+		expect(phash).toMatch(/^[0-9a-f]{64}$/);
 	});
 
 	it('rejects when the shop refuses the image', async () => {

@@ -14,6 +14,7 @@ import { and, eq, not } from 'drizzle-orm';
 import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
 import { loadSauceEditor, nextToReview } from '#lib/server/sauce-editor.js';
 import { isAdmin } from '#lib/server/admin.js';
+import { sauceAdminActions } from '#lib/server/sauce-admin.js';
 import {
 	imageOrder,
 	shownImageKey,
@@ -22,7 +23,7 @@ import {
 } from '#lib/server/images.js';
 import { z } from 'zod/v4';
 
-export async function load({ params, locals: { user } }) {
+export async function load({ params, url, locals: { user } }) {
 	const slug = params.slug;
 
 	if (!slug) {
@@ -96,18 +97,23 @@ export async function load({ params, locals: { user } }) {
 				.where(and(eq(wishlist.hotSauceId, sauceId), eq(wishlist.userId, user.id)))
 		: [];
 
-	const [dbMaker, dbStores, dbCheckins, dbWishlist, dbImages] = await Promise.all([
+	// Admins edit the sauce right here (?edit); nobody else gets the hidden photos.
+	const editorQuery =
+		admin && url.searchParams.has('edit')
+			? Promise.all([loadSauceEditor(sauceId), nextToReview(sauce)]).then(([editor, next]) => ({
+					...editor,
+					next
+				}))
+			: null;
+
+	const [dbMaker, dbStores, dbCheckins, dbWishlist, dbImages, editor] = await Promise.all([
 		makerQuery,
 		storesQuery,
 		checkinsQuery,
 		wishlistQuery,
-		imagesQuery
+		imagesQuery,
+		editorQuery
 	]);
-
-	// Admins can edit the sauce right here; nobody else gets the hidden photos.
-	const editor = admin
-		? { ...(await loadSauceEditor(sauceId)), next: await nextToReview(sauce) }
-		: null;
 
 	// With a bucket configured, a photo that never uploaded is usually a dead link.
 	const images = withoutDuplicatePhotos(
@@ -126,6 +132,7 @@ export async function load({ params, locals: { user } }) {
 }
 
 export const actions = {
+	...sauceAdminActions,
 	wishlist: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, { error: 'Unauthorized' });

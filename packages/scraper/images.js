@@ -1,20 +1,12 @@
 import { createHash } from 'node:crypto';
-import { AwsClient } from 'aws4fetch';
 import sharp from 'sharp';
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { hotSauceImages, hotSauces } from '@app/db/schema';
+import { IMAGE_KEY_PREFIX, IMAGE_WIDTHS, imageObjectName } from '@app/db/images';
+import { forEachConcurrent } from './utils/concurrent.js';
 import { fetchPage, sleep } from './utils/fetch.js';
 
-/** Grid thumbnails and the detail page; the site picks between them with srcset. */
-export const IMAGE_WIDTHS = [400, 800];
-
-/**
- * Part of every key, because keys are cached as immutable: changing the widths or
- * encoding must produce new URLs. Bump it, then null `image_key` to re-upload.
- */
-const PIPELINE_VERSION = 'v1';
-
-const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+/** @typedef {import('@app/db/bucket').ImageBucket} ImageBucket */
 
 /** Shops downloaded from at once; each shop's own images go one at a time. */
 const CONCURRENCY = 4;
@@ -38,42 +30,6 @@ export function imageSource(url) {
 	const { host, pathname } = new URL(url);
 	if (host !== 'cdn.shopify.com') return host;
 	return `${host}${pathname.split('/').slice(0, 6).join('/')}`;
-}
-
-/**
- * @typedef {{ client: AwsClient, base: string }} ImageBucket
- */
-
-/**
- * `R2_ENDPOINT` overrides the account's R2 endpoint with any S3-compatible server,
- * such as the `s3` service in docker-compose.yaml.
- *
- * @returns {ImageBucket | null} null when R2 isn't configured, e.g. a local scrape
- */
-export function imageBucketFromEnv() {
-	const { R2_ACCOUNT_ID, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } =
-		process.env;
-	const endpoint =
-		R2_ENDPOINT || (R2_ACCOUNT_ID && `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`);
-	if (!endpoint || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET) return null;
-
-	return {
-		client: new AwsClient({
-			accessKeyId: R2_ACCESS_KEY_ID,
-			secretAccessKey: R2_SECRET_ACCESS_KEY,
-			service: 's3',
-			region: 'auto'
-		}),
-		base: `${endpoint.replace(/\/$/, '')}/${R2_BUCKET}`
-	};
-}
-
-/**
- * @param {string} key
- * @param {number} width
- */
-export function imageObjectName(key, width) {
-	return `${key}-${width}.webp`;
 }
 
 /** @param {string} url */
@@ -204,8 +160,19 @@ export async function writeSauceImages(db, listedBySauce, lockedSauceIds) {
 			.delete(hotSauceImages)
 			.where(inArray(hotSauceImages.imageId, deletes.slice(start, start + WRITE_CHUNK)));
 	}
+	// One statement per shop, not per row: the first run after the migration adopts thousands.
+	/** @type {Map<string, string[]>} */
+	const adoptedByStore = new Map();
 	for (const { id, storeId } of adopted) {
-		await db.update(hotSauceImages).set({ storeId }).where(eq(hotSauceImages.imageId, id));
+		adoptedByStore.set(storeId, [...(adoptedByStore.get(storeId) ?? []), id]);
+	}
+	for (const [storeId, ids] of adoptedByStore) {
+		for (let start = 0; start < ids.length; start += WRITE_CHUNK) {
+			await db
+				.update(hotSauceImages)
+				.set({ storeId })
+				.where(inArray(hotSauceImages.imageId, ids.slice(start, start + WRITE_CHUNK)));
+		}
 	}
 	for (let start = 0; start < inserts.length; start += WRITE_CHUNK) {
 		await db
@@ -273,6 +240,18 @@ export async function perceptualHash(image) {
 }
 
 /**
+ * @param {Buffer} source
+ * @param {number} width
+ */
+function resize(source, width) {
+	return sharp(source)
+		.rotate()
+		.resize({ width, height: width, fit: 'inside', withoutEnlargement: true })
+		.webp({ quality: 80 })
+		.toBuffer();
+}
+
+/**
  * Downloads, resizes and uploads one image.
  *
  * Keyed on the source bytes, so sauces sharing a photo share the objects and a
@@ -288,76 +267,61 @@ export async function uploadImage(bucket, sourceUrl) {
 	const source = Buffer.from(await response.arrayBuffer());
 
 	const hash = createHash('sha256').update(source).digest('hex').slice(0, 32);
-	const key = `sauces/${PIPELINE_VERSION}/${hash}`;
+	const key = `${IMAGE_KEY_PREFIX}/${hash}`;
 
-	const variants = await Promise.all(
-		IMAGE_WIDTHS.map((width) =>
-			sharp(source)
-				.rotate()
-				.resize({ width, height: width, fit: 'inside', withoutEnlargement: true })
-				.webp({ quality: 80 })
-				.toBuffer()
-		)
-	);
-	// From the smallest copy, the same file `fingerprintImages` reads back later.
-	const phash = await perceptualHash(variants[0]);
-
-	// The largest width is uploaded last, so its presence means the set is complete.
-	const largest = imageObjectName(key, IMAGE_WIDTHS.at(-1));
-	const head = await bucket.client.fetch(`${bucket.base}/${largest}`, { method: 'HEAD' });
-	if (head.ok) return { key, phash };
-
-	for (const [i, width] of IMAGE_WIDTHS.entries()) {
-		const body = variants[i];
-		const put = await bucket.client.fetch(`${bucket.base}/${imageObjectName(key, width)}`, {
-			method: 'PUT',
-			body,
-			headers: { 'Content-Type': 'image/webp', 'Cache-Control': CACHE_CONTROL }
-		});
-		if (!put.ok) throw new Error(`upload responded ${put.status}`);
+	// The largest width is uploaded last, so its presence means the set is complete,
+	// and only the smallest copy is still needed: the fingerprint is taken from it.
+	if (await bucket.has(imageObjectName(key, IMAGE_WIDTHS.at(-1)))) {
+		return { key, phash: await perceptualHash(await resize(source, IMAGE_WIDTHS[0])) };
 	}
 
-	return { key, phash };
+	const variants = await Promise.all(IMAGE_WIDTHS.map((width) => resize(source, width)));
+	for (const [i, width] of IMAGE_WIDTHS.entries()) {
+		await bucket.put(imageObjectName(key, width), variants[i]);
+	}
+	// From the smallest copy, the same file `fingerprintImages` reads back later.
+	return { key, phash: await perceptualHash(variants[0]) };
 }
 
 /**
  * Fingerprints images uploaded before fingerprints existed, from the bucket's own
- * copy rather than the shop's, so it costs the shops nothing.
+ * copy rather than the shop's, so it costs the shops nothing. Once per file: sauces
+ * sharing a photo share its fingerprint.
  *
  * @param {ReturnType<typeof import('@app/db').getDb>} db
  * @param {ImageBucket} bucket
  */
 async function fingerprintImages(db, bucket) {
-	const pending = await db
-		.select({ id: hotSauceImages.imageId, imageKey: hotSauceImages.imageKey })
+	const keys = await db
+		.selectDistinct({ imageKey: hotSauceImages.imageKey })
 		.from(hotSauceImages)
 		.where(and(isNotNull(hotSauceImages.imageKey), isNull(hotSauceImages.phash)));
-	if (pending.length === 0) return;
+	if (keys.length === 0) return;
 
-	console.info('Fingerprinting', pending.length, 'uploaded images');
-	let next = 0;
-	async function worker() {
-		while (next < pending.length) {
-			const image = pending[next++];
-			const name = imageObjectName(/** @type {string} */ (image.imageKey), IMAGE_WIDTHS[0]);
-			const response = await bucket.client.fetch(`${bucket.base}/${name}`);
-			if (!response.ok) {
-				console.warn('Fingerprint failed:', name, response.status);
-				continue;
-			}
-			const phash = await perceptualHash(Buffer.from(await response.arrayBuffer()));
-			await db.update(hotSauceImages).set({ phash }).where(eq(hotSauceImages.imageId, image.id));
+	console.info('Fingerprinting', keys.length, 'uploaded images');
+	await forEachConcurrent(keys, 8, async ({ imageKey }) => {
+		const key = /** @type {string} */ (imageKey);
+		try {
+			const phash = await perceptualHash(
+				Buffer.from(await bucket.get(imageObjectName(key, IMAGE_WIDTHS[0])))
+			);
+			await db
+				.update(hotSauceImages)
+				.set({ phash })
+				.where(and(eq(hotSauceImages.imageKey, key), isNull(hotSauceImages.phash)));
+		} catch (error) {
+			console.warn('Fingerprint failed:', key, /** @type {Error} */ (error).message);
 		}
-	}
-	await Promise.all(Array.from({ length: 8 }, worker));
+	});
 }
 
 /**
  * Uploads every sauce image not yet in R2. Doubles as the backfill: it works from
  * the table, not from the current scrape.
  *
- * An image that fails stays null and is retried next run. It never fails the run:
- * the site falls back to the shop's own URL.
+ * Each shop URL is fetched once, however many sauces share it. An image that fails
+ * stays null and is retried next run. It never fails the run: the site falls back
+ * to the shop's own URL.
  *
  * @param {ReturnType<typeof import('@app/db').getDb>} db
  * @param {ImageBucket} bucket
@@ -367,7 +331,7 @@ export async function syncImages(db, bucket) {
 	await fingerprintImages(db, bucket);
 
 	const pending = await db
-		.select({ id: hotSauceImages.imageId, sourceUrl: hotSauceImages.sourceUrl })
+		.selectDistinct({ sourceUrl: hotSauceImages.sourceUrl })
 		.from(hotSauceImages)
 		// Photos of a sauce an admin took off the site would never be shown.
 		.innerJoin(hotSauces, eq(hotSauces.sauceId, hotSauceImages.sauceId))
@@ -375,12 +339,11 @@ export async function syncImages(db, bucket) {
 
 	console.info('Uploading', pending.length, 'images');
 
-	/** @type {Map<string, typeof pending>} */
+	/** @type {Map<string, string[]>} shop -> its image URLs */
 	const byShop = new Map();
-	for (const image of pending) {
-		const shop = shopOf(image.sourceUrl) ?? image.sourceUrl;
-		if (!byShop.has(shop)) byShop.set(shop, []);
-		byShop.get(shop)?.push(image);
+	for (const { sourceUrl } of pending) {
+		const shop = shopOf(sourceUrl) ?? sourceUrl;
+		byShop.set(shop, [...(byShop.get(shop) ?? []), sourceUrl]);
 	}
 	// Largest first, so the long queues start early and the run ends evenly.
 	const queues = [...byShop.values()].sort((a, b) => b.length - a.length);
@@ -388,26 +351,22 @@ export async function syncImages(db, bucket) {
 	let uploaded = 0;
 	let failed = 0;
 
-	async function worker() {
-		for (let queue = queues.shift(); queue; queue = queues.shift()) {
-			for (const [i, image] of queue.entries()) {
-				if (i > 0) await sleep(SHOP_DELAY_MS);
-				try {
-					const { key: imageKey, phash } = await uploadImage(bucket, image.sourceUrl);
-					await db
-						.update(hotSauceImages)
-						.set({ imageKey, phash })
-						.where(eq(hotSauceImages.imageId, image.id));
-					uploaded++;
-				} catch (error) {
-					failed++;
-					console.warn('Image failed:', image.sourceUrl, /** @type {Error} */ (error).message);
-				}
+	await forEachConcurrent(queues, CONCURRENCY, async (urls) => {
+		for (const [i, sourceUrl] of urls.entries()) {
+			if (i > 0) await sleep(SHOP_DELAY_MS);
+			try {
+				const { key: imageKey, phash } = await uploadImage(bucket, sourceUrl);
+				await db
+					.update(hotSauceImages)
+					.set({ imageKey, phash })
+					.where(and(eq(hotSauceImages.sourceUrl, sourceUrl), isNull(hotSauceImages.imageKey)));
+				uploaded++;
+			} catch (error) {
+				failed++;
+				console.warn('Image failed:', sourceUrl, /** @type {Error} */ (error).message);
 			}
 		}
-	}
-
-	await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+	});
 
 	console.info('Uploaded', uploaded, 'images;', failed, 'failed');
 	return { uploaded, failed };

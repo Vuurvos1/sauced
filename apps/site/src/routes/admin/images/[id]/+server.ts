@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { z } from 'zod/v4';
 import { eq } from 'drizzle-orm';
 import { hotSauceImages } from '@app/db/schema';
-import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
+import { sauceImageSrc } from '#lib/images.js';
 import { db } from '#lib/server/db.js';
 import { requireAdmin } from '#lib/server/admin.js';
 
@@ -21,11 +21,9 @@ export async function GET({ locals, params }) {
 		.limit(1);
 	if (!image) error(404, 'Not found');
 
-	const url =
-		image.imageKey && PUBLIC_IMAGE_BASE_URL
-			? `${PUBLIC_IMAGE_BASE_URL}/${image.imageKey}-800.webp`
-			: image.sourceUrl;
-	const response = await fetch(url);
+	const response = await fetch(
+		sauceImageSrc({ imageKey: image.imageKey, imageUrl: image.sourceUrl }, 800)!
+	);
 	if (!response.ok) error(502, `The photo responded ${response.status}`);
 
 	return new Response(response.body, {

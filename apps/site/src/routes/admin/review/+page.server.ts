@@ -1,6 +1,7 @@
 import { db } from '#lib/server/db.js';
 import { requireAdmin } from '#lib/server/admin.js';
 import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 import { hotSauceImages, hotSauces, makers } from '@app/db/schema';
 import { and, count, desc, eq, exists, isNotNull, isNull, sql } from 'drizzle-orm';
 
@@ -14,11 +15,10 @@ const hasPendingPhotos = exists(
 );
 
 /** Each tab is a slice of the catalogue an admin works through. */
-const shown = isNull(hotSauces.hiddenAt);
 const FILTERS = {
-	unreviewed: and(shown, isNull(hotSauces.reviewedAt)),
-	pending: and(shown, isNotNull(hotSauces.reviewedAt), hasPendingPhotos),
-	reviewed: and(shown, isNotNull(hotSauces.reviewedAt)),
+	unreviewed: and(visibleSauce, isNull(hotSauces.reviewedAt)),
+	pending: and(visibleSauce, isNotNull(hotSauces.reviewedAt), hasPendingPhotos),
+	reviewed: and(visibleSauce, isNotNull(hotSauces.reviewedAt)),
 	hidden: isNotNull(hotSauces.hiddenAt)
 } as const;
 

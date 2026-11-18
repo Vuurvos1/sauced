@@ -3,6 +3,7 @@ import { hotSauceImages, hotSauces, stores } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
 import { imageBucket } from '#lib/server/admin.js';
 import { imageOrder, isSamePhoto, shownImageKey } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 /**
  * Everything the photo editor shows for one sauce: every photo, hidden and pending
@@ -51,7 +52,7 @@ export async function nextToReview(sauce: { sauceId: string; createdAt: Date }) 
 		lt(hotSauces.createdAt, sauce.createdAt),
 		and(eq(hotSauces.createdAt, sauce.createdAt), sql`${hotSauces.sauceId} > ${sauce.sauceId}`)
 	);
-	const toReview = and(isNull(hotSauces.reviewedAt), isNull(hotSauces.hiddenAt));
+	const toReview = and(isNull(hotSauces.reviewedAt), visibleSauce);
 	for (const where of [and(toReview, after), toReview]) {
 		const [next] = await db
 			.select({ slug: hotSauces.slug })

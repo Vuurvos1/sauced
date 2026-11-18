@@ -5,7 +5,7 @@ import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 import { mainImage } from '#lib/server/images.js';
-import { cached } from '#lib/server/cache.js';
+import { cached, HOME_CACHE_KEY } from '#lib/server/cache.js';
 import { visibleSauce } from '#lib/server/sauces.js';
 
 /** How stale the front page's lists may get: a new sauce or rating shows within this. */
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async () => {
 		.limit(8);
 
 	// The same for everyone, and fine a few minutes stale.
-	const [recentSauces, topSauces] = await cached('home', HOME_TTL_MS, () =>
+	const [recentSauces, topSauces] = await cached(HOME_CACHE_KEY, HOME_TTL_MS, () =>
 		Promise.all([recentSaucesQuery, topSaucesQuery])
 	);
 

@@ -9,6 +9,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { and, eq } from 'drizzle-orm';
 import { account, getDb, schema, user } from '@app/db';
+import { assertLocalDatabase } from '@app/db/local';
 
 export const LOCAL_ADMIN = {
 	email: 'admin@sauced.local',
@@ -18,17 +19,10 @@ export const LOCAL_ADMIN = {
 } as const;
 
 const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-	console.error('DATABASE_URL is not set; run this through `pnpm site seed:admin`.');
-	process.exit(1);
-}
-const host = new URL(databaseUrl).hostname;
-if (!['localhost', '127.0.0.1', '::1'].includes(host)) {
-	console.error(`Refusing to seed ${host}: the local admin's password is public.`);
-	process.exit(1);
-}
+// The login is in the README, so it may only ever exist on this machine.
+assertLocalDatabase(databaseUrl, "the local admin's password is public.");
 
-const db = getDb(databaseUrl);
+const db = getDb(databaseUrl!);
 
 // The site's own config minus its SvelteKit plugins, and minus the breached-password
 // check, which would turn down a password that is meant to be known.

@@ -1,13 +1,12 @@
 import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
+import { IMAGE_WIDTHS, imageObjectName } from '@app/db/images';
 
-/** Must match IMAGE_WIDTHS in packages/scraper/images.js. */
-const WIDTHS = [400, 800] as const;
-type Width = (typeof WIDTHS)[number];
+type Width = (typeof IMAGE_WIDTHS)[number];
 
 type Imaged = { imageKey?: string | null; imageUrl?: string | null };
 
 function objectUrl(key: string, width: Width) {
-	return `${PUBLIC_IMAGE_BASE_URL}/${key}-${width}.webp`;
+	return `${PUBLIC_IMAGE_BASE_URL}/${imageObjectName(key, width)}`;
 }
 
 /** The R2 copy when there is one, otherwise the shop's original. */
@@ -21,6 +20,6 @@ export function sauceImageAttrs(sauce: Imaged) {
 	if (!sauce.imageKey || !PUBLIC_IMAGE_BASE_URL) return { src: sauce.imageUrl ?? undefined };
 	return {
 		src: objectUrl(sauce.imageKey, 800),
-		srcset: WIDTHS.map((w) => `${objectUrl(sauce.imageKey!, w)} ${w}w`).join(', ')
+		srcset: IMAGE_WIDTHS.map((w) => `${objectUrl(sauce.imageKey!, w)} ${w}w`).join(', ')
 	};
 }

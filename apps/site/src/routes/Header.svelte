@@ -8,6 +8,7 @@
 	import { debounce } from '#lib/utils/debounce.svelte.js';
 	import type { SearchResponse } from '#lib/types/api.js';
 	import { skipViewTransition } from '#lib/view-transition.svelte.js';
+	import { isTyping } from '#lib/utils/keyboard.js';
 
 	let {
 		data: { session, isAdmin }
@@ -155,15 +156,11 @@
 
 	/** `/` and ⌘K reach the search box from anywhere on the page. */
 	function handleShortcut(event: KeyboardEvent) {
-		const target = event.target as HTMLElement | null;
-		const isTyping =
-			target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
-
 		if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
 			event.preventDefault();
 		} else if (
 			event.key === '/' &&
-			!isTyping &&
+			!isTyping(event) &&
 			!event.metaKey &&
 			!event.ctrlKey &&
 			!event.altKey

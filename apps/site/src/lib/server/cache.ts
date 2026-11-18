@@ -12,6 +12,9 @@ const entries = new Map<string, { expires: number; value: Promise<unknown> }>();
 /** Plenty for a handful of public lists; stops a bug from growing it unbounded. */
 const MAX_ENTRIES = 100;
 
+/** The front page's lists, dropped when an admin changes a sauce. */
+export const HOME_CACHE_KEY = 'home';
+
 export function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
 	const now = Date.now();
 	const hit = entries.get(key);
@@ -30,6 +33,11 @@ export function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): P
 		if (entries.size > MAX_ENTRIES) entries.delete(entries.keys().next().value!);
 	}
 	return value;
+}
+
+/** Drops one entry, after a write that changes what it holds. */
+export function forget(key: string) {
+	entries.delete(key);
 }
 
 /** For tests. */

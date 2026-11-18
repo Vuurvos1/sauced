@@ -2,21 +2,17 @@
 	import { deserialize } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { Dialog } from '#lib/components/dialog/index.js';
+	import { IMAGE_WIDTHS } from '@app/db/images';
 
 	type Mask = { x: number; y: number; width: number; height: number };
 
 	interface Props {
 		open: boolean;
-		/** The sauce the photo belongs to; edits are saved through its admin page. */
-		slug: string;
 		imageId: string;
 		masks: Mask[];
 	}
 
-	let { open = $bindable(), slug, imageId, masks: initial }: Props = $props();
-
-	/** Must match IMAGE_WIDTHS in packages/scraper/images.js. */
-	const WIDTHS = [400, 800];
+	let { open = $bindable(), imageId, masks: initial }: Props = $props();
 
 	let masks = $state<Mask[]>([]);
 	let draft = $state<Mask | null>(null);
@@ -106,11 +102,11 @@
 			const body = new FormData();
 			body.set('imageId', imageId);
 			body.set('masks', JSON.stringify(masks));
-			for (const width of WIDTHS)
+			for (const width of IMAGE_WIDTHS)
 				body.set(`w${width}`, await render(image, width), `${width}.webp`);
 
-			// The editor also opens on the public sauce page, so the action is named in full.
-			const response = await fetch(`/admin/sauces/${encodeURIComponent(slug)}?/edit`, {
+			// Posted by hand, not as a <form>: the files are rendered in the browser.
+			const response = await fetch('?/edit&edit=1', {
 				method: 'POST',
 				body,
 				headers: { 'x-sveltekit-action': 'true' }

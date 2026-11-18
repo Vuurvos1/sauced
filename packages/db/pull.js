@@ -14,13 +14,12 @@
  *                         the local bucket; without them only rows are copied
  */
 import postgres from 'postgres';
-import { AwsClient } from 'aws4fetch';
+import { imageBucketFromEnv } from './bucket.js';
+import { IMAGE_WIDTHS, imageObjectName } from './images.js';
+import { assertLocalDatabase } from './local.js';
 
 /** Parents first, so every foreign key has its row when the child arrives. */
 const TABLES = ['stores', 'makers', 'hot_sauces', 'store_hot_sauces', 'hot_sauce_images'];
-
-/** Must match IMAGE_WIDTHS in packages/scraper/images.js. */
-const IMAGE_WIDTHS = [400, 800];
 
 const ROWS_PER_INSERT = 500;
 
@@ -37,11 +36,7 @@ if (!sourceUrl || !targetUrl) {
 }
 
 // This empties tables. Pointed at a hosted database by mistake, it would wipe it.
-const targetHost = new URL(targetUrl).hostname;
-if (!['localhost', '127.0.0.1', '::1'].includes(targetHost)) {
-	console.error(`Refusing to write to ${targetHost}: DATABASE_URL must be a local database.`);
-	process.exit(1);
-}
+assertLocalDatabase(targetUrl, 'DATABASE_URL must be a local database.');
 if (sourceUrl === targetUrl) {
 	console.error('PULL_DATABASE_URL and DATABASE_URL are the same database.');
 	process.exit(1);
@@ -111,23 +106,18 @@ async function copyRows() {
  * @param {postgres.Row[]} images
  */
 async function copyImages(images) {
-	const { R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
-	if (!R2_ENDPOINT || !R2_BUCKET || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
+	const bucket = imageBucketFromEnv(process.env);
+	if (!bucket) {
 		console.info('No local bucket configured; skipping photo files');
 		return;
 	}
-	const client = new AwsClient({
-		accessKeyId: R2_ACCESS_KEY_ID,
-		secretAccessKey: R2_SECRET_ACCESS_KEY,
-		service: 's3',
-		region: 'auto'
-	});
-	const bucket = `${R2_ENDPOINT.replace(/\/$/, '')}/${R2_BUCKET}`;
 
 	const keys = new Set(
 		images.flatMap((image) => [image.image_key, image.edited_key]).filter(Boolean)
 	);
-	const names = [...keys].flatMap((key) => IMAGE_WIDTHS.map((width) => `${key}-${width}.webp`));
+	const names = [...keys].flatMap((key) =>
+		IMAGE_WIDTHS.map((width) => imageObjectName(key, width))
+	);
 	console.info('Photo files to check:', names.length);
 
 	let copied = 0;
@@ -136,26 +126,17 @@ async function copyImages(images) {
 	async function worker() {
 		while (next < names.length) {
 			const name = names[next++];
-			// Files are named by their content, so one already here is the same file.
-			const head = await client.fetch(`${bucket}/${name}`, { method: 'HEAD' });
-			if (head.ok) continue;
-			const response = await fetch(`${imageBase}/${name}`);
-			if (!response.ok) {
+			try {
+				// Files are named by their content, so one already here is the same file.
+				if (await bucket.has(name)) continue;
+				const response = await fetch(`${imageBase}/${name}`);
+				if (!response.ok) throw new Error(`responded ${response.status}`);
+				await bucket.put(name, await response.arrayBuffer());
+				copied++;
+			} catch (error) {
 				failed++;
-				console.warn('Could not fetch', name, response.status);
-				continue;
+				console.warn('Could not copy', name, /** @type {Error} */ (error).message);
 			}
-			const put = await client.fetch(`${bucket}/${name}`, {
-				method: 'PUT',
-				body: await response.arrayBuffer(),
-				headers: {
-					'Content-Type': 'image/webp',
-					'Cache-Control':
-						response.headers.get('cache-control') ?? 'public, max-age=31536000, immutable'
-				}
-			});
-			if (put.ok) copied++;
-			else failed++;
 		}
 	}
 	await Promise.all(Array.from({ length: 8 }, worker));
