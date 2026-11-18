@@ -216,6 +216,9 @@ importers:
 
   packages/db:
     dependencies:
+      aws4fetch:
+        specifier: ^1.0.20
+        version: 1.0.20
       postgres:
         specifier: 'catalog:'
         version: 3.4.9

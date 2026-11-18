@@ -10,10 +10,16 @@ import {
 	boolean,
 	pgEnum,
 	uuid,
-	index
+	index,
+	jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.js';
+
+/**
+ * @typedef {{ x: number, y: number, width: number, height: number }} ImageMask
+ * @typedef {{ masks: ImageMask[] }} ImageEdits
+ */
 
 export const roleEnum = pgEnum('role', ['admin', 'moderator', 'user']);
 
@@ -50,6 +56,9 @@ export const hotSauces = pgTable(
 		makerId: uuid('maker_id').references(() => makers.makerId, {
 			onDelete: 'set null'
 		}),
+		// Set once an admin has gone through the sauce. From then on the scraper keeps
+		// its store links current but leaves its name, description and photos alone.
+		reviewedAt: timestamp('reviewed_at'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at')
 			.notNull()
@@ -115,6 +124,19 @@ export const hotSauceImages = pgTable(
 		// a few bits, so the gallery can show one of them.
 		phash: text('phash'),
 		position: integer('position').notNull(),
+		// Rejected by an admin. The row stays so the scraper doesn't add it back.
+		hidden: boolean('hidden').notNull().default(false),
+		// Chosen by an admin as the main image, ahead of position.
+		pinned: boolean('pinned').notNull().default(false),
+		// Found for a reviewed sauce; shown only once an admin accepts it.
+		pending: boolean('pending').notNull().default(false),
+		// Boxes painted over the photo, as fractions of its width and height.
+		edits:
+			/** @type {import('drizzle-orm').$Type<ReturnType<typeof jsonb<'edits'>>, ImageEdits>} */ (
+				jsonb('edits')
+			),
+		// Content-hash prefix of the edited copies; shown instead of `image_key`.
+		editedKey: text('edited_key'),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},
 	(t) => [

@@ -9,7 +9,8 @@
 		"generate": "drizzle-kit generate",
 		"diagram": "node dbml.js && pnpm dbml-renderer -i schema.dbml -o erd.svg",
 		"studio": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs studio",
-		"migrate": "drizzle-kit migrate"
+		"migrate": "drizzle-kit migrate",
+		"pull": "node --env-file-if-exists=.env pull.js"
 	},
 	"type": "module",
 	"exports": {
@@ -23,6 +24,7 @@
 		"drizzle-zod": "catalog:"
 	},
 	"dependencies": {
+		"aws4fetch": "^1.0.20",
 		"postgres": "catalog:"
 	},
 	"devDependencies": {

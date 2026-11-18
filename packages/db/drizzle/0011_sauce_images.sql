@@ -13,6 +13,13 @@ CREATE TABLE "hot_sauce_images" (
 ALTER TABLE "hot_sauce_images" ADD CONSTRAINT "hot_sauce_images_hot_sauce_id_hot_sauces_id_fk" FOREIGN KEY ("hot_sauce_id") REFERENCES "public"."hot_sauces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "hot_sauce_images" ADD CONSTRAINT "hot_sauce_images_store_id_stores_store_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("store_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "hot_sauce_images_sauce_position_idx" ON "hot_sauce_images" USING btree ("hot_sauce_id","position");--> statement-breakpoint
+ALTER TABLE "user" ADD COLUMN "role" text DEFAULT 'user' NOT NULL;--> statement-breakpoint
+ALTER TABLE "hot_sauce_images" ADD COLUMN "hidden" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "hot_sauce_images" ADD COLUMN "pinned" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "hot_sauce_images" ADD COLUMN "pending" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "hot_sauce_images" ADD COLUMN "edits" jsonb;--> statement-breakpoint
+ALTER TABLE "hot_sauce_images" ADD COLUMN "edited_key" text;--> statement-breakpoint
+ALTER TABLE "hot_sauces" ADD COLUMN "reviewed_at" timestamp;--> statement-breakpoint
 -- Carry each sauce's one image over as its main image. The shop is recorded only
 -- when a single shop stocks the sauce; otherwise the scraper works it out from the
 -- image's URL on its next run.
