@@ -68,6 +68,33 @@ describe('normalizeName', () => {
 });
 
 describe('cleanProductName', () => {
+	it('should keep accents and the punctuation names use', () => {
+		expect(cleanProductName('La Sauce Piqu’Hans: Jalapeño & Lime (No. 2) + 100% Fire!')).toBe(
+			'La Sauce Piqu’Hans: Jalapeño & Lime (No. 2) + 100% Fire!'
+		);
+		expect(cleanProductName('Bumblef**ked Hot Sauce')).toBe('Bumblef**ked Hot Sauce');
+		expect(cleanProductName('Sriracha „BLACKOUT“')).toBe('Sriracha „BLACKOUT“');
+		expect(cleanProductName('Raw Heat Vintage 69′ Hot Sauce')).toBe(
+			'Raw Heat Vintage 69’ Hot Sauce'
+		);
+	});
+
+	it('should drop emoji and other decoration', () => {
+		expect(cleanProductName('Heartbeat - Blueberry 🫐')).toBe('Heartbeat - Blueberry');
+		expect(cleanProductName('TRUFF - Jalapeño Lime 🍋‍🟩')).toBe('TRUFF - Jalapeño Lime');
+		expect(cleanProductName('Clark + Hopkins - Florida 🇺🇸')).toBe('Clark + Hopkins - Florida');
+		expect(cleanProductName('El Yucateco - Jalapeña ☀️')).toBe('El Yucateco - Jalapeña');
+	});
+
+	it('should drop trademark marks', () => {
+		expect(cleanProductName('Garlic Reaper™ Sauce - Garlic Hot Sauce')).toBe(
+			'Garlic Reaper Sauce - Garlic Hot Sauce'
+		);
+		expect(cleanProductName('Zombie Apocalypse ™ Ghost Pepper')).toBe(
+			'Zombie Apocalypse Ghost Pepper'
+		);
+	});
+
 	it('should strip serving sizes', () => {
 		expect(cleanProductName('Melinda’s Chipotle Hot Sauce 148ml')).toBe(
 			'Melinda’s Chipotle Hot Sauce'
@@ -115,6 +142,24 @@ describe('slugifyName — stranded separators', () => {
 });
 
 describe('stripMakerFromName', () => {
+	// "TABASCO® Brand Scorpion Pepper Sauce" was stored as "® Brand Scorpion Pepper
+	// Sauce", and never met other shops' "Tabasco Scorpion Pepper Sauce".
+	it('should treat a semicolon as a separator', () => {
+		expect(stripMakerFromName("Melinda's; Sweet and Spicy Polynesian Barbecue", "Melinda's")).toBe(
+			'Sweet and Spicy Polynesian Barbecue'
+		);
+	});
+
+	it('should take the trademark mark and the maker\'s "Brand" with it', () => {
+		expect(stripMakerFromName('Tabasco® Brand Scorpion Pepper Sauce', 'Tabasco')).toBe(
+			'Scorpion Pepper Sauce'
+		);
+		expect(stripMakerFromName('TABASCO® Original Red Sauce', 'TABASCO®')).toBe(
+			'Original Red Sauce'
+		);
+		expect(stripMakerFromName('Brand New Day Hot Sauce', 'Acme')).toBe('Brand New Day Hot Sauce');
+	});
+
 	it('should remove the maker from either end', () => {
 		expect(stripMakerFromName('Queen Majesty - Scotch Bonnet & Ginger', 'Queen Majesty')).toBe(
 			'Scotch Bonnet & Ginger'
@@ -156,10 +201,10 @@ describe('stripMakerFromName', () => {
 		expect(stripMakerFromName('Torchbearer', 'Torchbearer')).toBe('Torchbearer');
 	});
 
-	// "Valentina ❤️" minus "Valentina" is an emoji, which slugifies to nothing.
+	// "Valentina ❤️" minus "Valentina" would be nothing; the emoji goes either way.
 	it('should keep the name when stripping would leave no letters', () => {
-		expect(stripMakerFromName('Valentina ❤️', 'Valentina')).toBe('Valentina ❤️');
-		expect(stripMakerFromName('Truff - 🔥', 'Truff')).toBe('Truff - 🔥');
+		expect(stripMakerFromName('Valentina ❤️', 'Valentina')).toBe('Valentina');
+		expect(stripMakerFromName('Truff - 🔥', 'Truff')).toBe('Truff');
 	});
 
 	it('should tolerate a missing maker', () => {
@@ -211,6 +256,12 @@ describe('canonicalSauceName', () => {
 });
 
 describe('sauceDedupKey', () => {
+	it('should key a trademarked title with the plain one', () => {
+		expect(sauceDedupKey('Tabasco® Brand Scorpion Pepper Sauce', 'Tabasco')).toBe(
+			sauceDedupKey('Tabasco Scorpion Pepper Sauce', 'Tabasco')
+		);
+	});
+
 	it('matches the same sauce across shops that spell it differently', () => {
 		expect(sauceDedupKey('Queen Majesty Cocoa Ghost', 'Queen Majesty', 'a')).toBe(
 			sauceDedupKey('Cocoa Ghost Hot Sauce', 'Queen Majesty Hot Sauce', 'b')
