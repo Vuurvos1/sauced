@@ -17,11 +17,20 @@ const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
 const RESULT_LIMIT = 8;
 
+/**
+ * The results don't depend on who asks, so the CDN can answer repeats: the header
+ * searches as people type, and every miss wakes Neon. A sauce an admin hides can
+ * linger in results for up to five minutes. Failures aren't cached.
+ */
+const CACHED = {
+	'cache-control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600'
+};
+
 export async function GET({ url }) {
 	const query = normalizeQuery(url.searchParams.get('q'));
 
 	if (query.length < MIN_SEARCH_LENGTH) {
-		return Response.json(EMPTY satisfies SearchResponse);
+		return Response.json(EMPTY satisfies SearchResponse, { headers: CACHED });
 	}
 
 	try {
@@ -77,11 +86,14 @@ export async function GET({ url }) {
 			return Promise.all([sauceQuery, storeQuery, makerQuery]);
 		});
 
-		return Response.json({
-			makers: makerResults,
-			stores: storeResults,
-			sauces: sauceResults
-		} satisfies SearchResponse);
+		return Response.json(
+			{
+				makers: makerResults,
+				stores: storeResults,
+				sauces: sauceResults
+			} satisfies SearchResponse,
+			{ headers: CACHED }
+		);
 	} catch (error) {
 		console.error('Search error:', error);
 		return Response.json(EMPTY satisfies SearchResponse, { status: 500 });

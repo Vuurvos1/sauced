@@ -86,6 +86,8 @@ Production is the source of truth for the catalogue and its images; local mirror
         `lib/server/cache.ts`); admin actions clear it. Per server instance, so it
         cuts queries without guaranteeing none. Other public, visitor-independent
         lists can use it too.
+  - [x] Search API responses cached at the CDN for 5 minutes (same for everyone).
+  - [x] Sitemap down to ~8 ms of CPU (was ~12), under Workers Free's 10 ms.
   - [ ] Hyperdrive query caching for catalogue reads, once on Workers.
   - [ ] Cloudflare cache rule for public pages that bypasses the cache when a Better
         Auth session cookie is present, so crawlers are served from the edge.
@@ -94,7 +96,8 @@ Production is the source of truth for the catalogue and its images; local mirror
   - [ ] Check Neon's compute graph against the scrape schedule and crawler traffic.
 - [ ] Billing alerts in OpenTofu before anything usage-billed goes live.
 - [ ] Move the site to Workers (adapter-cloudflare, Hyperdrive binding, per-request
-      database client, Workers AI in place of the TensorFlow toxicity model).
+      database client). Add an `AI` binding: review moderation (`lib/server/moderation.ts`,
+      Llama Guard) only runs where it exists, and saves reviews unflagged elsewhere.
 - [ ] Duplicate Tabasco Scorpion Pepper Sauce: the cleaned name collides with an
       existing row, so the old "® Brand" row needs merging by hand.
 
