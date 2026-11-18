@@ -59,6 +59,9 @@ export const hotSauces = pgTable(
 		// Set once an admin has gone through the sauce. From then on the scraper keeps
 		// its store links current but leaves its name, description and photos alone.
 		reviewedAt: timestamp('reviewed_at'),
+		// Set when an admin takes the sauce off the site: not a sauce, a junk listing.
+		// Deleting it would only bring it back with the next scrape.
+		hiddenAt: timestamp('hidden_at'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at')
 			.notNull()

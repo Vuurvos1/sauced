@@ -1,5 +1,5 @@
 import { checkins, hotSauces, makers, stores } from '@app/db/schema';
-import { avg, desc, eq, count } from 'drizzle-orm';
+import { avg, desc, eq, count, and } from 'drizzle-orm';
 import {
 	MIN_SEARCH_LENGTH,
 	matchSimilarity,
@@ -11,6 +11,7 @@ import {
 } from '#lib/server/search.js';
 import type { SearchResponse } from '#lib/types/api.js';
 import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
@@ -36,7 +37,7 @@ export async function GET({ url }) {
 					ratingCount: count(checkins.rating)
 				})
 				.from(hotSauces)
-				.where(sauceMatchesQuery(query))
+				.where(and(sauceMatchesQuery(query), visibleSauce))
 				.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
 				.groupBy(hotSauces.sauceId)
 				.orderBy(
@@ -68,7 +69,7 @@ export async function GET({ url }) {
 				})
 				.from(makers)
 				.where(matchesQuery(makers.name, query))
-				.leftJoin(hotSauces, eq(hotSauces.makerId, makers.makerId))
+				.leftJoin(hotSauces, and(eq(hotSauces.makerId, makers.makerId), visibleSauce))
 				.groupBy(makers.makerId)
 				.orderBy(desc(matchTier(makers.name, query)), desc(count(hotSauces.sauceId)))
 				.limit(RESULT_LIMIT);

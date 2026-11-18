@@ -20,6 +20,7 @@ ALTER TABLE "hot_sauce_images" ADD COLUMN "pending" boolean DEFAULT false NOT NU
 ALTER TABLE "hot_sauce_images" ADD COLUMN "edits" jsonb;--> statement-breakpoint
 ALTER TABLE "hot_sauce_images" ADD COLUMN "edited_key" text;--> statement-breakpoint
 ALTER TABLE "hot_sauces" ADD COLUMN "reviewed_at" timestamp;--> statement-breakpoint
+ALTER TABLE "hot_sauces" ADD COLUMN "hidden_at" timestamp;--> statement-breakpoint
 -- Carry each sauce's one image over as its main image. The shop is recorded only
 -- when a single shop stocks the sauce; otherwise the scraper works it out from the
 -- image's URL on its next run.

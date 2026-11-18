@@ -5,6 +5,7 @@ import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
 import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 export const load: PageServerLoad = async () => {
 	const hotSauceColumns = { ...getTableColumns(hotSauces), ...mainImage };
@@ -12,6 +13,7 @@ export const load: PageServerLoad = async () => {
 		.select({ ...hotSauceColumns, makerName: makers.name })
 		.from(hotSauces)
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+		.where(visibleSauce)
 		.orderBy(desc(hotSauces.createdAt))
 		.limit(12);
 
@@ -25,6 +27,7 @@ export const load: PageServerLoad = async () => {
 		.from(hotSauces)
 		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+		.where(visibleSauce)
 		.groupBy(hotSauces.sauceId, makers.name)
 		.orderBy(desc(count(checkins.rating)), desc(avg(checkins.rating)))
 		.limit(8);

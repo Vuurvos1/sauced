@@ -67,8 +67,9 @@ pnpm site dev
 ### Admin
 
 `/admin/review` walks through the catalogue: hide or pin photos, cover parts of a photo
-with white boxes, fix names, and mark a sauce reviewed, which locks it against the
-scraper.
+with white boxes, fix names, hide a sauce that isn't one, and mark a sauce reviewed,
+which locks it against the scraper. The same editor opens in place on any sauce page
+for an admin ("Edit photos and details").
 
 Locally, seed an admin and log in as `admin@sauced.local` / `sauced-admin`. Running it
 again puts the password back; it refuses any database that isn't on localhost:

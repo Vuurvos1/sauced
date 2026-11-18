@@ -8,7 +8,8 @@
 	const tabs = [
 		{ show: 'unreviewed', label: 'To review' },
 		{ show: 'pending', label: 'New photos' },
-		{ show: 'reviewed', label: 'Reviewed' }
+		{ show: 'reviewed', label: 'Reviewed' },
+		{ show: 'hidden', label: 'Hidden' }
 	] as const;
 </script>
 

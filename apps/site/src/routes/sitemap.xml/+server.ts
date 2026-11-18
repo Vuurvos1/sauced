@@ -2,6 +2,7 @@ import { PUBLIC_BASE_URL } from '$app/env/public';
 import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores } from '@app/db/schema';
 import { asc } from 'drizzle-orm';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 type Entry = { path: string; lastmod?: Date | null };
 
@@ -25,6 +26,7 @@ export async function GET({ setHeaders }) {
 		db
 			.select({ slug: hotSauces.slug, updatedAt: hotSauces.updatedAt })
 			.from(hotSauces)
+			.where(visibleSauce)
 			.orderBy(asc(hotSauces.slug)),
 		db
 			.select({ slug: makers.slug, updatedAt: makers.updatedAt })

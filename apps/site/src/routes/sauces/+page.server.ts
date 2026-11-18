@@ -1,7 +1,7 @@
 import { db } from '#lib/server/db.js';
 import { hotSauces, checkins, makers } from '@app/db/schema';
 import { type Actions } from '@sveltejs/kit';
-import { eq, avg, count, desc, getTableColumns } from 'drizzle-orm';
+import { eq, avg, count, desc, getTableColumns, and } from 'drizzle-orm';
 import {
 	type Executor,
 	matchSimilarity,
@@ -11,13 +11,14 @@ import {
 	withFuzzyMatching
 } from '#lib/server/search.js';
 import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 export async function load({ url }) {
 	const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
 	const pageSize = 24;
 
 	const search = normalizeQuery(url.searchParams.get('q'));
-	const filter = search ? sauceMatchesQuery(search) : undefined;
+	const filter = search ? and(sauceMatchesQuery(search), visibleSauce) : visibleSauce;
 
 	// Relevance only means something while searching; otherwise show the newest first.
 	const order = search

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { AwsClient } from 'aws4fetch';
 import sharp from 'sharp';
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
-import { hotSauceImages } from '@app/db/schema';
+import { hotSauceImages, hotSauces } from '@app/db/schema';
 import { fetchPage, sleep } from './utils/fetch.js';
 
 /** Grid thumbnails and the detail page; the site picks between them with srcset. */
@@ -369,7 +369,9 @@ export async function syncImages(db, bucket) {
 	const pending = await db
 		.select({ id: hotSauceImages.imageId, sourceUrl: hotSauceImages.sourceUrl })
 		.from(hotSauceImages)
-		.where(isNull(hotSauceImages.imageKey));
+		// Photos of a sauce an admin took off the site would never be shown.
+		.innerJoin(hotSauces, eq(hotSauces.sauceId, hotSauceImages.sauceId))
+		.where(and(isNull(hotSauceImages.imageKey), isNull(hotSauces.hiddenAt)));
 
 	console.info('Uploading', pending.length, 'images');
 

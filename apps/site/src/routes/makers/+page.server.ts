@@ -1,6 +1,6 @@
 import { db } from '#lib/server/db.js';
 import { hotSauces, makers } from '@app/db/schema';
-import { count, desc, eq } from 'drizzle-orm';
+import { count, desc, eq, and } from 'drizzle-orm';
 import {
 	type Executor,
 	matchSimilarity,
@@ -9,6 +9,7 @@ import {
 	normalizeQuery,
 	withFuzzyMatching
 } from '#lib/server/search.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 export async function load({ url }) {
 	const search = normalizeQuery(url.searchParams.get('q'));
@@ -23,7 +24,7 @@ export async function load({ url }) {
 			})
 			.from(makers)
 			.where(search ? matchesQuery(makers.name, search) : undefined)
-			.leftJoin(hotSauces, eq(hotSauces.makerId, makers.makerId))
+			.leftJoin(hotSauces, and(eq(hotSauces.makerId, makers.makerId), visibleSauce))
 			.groupBy(makers.makerId)
 			.orderBy(
 				...(search

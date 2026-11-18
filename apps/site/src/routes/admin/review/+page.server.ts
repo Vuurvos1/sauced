@@ -14,10 +14,12 @@ const hasPendingPhotos = exists(
 );
 
 /** Each tab is a slice of the catalogue an admin works through. */
+const shown = isNull(hotSauces.hiddenAt);
 const FILTERS = {
-	unreviewed: isNull(hotSauces.reviewedAt),
-	pending: and(isNotNull(hotSauces.reviewedAt), hasPendingPhotos),
-	reviewed: isNotNull(hotSauces.reviewedAt)
+	unreviewed: and(shown, isNull(hotSauces.reviewedAt)),
+	pending: and(shown, isNotNull(hotSauces.reviewedAt), hasPendingPhotos),
+	reviewed: and(shown, isNotNull(hotSauces.reviewedAt)),
+	hidden: isNotNull(hotSauces.hiddenAt)
 } as const;
 
 type Filter = keyof typeof FILTERS;

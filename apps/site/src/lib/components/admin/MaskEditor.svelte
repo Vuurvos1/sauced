@@ -7,11 +7,13 @@
 
 	interface Props {
 		open: boolean;
+		/** The sauce the photo belongs to; edits are saved through its admin page. */
+		slug: string;
 		imageId: string;
 		masks: Mask[];
 	}
 
-	let { open = $bindable(), imageId, masks: initial }: Props = $props();
+	let { open = $bindable(), slug, imageId, masks: initial }: Props = $props();
 
 	/** Must match IMAGE_WIDTHS in packages/scraper/images.js. */
 	const WIDTHS = [400, 800];
@@ -107,7 +109,8 @@
 			for (const width of WIDTHS)
 				body.set(`w${width}`, await render(image, width), `${width}.webp`);
 
-			const response = await fetch('?/edit', {
+			// The editor also opens on the public sauce page, so the action is named in full.
+			const response = await fetch(`/admin/sauces/${encodeURIComponent(slug)}?/edit`, {
 				method: 'POST',
 				body,
 				headers: { 'x-sveltekit-action': 'true' }

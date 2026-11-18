@@ -12,6 +12,7 @@
 	import { toast } from 'svelte-sonner';
 	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
 	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
+	import SauceEditor from '#lib/components/admin/SauceEditor.svelte';
 
 	let { data } = $props();
 
@@ -25,6 +26,7 @@
 	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
 	let open = $state(false);
+	let editorOpen = $state(false);
 
 	const byMaker = $derived(maker ? ` by ${maker.name}` : '');
 </script>
@@ -38,6 +40,18 @@
 />
 
 <div class="container">
+	{#if data.editor && sauce.hiddenAt}
+		<p class="mb-4 rounded-md bg-red-50 p-3 font-medium text-red-800">
+			Hidden from the site: visitors get a 404 here. Open the editor to put it back.
+		</p>
+	{/if}
+
+	{#if data.editor && editorOpen}
+		<section id="sauce-editor" class="mb-12 rounded-md border border-gray-300 p-4">
+			<SauceEditor {sauce} images={data.editor.images} canEdit={data.editor.canEdit} inline />
+		</section>
+	{/if}
+
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
 		<div class="xl:col-span-3">
 			<img
@@ -77,14 +91,17 @@
 		<div class="xl:col-span-2">
 			<h1 class="h1 mb-1">{sauce.name}</h1>
 
-			{#if user?.role === 'admin'}
+			{#if data.editor}
 				<div class="mb-3">
-					<a
+					<button
+						type="button"
 						class="btn btn-outline px-3 py-1 text-sm"
-						href={resolve('/admin/sauces/[slug]', { slug: sauce.slug })}
+						aria-expanded={editorOpen}
+						aria-controls="sauce-editor"
+						onclick={() => (editorOpen = !editorOpen)}
 					>
-						Edit photos and details
-					</a>
+						{editorOpen ? 'Close editor' : 'Edit photos and details'}
+					</button>
 				</div>
 			{/if}
 

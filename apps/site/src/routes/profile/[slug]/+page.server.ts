@@ -5,6 +5,7 @@ import { getAchievements } from '#lib/server/achievements/index.js';
 import { and, count, desc, eq, isNotNull, getTableColumns, not } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -37,7 +38,7 @@ export async function load({ params }) {
 			checkedAt: checkins.createdAt
 		})
 		.from(checkins)
-		.innerJoin(hotSauces, eq(checkins.hotSauceId, hotSauces.sauceId))
+		.innerJoin(hotSauces, and(eq(checkins.hotSauceId, hotSauces.sauceId), visibleSauce))
 		.where(eq(checkins.userId, user.id))
 		.orderBy(desc(checkins.createdAt))
 		.limit(12);
