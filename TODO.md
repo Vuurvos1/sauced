@@ -53,6 +53,37 @@ Grouped by urgency: **Bugs** are wrong today, **Now** unblocks other work,
 
 ---
 
+## Cloudflare and images (`feat/cloudflare`)
+
+Production is the source of truth for the catalogue and its images; local mirrors it.
+
+- [x] OpenTofu in `infra/`: an R2 image bucket per environment (`img.hotsauced.app`,
+      `img-dev.hotsauced.app`) and a Hyperdrive config per Neon database.
+- [x] Images resized to 400/800px WebP during the scrape, uploaded under a content hash
+      with immutable cache headers. Up to 5 photos per shop per sauce in
+      `hot_sauce_images`; the sauce page shows them as a gallery.
+- [x] Near-duplicate photos (another shop's copy of the same shot) hidden from the
+      gallery by a 256-bit perceptual hash.
+- [x] Sauce names keep only the characters real names use (no ®, ™, emoji).
+- [ ] `pnpm db pull`: copy production's catalogue tables (not users or check-ins) into
+      the local database, and its image files into the local bucket.
+- [ ] `pnpm scrapers diff`: run the old and new scraper over the cached catalogues and
+      list what a change does to names, merges and photos.
+- [ ] Review status: a reviewed sauce is locked; the scraper keeps its links current but
+      no longer changes its name, description or photos. New photos for it wait as
+      suggestions.
+- [ ] Admin review page: walk unreviewed sauces, hide or pin photos, accept suggestions.
+- [ ] Photo editor: white boxes over parts of a photo (later crop and rotate), rendered in
+      the browser and uploaded as new files; the original is kept.
+- [ ] Bucket cleanup: delete files no row references any more.
+- [ ] Billing alerts in OpenTofu before anything usage-billed goes live.
+- [ ] Move the site to Workers (adapter-cloudflare, Hyperdrive binding, per-request
+      database client, Workers AI in place of the TensorFlow toxicity model).
+- [ ] Duplicate Tabasco Scorpion Pepper Sauce: the cleaned name collides with an
+      existing row, so the old "® Brand" row needs merging by hand.
+
+---
+
 ## Now
 
 ### Generic scraper adapters (unblocks every store below)
