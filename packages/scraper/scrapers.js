@@ -1,6 +1,7 @@
 import { createShopifyScraper } from './adapters/shopify.js';
+import { createSitemapScraper } from './adapters/sitemap.js';
 import { createWooScraper } from './adapters/woo.js';
-import { makerAliases, shopifyStores, wooStores } from './stores.js';
+import { makerAliases, shopifyStores, sitemapStores, wooStores } from './stores.js';
 
 /**
  * @param {import('./').BaseScraperConfig[]} configs
@@ -20,12 +21,13 @@ function register(configs, create) {
  * A disabled store stays registered so `scrape <key>` can still reach it; only
  * `scrape all` skips it.
  */
-export const enabledKeys = [...shopifyStores, ...wooStores]
+export const enabledKeys = [...shopifyStores, ...wooStores, ...sitemapStores]
 	.filter((config) => !config.disabled)
 	.map((config) => config.key);
 
 /** @type {Record<string, import('./').SauceScraper>} */
 export default {
 	...register(shopifyStores, createShopifyScraper),
-	...register(wooStores, createWooScraper)
+	...register(wooStores, createWooScraper),
+	...register(sitemapStores, createSitemapScraper)
 };
