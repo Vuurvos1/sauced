@@ -11,7 +11,7 @@
 
 ## Getting Started
 
-Requires Node 24+ and pnpm (the version is pinned in `package.json`).
+Requires Node 26+ and pnpm (the version is pinned in `package.json`).
 
 Install dependencies:
 

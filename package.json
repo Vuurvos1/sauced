@@ -19,7 +19,7 @@
 	"type": "module",
 	"packageManager": "pnpm@10.18.0",
 	"engines": {
-		"node": ">=24"
+		"node": ">=26"
 	},
 	"pnpm": {
 		"overrides": {
