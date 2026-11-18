@@ -30,11 +30,14 @@ export const auth = betterAuth({
 				unique: true,
 				input: true
 			},
+			// Never in a session response (not even to its owner) nor in locals.user:
+			// ask isAdmin() instead.
 			role: {
 				type: 'string',
 				required: false,
 				defaultValue: 'user',
-				input: false
+				input: false,
+				returned: false
 			}
 		}
 	},

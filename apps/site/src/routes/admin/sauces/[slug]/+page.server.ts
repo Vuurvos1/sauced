@@ -30,7 +30,7 @@ async function findSauce(slug: string) {
 
 /** Editing happens on the sauce page itself; this route only holds the actions. */
 export async function load({ locals, params }) {
-	requireAdmin(locals);
+	await requireAdmin(locals);
 	redirect(307, `/sauces/${encodeURIComponent(params.slug)}?edit=1`);
 }
 
@@ -102,7 +102,7 @@ function clearingCache<T extends Record<string, (event: never) => unknown>>(acti
 
 export const actions = clearingCache({
 	pin: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const parsed = imageForm.safeParse(Object.fromEntries(await request.formData()));
 		if (!parsed.success) return fail(400, { error: 'Unknown photo' });
 		const sauce = await findSauce(params.slug);
@@ -125,11 +125,11 @@ export const actions = clearingCache({
 		return { ok: true };
 	},
 	unpin: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		return updateImage(request, params.slug, { pinned: false });
 	},
 	hide: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const parsed = imageForm.safeParse(Object.fromEntries(await request.clone().formData()));
 		if (!parsed.success) return fail(400, { error: 'Unknown photo' });
 		const sauce = await findSauce(params.slug);
@@ -148,12 +148,12 @@ export const actions = clearingCache({
 		return updateImage(request, params.slug, { hidden: true, pinned: false, pending: false });
 	},
 	show: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		return updateImage(request, params.slug, { hidden: false, pending: false });
 	},
 
 	details: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const parsed = z
 			.object({ name: z.string().trim().min(1).max(200), description: z.string().trim().max(5000) })
 			.safeParse(Object.fromEntries(await request.formData()));
@@ -169,7 +169,7 @@ export const actions = clearingCache({
 	},
 
 	review: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const sauce = await findSauce(params.slug);
 		await db
 			.update(hotSauces)
@@ -178,7 +178,7 @@ export const actions = clearingCache({
 		return moveOn(await request.formData(), sauce);
 	},
 	hideSauce: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const sauce = await findSauce(params.slug);
 		await db
 			.update(hotSauces)
@@ -187,13 +187,13 @@ export const actions = clearingCache({
 		return moveOn(await request.formData(), sauce);
 	},
 	showSauce: async ({ locals, params }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const sauce = await findSauce(params.slug);
 		await db.update(hotSauces).set({ hiddenAt: null }).where(eq(hotSauces.sauceId, sauce.sauceId));
 		return { ok: true };
 	},
 	unreview: async ({ locals, params }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const sauce = await findSauce(params.slug);
 		await db
 			.update(hotSauces)
@@ -204,7 +204,7 @@ export const actions = clearingCache({
 
 	/** Stores the boxes and the copies the browser rendered with them. */
 	edit: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		const bucket = imageBucket();
 		if (!bucket) return fail(503, { error: 'No bucket configured for edits' });
 
@@ -251,7 +251,7 @@ export const actions = clearingCache({
 		return { ok: true };
 	},
 	unedit: async ({ locals, params, request }) => {
-		requireAdmin(locals);
+		await requireAdmin(locals);
 		// The edited files stay in the bucket; nothing points at them any more.
 		return updateImage(request, params.slug, { edits: null, editedKey: null });
 	}

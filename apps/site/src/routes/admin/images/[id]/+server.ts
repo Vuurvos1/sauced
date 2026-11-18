@@ -11,7 +11,7 @@ import { requireAdmin } from '#lib/server/admin.js';
  * canvas, and a canvas holding a cross-origin image can't be exported.
  */
 export async function GET({ locals, params }) {
-	requireAdmin(locals);
+	await requireAdmin(locals);
 	if (!z.uuid().safeParse(params.id).success) error(404, 'Not found');
 
 	const [image] = await db

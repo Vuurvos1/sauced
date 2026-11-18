@@ -13,6 +13,7 @@ import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
 import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
 import { loadSauceEditor, nextToReview } from '#lib/server/sauce-editor.js';
+import { isAdmin } from '#lib/server/admin.js';
 import {
 	imageOrder,
 	shownImageKey,
@@ -31,7 +32,8 @@ export async function load({ params, locals: { user } }) {
 	const dbSauce = await db.select().from(hotSauces).where(eq(hotSauces.slug, slug)).limit(1);
 
 	// A hidden sauce stays reachable for admins, so they can bring it back.
-	if (dbSauce.length === 0 || (dbSauce[0].hiddenAt && user?.role !== 'admin')) {
+	const admin = await isAdmin(user);
+	if (dbSauce.length === 0 || (dbSauce[0].hiddenAt && !admin)) {
 		error(404, 'Sauce not found');
 	}
 
@@ -103,10 +105,9 @@ export async function load({ params, locals: { user } }) {
 	]);
 
 	// Admins can edit the sauce right here; nobody else gets the hidden photos.
-	const editor =
-		user?.role === 'admin'
-			? { ...(await loadSauceEditor(sauceId)), next: await nextToReview(sauce) }
-			: null;
+	const editor = admin
+		? { ...(await loadSauceEditor(sauceId)), next: await nextToReview(sauce) }
+		: null;
 
 	// With a bucket configured, a photo that never uploaded is usually a dead link.
 	const images = withoutDuplicatePhotos(

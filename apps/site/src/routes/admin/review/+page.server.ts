@@ -25,7 +25,7 @@ const FILTERS = {
 type Filter = keyof typeof FILTERS;
 
 export async function load({ locals, url }) {
-	requireAdmin(locals);
+	await requireAdmin(locals);
 
 	const param = url.searchParams.get('show');
 	const show: Filter = param && param in FILTERS ? (param as Filter) : 'unreviewed';
