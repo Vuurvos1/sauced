@@ -68,7 +68,16 @@ pnpm site dev
 
 `/admin/review` walks through the catalogue: hide or pin photos, cover parts of a photo
 with white boxes, fix names, and mark a sauce reviewed, which locks it against the
-scraper. Admins are set in the database:
+scraper.
+
+Locally, seed an admin and log in as `admin@sauced.local` / `sauced-admin`. Running it
+again puts the password back; it refuses any database that isn't on localhost:
+
+```bash
+pnpm site seed:admin
+```
+
+Anywhere else, promote a real account:
 
 ```sql
 update "user" set role = 'admin' where email = 'you@example.com';

@@ -13,6 +13,7 @@
 		"format": "oxfmt .",
 		"test:integration": "docker compose -f ../../docker-compose.yaml up -d db-test && playwright test",
 		"test:unit": "vitest",
+		"seed:admin": "node --env-file-if-exists=.env scripts/seed-admin.ts",
 		"generate:auth": "pnpm dlx @better-auth/cli@latest generate --config ./src/lib/server/auth.ts --output ../../packages/db/schema/auth.js"
 	},
 	"devDependencies": {
