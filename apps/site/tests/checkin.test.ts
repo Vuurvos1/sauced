@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { TEST_SAUCE } from './global-setup';
 import { createTestUser, login } from './fixtures';
 
-// Reviews are left empty: any text loads the TensorFlow toxicity model, which is
-// fetched over the network and takes seconds.
+// Review text is moderated only where the Workers AI binding exists, which these
+// tests don't have, so text saves unflagged; the tests stick to ratings.
 
 // The page is server-rendered, so a click can land before hydration attaches the
 // handlers. Waiting for the network to settle covers the module graph in dev.
