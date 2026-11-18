@@ -5,6 +5,7 @@ import { hotSauceImages, hotSauces, makers } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
 import { contentHash, IMAGE_WIDTHS, imageBucket, requireAdmin } from '#lib/server/admin.js';
 import { loadSauceEditor } from '#lib/server/sauce-editor.js';
+import { clearCache } from '#lib/server/cache.js';
 import { visibleImage } from '#lib/server/images.js';
 
 async function findSauce(slug: string) {
@@ -103,7 +104,26 @@ const masks = z
 
 const MAX_UPLOAD_BYTES = 2_000_000;
 
-export const actions = {
+/**
+ * Every action changes what visitors see, so public caches start over afterwards
+ * (on this server instance; others catch up within their TTL).
+ */
+function clearingCache<T extends Record<string, (event: never) => unknown>>(actions: T): T {
+	return Object.fromEntries(
+		Object.entries(actions).map(([name, action]) => [
+			name,
+			async (event: never) => {
+				try {
+					return await action(event);
+				} finally {
+					clearCache();
+				}
+			}
+		])
+	) as T;
+}
+
+export const actions = clearingCache({
 	pin: async ({ locals, params, request }) => {
 		requireAdmin(locals);
 		const parsed = imageForm.safeParse(Object.fromEntries(await request.formData()));
@@ -258,4 +278,4 @@ export const actions = {
 		// The edited files stay in the bucket; nothing points at them any more.
 		return updateImage(request, params.slug, { edits: null, editedKey: null });
 	}
-};
+});

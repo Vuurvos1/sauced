@@ -82,6 +82,10 @@ Production is the source of truth for the catalogue and its images; local mirror
 - [ ] Bucket cleanup: delete files no row references any more.
 - [ ] Cut Neon compute hours (it bills for time awake, and any query wakes it):
   - [x] Search as a union of indexed lookups: ~150 ms → ~25 ms per query.
+  - [x] Front page lists cached in memory for 5 minutes (`cached()` in
+        `lib/server/cache.ts`); admin actions clear it. Per server instance, so it
+        cuts queries without guaranteeing none. Other public, visitor-independent
+        lists can use it too.
   - [ ] Hyperdrive query caching for catalogue reads, once on Workers.
   - [ ] Cloudflare cache rule for public pages that bypasses the cache when a Better
         Auth session cookie is present, so crawlers are served from the edge.
