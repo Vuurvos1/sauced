@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
-import { hotSauceImages, stores } from '@app/db/schema';
+import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { hotSauceImages, hotSauces, stores } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
 import { imageBucket } from '#lib/server/admin.js';
 import { imageOrder, isSamePhoto, shownImageKey } from '#lib/server/images.js';
@@ -41,3 +41,25 @@ export async function loadSauceEditor(sauceId: string) {
 }
 
 export type SauceEditorImage = Awaited<ReturnType<typeof loadSauceEditor>>['images'][number];
+
+/**
+ * The unreviewed sauce after this one in the review list's order (newest first),
+ * wrapping round to the start.
+ */
+export async function nextToReview(sauce: { sauceId: string; createdAt: Date }) {
+	const after = or(
+		lt(hotSauces.createdAt, sauce.createdAt),
+		and(eq(hotSauces.createdAt, sauce.createdAt), sql`${hotSauces.sauceId} > ${sauce.sauceId}`)
+	);
+	const toReview = and(isNull(hotSauces.reviewedAt), isNull(hotSauces.hiddenAt));
+	for (const where of [and(toReview, after), toReview]) {
+		const [next] = await db
+			.select({ slug: hotSauces.slug })
+			.from(hotSauces)
+			.where(and(where, sql`${hotSauces.sauceId} <> ${sauce.sauceId}`))
+			.orderBy(desc(hotSauces.createdAt), hotSauces.sauceId)
+			.limit(1);
+		if (next) return next.slug;
+	}
+	return null;
+}

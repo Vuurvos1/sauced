@@ -1,10 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
 import { hotSauceImages, hotSauces, makers } from '@app/db/schema';
 import { db } from '#lib/server/db.js';
 import { contentHash, IMAGE_WIDTHS, imageBucket, requireAdmin } from '#lib/server/admin.js';
-import { loadSauceEditor } from '#lib/server/sauce-editor.js';
+import { nextToReview } from '#lib/server/sauce-editor.js';
 import { clearCache } from '#lib/server/cache.js';
 import { visibleImage } from '#lib/server/images.js';
 
@@ -28,33 +28,10 @@ async function findSauce(slug: string) {
 	return sauce;
 }
 
-/**
- * The unreviewed sauce after this one in the review list's order (newest first),
- * wrapping round to the start.
- */
-async function nextToReview(sauce: { sauceId: string; createdAt: Date }) {
-	const after = or(
-		lt(hotSauces.createdAt, sauce.createdAt),
-		and(eq(hotSauces.createdAt, sauce.createdAt), sql`${hotSauces.sauceId} > ${sauce.sauceId}`)
-	);
-	const toReview = and(isNull(hotSauces.reviewedAt), isNull(hotSauces.hiddenAt));
-	for (const where of [and(toReview, after), toReview]) {
-		const [next] = await db
-			.select({ slug: hotSauces.slug })
-			.from(hotSauces)
-			.where(and(where, sql`${hotSauces.sauceId} <> ${sauce.sauceId}`))
-			.orderBy(desc(hotSauces.createdAt), hotSauces.sauceId)
-			.limit(1);
-		if (next) return next.slug;
-	}
-	return null;
-}
-
+/** Editing happens on the sauce page itself; this route only holds the actions. */
 export async function load({ locals, params }) {
 	requireAdmin(locals);
-	const sauce = await findSauce(params.slug);
-	const [editor, next] = await Promise.all([loadSauceEditor(sauce.sauceId), nextToReview(sauce)]);
-	return { sauce, next, ...editor };
+	redirect(307, `/sauces/${encodeURIComponent(params.slug)}?edit=1`);
 }
 
 /**
@@ -64,7 +41,7 @@ export async function load({ locals, params }) {
 async function moveOn(formData: FormData, sauce: Awaited<ReturnType<typeof findSauce>>) {
 	if (formData.has('stay')) return { ok: true };
 	const next = await nextToReview(sauce);
-	redirect(303, next ? `/admin/sauces/${next}` : '/admin/review');
+	redirect(303, next ? `/sauces/${encodeURIComponent(next)}?edit=1` : '/admin/review');
 }
 
 const imageForm = z.object({ imageId: z.uuid() });

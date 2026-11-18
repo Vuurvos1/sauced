@@ -12,21 +12,106 @@
 	import { toast } from 'svelte-sonner';
 	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
 	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
-	import SauceEditor from '#lib/components/admin/SauceEditor.svelte';
+	import { page } from '$app/state';
+	import { ChevronRight } from '@o7/icon/lucide';
+	import AdminBar from '#lib/components/admin/AdminBar.svelte';
+	import PhotoToolbar from '#lib/components/admin/PhotoToolbar.svelte';
+	import MaskEditor from '#lib/components/admin/MaskEditor.svelte';
+	import { adminAction, stayHere } from '#lib/components/admin/stay.js';
+	import type { SauceEditorImage } from '#lib/server/sauce-editor.js';
 
 	let { data } = $props();
 
 	let { sauce, images, maker, session, user, wishlisted, stores } = $derived(data);
 
-	// Keyed to the sauce, so navigating to another one starts on its main image.
-	let selection = $state<{ sauceId: string; index: number }>();
-	const selected = $derived(selection?.sauceId === sauce.sauceId ? selection.index : 0);
-	const shown = $derived(images[selected] ?? images[0] ?? { imageKey: null, imageUrl: null });
+	// Edit mode is in the URL, so the review queue can link straight into it.
+	const editor = $derived(data.editor);
+	const editing = $derived(Boolean(editor) && page.url.searchParams.has('edit'));
+
+	type Photo = {
+		id: string;
+		imageKey: string | null;
+		imageUrl: string | null;
+		admin?: SauceEditorImage;
+	};
+	/** Visitors' photos, or in edit mode every photo with what an admin needs to know. */
+	const gallery: Photo[] = $derived(
+		editing && editor
+			? editor.images.map((image) => ({
+					id: image.imageId,
+					imageKey: image.imageKey,
+					imageUrl: image.imageUrl,
+					admin: image
+				}))
+			: images.map((image) => ({ id: image.imageKey ?? image.imageUrl ?? '', ...image }))
+	);
+
+	// By photo, not position: pinning reorders the list, and the photo you acted on
+	// should stay in view. Keyed to the sauce, so another sauce starts on its main image.
+	let selection = $state<{ sauceId: string; id: string }>();
+	const selected = $derived(
+		Math.max(
+			0,
+			gallery.findIndex(
+				(photo) => selection?.sauceId === sauce.sauceId && photo.id === selection.id
+			)
+		)
+	);
+	const shown: Photo = $derived(gallery[selected] ?? { id: '', imageKey: null, imageUrl: null });
+
+	function select(index: number) {
+		const count = gallery.length;
+		if (count === 0) return;
+		selection = { sauceId: sauce.sauceId, id: gallery[(index + count) % count].id };
+	}
+
+	function arrowKeys(event: KeyboardEvent) {
+		if (event.metaKey || event.ctrlKey || event.altKey || gallery.length < 2) return;
+		const target = event.target as HTMLElement;
+		if (target.closest('input, textarea, select, [contenteditable]')) return;
+		if (document.querySelector('[role="dialog"]')) return;
+		if (event.key === 'ArrowLeft') select(selected - 1);
+		if (event.key === 'ArrowRight') select(selected + 1);
+	}
+
+	/** A horizontal swipe on the main photo steps through the gallery. */
+	let swipeStart: { x: number; y: number } | null = null;
+	function swipeDown(event: PointerEvent) {
+		// The arrows and the edit toolbar handle their own taps.
+		if ((event.target as HTMLElement).closest('button, a, form')) return;
+		swipeStart = { x: event.clientX, y: event.clientY };
+	}
+	function swipeUp(event: PointerEvent) {
+		if (!swipeStart) return;
+		const dx = event.clientX - swipeStart.x;
+		const dy = event.clientY - swipeStart.y;
+		swipeStart = null;
+		// Far enough to be meant, and more sideways than down, so scrolling still works.
+		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) select(selected + (dx < 0 ? 1 : -1));
+	}
+
+	let problem = $state('');
+	const stay = stayHere((message) => (problem = message));
+	let detailsForm = $state<HTMLFormElement>();
+	let covering = $state<SauceEditorImage | null>(null);
+	let coverOpen = $state(false);
+
+	const visibleCount = $derived(
+		editor?.images.filter((image) => !image.hidden && !image.pending).length ?? 0
+	);
+
+	/** Escape puts back what was there instead of saving it. */
+	function revertOnEscape(event: KeyboardEvent, original: string) {
+		const field = event.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+		if (event.key === 'Escape') {
+			field.value = original;
+			field.blur();
+		}
+	}
 	let checkins = $derived(data.checkins);
 	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
 	let open = $state(false);
-	let editorOpen = $state(false);
 
 	const byMaker = $derived(maker ? ` by ${maker.name}` : '');
 </script>
@@ -39,49 +124,84 @@
 	imageAlt={sauce.name}
 />
 
-<div class="container">
-	{#if data.editor && sauce.hiddenAt}
-		<p class="mb-4 rounded-md bg-red-50 p-3 font-medium text-red-800">
-			Hidden from the site: visitors get a 404 here. Open the editor to put it back.
-		</p>
-	{/if}
+<svelte:window onkeydown={arrowKeys} />
 
-	{#if data.editor && editorOpen}
-		<section id="sauce-editor" class="mb-12 rounded-md border border-gray-300 p-4">
-			<SauceEditor {sauce} images={data.editor.images} canEdit={data.editor.canEdit} inline />
-		</section>
+<div class="container">
+	{#if editor}
+		<AdminBar {sauce} next={editor.next} {editing} onError={(message) => (problem = message)} />
+		{#if problem}<p class="mb-4 text-red-600" role="alert">{problem}</p>{/if}
 	{/if}
 
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
 		<div class="xl:col-span-3">
-			<img
-				class="sauce-hero aspect-square w-full object-contain"
-				{...sauceImageAttrs(shown)}
-				sizes="(min-width: 1280px) 60vw, (min-width: 768px) 50vw, 100vw"
-				alt={sauce.name}
-			/>
+			<div
+				class="relative touch-pan-y select-none"
+				role="group"
+				aria-roledescription="carousel"
+				aria-label="Photos of {sauce.name}"
+				onpointerdown={swipeDown}
+				onpointerup={swipeUp}
+				onpointercancel={() => (swipeStart = null)}
+			>
+				<img
+					draggable="false"
+					class={[
+						'sauce-hero aspect-square w-full object-contain',
+						(shown.admin?.hidden || shown.admin?.duplicate) && 'opacity-50'
+					]}
+					{...sauceImageAttrs(shown)}
+					sizes="(min-width: 1280px) 60vw, (min-width: 768px) 50vw, 100vw"
+					alt={sauce.name}
+				/>
 
-			{#if images.length > 1}
-				<ul class="mt-3 flex gap-2 overflow-x-auto" aria-label="Photos">
-					{#each images as image, index (image.imageKey ?? image.imageUrl)}
-						<li class="shrink-0">
+				{#if gallery.length > 1}
+					<button
+						type="button"
+						class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow transition hover:bg-white"
+						aria-label="Previous photo"
+						onclick={() => select(selected - 1)}
+					>
+						<ChevronRight class="rotate-180" size={24}></ChevronRight>
+					</button>
+					<button
+						type="button"
+						class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow transition hover:bg-white"
+						aria-label="Next photo"
+						onclick={() => select(selected + 1)}
+					>
+						<ChevronRight size={24}></ChevronRight>
+					</button>
+				{/if}
+			</div>
+
+			{#if !editing && gallery.length > 1}
+				<ul class="mt-3 flex gap-2 overflow-x-auto pt-1" aria-label="Photos">
+					{#each gallery as photo, index (photo.id)}
+						<li class="relative shrink-0">
 							<button
 								type="button"
 								class={[
 									'block size-16 rounded-md border-2 p-0.5 transition-colors',
-									index === selected ? 'border-black' : 'border-transparent hover:border-gray-300'
+									index === selected ? 'border-black' : 'border-transparent hover:border-gray-300',
+									(photo.admin?.hidden || photo.admin?.duplicate) && 'opacity-40'
 								]}
-								aria-label={`Photo ${index + 1} of ${images.length}`}
+								aria-label={`Photo ${index + 1} of ${gallery.length}`}
 								aria-pressed={index === selected}
-								onclick={() => (selection = { sauceId: sauce.sauceId, index })}
+								onclick={() => select(index)}
 							>
 								<img
 									class="size-full object-contain"
-									src={sauceImageSrc(image, 400)}
+									src={sauceImageSrc(photo, 400)}
 									alt=""
 									loading="lazy"
 								/>
 							</button>
+							{#if photo.admin?.pending}
+								<span
+									class="pointer-events-none absolute -right-1 -top-1 rounded bg-amber-400 px-1 text-xs font-semibold"
+									>New</span
+								>
+							{/if}
 						</li>
 					{/each}
 				</ul>
@@ -89,20 +209,37 @@
 		</div>
 
 		<div class="xl:col-span-2">
-			<h1 class="h1 mb-1">{sauce.name}</h1>
-
-			{#if data.editor}
-				<div class="mb-3">
-					<button
-						type="button"
-						class="btn btn-outline px-3 py-1 text-sm"
-						aria-expanded={editorOpen}
-						aria-controls="sauce-editor"
-						onclick={() => (editorOpen = !editorOpen)}
-					>
-						{editorOpen ? 'Close editor' : 'Edit photos and details'}
-					</button>
-				</div>
+			{#if editing}
+				<!-- Name and description save together when either loses focus with a change. -->
+				<form
+					id="sauce-details"
+					method="post"
+					action={adminAction(sauce.slug, 'details')}
+					use:enhance={stay}
+					bind:this={detailsForm}
+				>
+					<h1 class="h1 mb-1">
+						<span class="sr-only">{sauce.name}</span>
+						<!-- A textarea so a long name wraps; Enter saves instead of breaking the line. -->
+						<textarea
+							class="block w-full resize-none rounded border border-dashed border-gray-300 px-1 [field-sizing:content] hover:border-gray-500 focus:border-solid focus:border-black focus:outline-none"
+							name="name"
+							rows="1"
+							value={sauce.name}
+							aria-label="Sauce name"
+							required
+							onchange={() => detailsForm?.requestSubmit()}
+							onkeydown={(event) => {
+								if (event.key === 'Enter') {
+									event.preventDefault();
+									event.currentTarget.blur();
+								}
+								revertOnEscape(event, sauce.name);
+							}}></textarea>
+					</h1>
+				</form>
+			{:else}
+				<h1 class="h1 mb-1">{sauce.name}</h1>
 			{/if}
 
 			{#if maker}
@@ -114,7 +251,19 @@
 				</a>
 			{/if}
 
-			<p class="mb-5 text-gray-500">{sauce.description}</p>
+			{#if editing}
+				<textarea
+					form="sauce-details"
+					class="mb-5 min-h-40 w-full rounded border border-dashed border-gray-300 p-1 text-gray-600 hover:border-gray-500 focus:border-solid focus:border-black focus:outline-none"
+					name="description"
+					aria-label="Description"
+					onchange={() => detailsForm?.requestSubmit()}
+					onkeydown={(event) => revertOnEscape(event, sauce.description ?? '')}
+					>{sauce.description ?? ''}</textarea
+				>
+			{:else}
+				<p class="mb-5 text-gray-500">{sauce.description}</p>
+			{/if}
 
 			{#if session}
 				<div class="flex flex-row gap-6">
@@ -235,6 +384,52 @@
 		</div>
 	</section>
 
+	{#if editing && editor}
+		<!-- Every photo side by side, with what an admin can do to each. -->
+		<section class="mb-12">
+			<h2 class="h3 mb-3">Photos</h2>
+			<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+				{#each gallery as photo, index (photo.id)}
+					{#if photo.admin}
+						{@const image = photo.admin}
+						<li
+							class={[
+								'flex flex-col rounded-md border-2 p-2',
+								index === selected ? 'border-black' : 'border-gray-200'
+							]}
+						>
+							<button
+								type="button"
+								class={['mb-2 block', (image.hidden || image.duplicate) && 'opacity-50']}
+								aria-label={`Show photo ${index + 1} above`}
+								aria-pressed={index === selected}
+								onclick={() => select(index)}
+							>
+								<img
+									class="aspect-square w-full object-contain"
+									src={sauceImageSrc(photo, 400)}
+									alt=""
+									loading="lazy"
+								/>
+							</button>
+							<PhotoToolbar
+								slug={sauce.slug}
+								{image}
+								{visibleCount}
+								canEdit={editor.canEdit}
+								onCover={() => {
+									covering = image;
+									coverOpen = true;
+								}}
+								onError={(message) => (problem = message)}
+							/>
+						</li>
+					{/if}
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
 	{#snippet checkinSnippet(checkin: (typeof data.checkins)[number])}
 		<li class="py-4 first:pt-0 last:pb-0">
 			<div class="mb-3 flex flex-row items-center justify-between">
@@ -303,6 +498,15 @@
 		{/if}
 	</section>
 </div>
+
+{#if covering}
+	<MaskEditor
+		bind:open={coverOpen}
+		slug={sauce.slug}
+		imageId={covering.imageId}
+		masks={covering.edits?.masks ?? []}
+	/>
+{/if}
 
 <style>
 	.sauce-hero {

@@ -43,7 +43,7 @@
 				<li>
 					<a
 						class="block rounded-md border border-gray-200 p-2 hover:border-gray-400"
-						href={resolve('/admin/sauces/[slug]', { slug: sauce.slug })}
+						href={resolve('/sauces/[slug]?edit=1', { slug: sauce.slug })}
 					>
 						<img
 							class="mb-2 aspect-square w-full object-contain"

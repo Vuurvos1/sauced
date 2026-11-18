@@ -12,7 +12,7 @@ import {
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
 import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
-import { loadSauceEditor } from '#lib/server/sauce-editor.js';
+import { loadSauceEditor, nextToReview } from '#lib/server/sauce-editor.js';
 import {
 	imageOrder,
 	shownImageKey,
@@ -103,7 +103,10 @@ export async function load({ params, locals: { user } }) {
 	]);
 
 	// Admins can edit the sauce right here; nobody else gets the hidden photos.
-	const editor = user?.role === 'admin' ? await loadSauceEditor(sauceId) : null;
+	const editor =
+		user?.role === 'admin'
+			? { ...(await loadSauceEditor(sauceId)), next: await nextToReview(sauce) }
+			: null;
 
 	// With a bucket configured, a photo that never uploaded is usually a dead link.
 	const images = withoutDuplicatePhotos(
