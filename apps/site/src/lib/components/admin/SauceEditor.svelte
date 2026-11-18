@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { enhance, type SubmitFunction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import type { SubmitFunction } from '@sveltejs/kit';
 	import { sauceImageSrc } from '#lib/images.js';
 	import type { SauceEditorImage } from '#lib/server/sauce-editor.js';
 	import MaskEditor from './MaskEditor.svelte';
