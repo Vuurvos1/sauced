@@ -101,7 +101,8 @@ async function loadStoredSauces(storeKeysById, aliases) {
 			slug: hotSauces.slug,
 			description: hotSauces.description,
 			makerId: hotSauces.makerId,
-			makerName: makers.name
+			makerName: makers.name,
+			reviewedAt: hotSauces.reviewedAt
 		})
 		.from(hotSauces)
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId));
@@ -228,7 +229,8 @@ async function writeCatalogue(runs) {
 			...(makerId && makerId !== existing.makerId ? { makerId } : {})
 		};
 
-		if (Object.keys(changes).length === 0) continue;
+		// A reviewed sauce is the admin's now; only its store links keep updating.
+		if (existing.reviewedAt || Object.keys(changes).length === 0) continue;
 
 		try {
 			await db.update(hotSauces).set(changes).where(eq(hotSauces.sauceId, existing.id));
@@ -313,7 +315,10 @@ async function writeCatalogue(runs) {
 			});
 	}
 
-	await writeSauceImages(db, images);
+	const reviewed = new Set(
+		[...stored.values()].filter((sauce) => sauce.reviewedAt).map((sauce) => sauce.id)
+	);
+	await writeSauceImages(db, images, reviewed);
 
 	return writeFailures;
 }

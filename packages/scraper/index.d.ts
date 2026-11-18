@@ -50,6 +50,7 @@ export type StoredSauce = {
 	description: string | null;
 	makerId: string | null;
 	makerName: string | null;
+	reviewedAt: Date | null;
 };
 
 export type GetSauceUrls = (url: string, options: ScrapeSauceOptions) => Promise<string[]>;

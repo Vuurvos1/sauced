@@ -122,7 +122,14 @@ function section(title, lines) {
 	if (lines.length > SAMPLE) console.info(`  … ${lines.length - SAMPLE} more (--all to list them)`);
 }
 
-const before = await run(checkout(ref));
+const base = checkout(ref);
+let before;
+try {
+	before = await run(base);
+} finally {
+	// Its test files would otherwise be picked up by vitest.
+	fs.rmSync(path.join(here, '.diff-base'), { recursive: true, force: true });
+}
 const after = await run(here);
 
 const added = [];

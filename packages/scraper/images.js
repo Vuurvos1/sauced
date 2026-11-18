@@ -86,9 +86,15 @@ function shopOf(url) {
 }
 
 /**
- * @typedef {{ id: string, storeId: string | null, sourceUrl: string, position: number }} StoredImage
  * @typedef {{
- *   inserts: { storeId: string, sourceUrl: string, position: number }[],
+ *   id: string,
+ *   storeId: string | null,
+ *   sourceUrl: string,
+ *   position: number,
+ *   curated?: boolean
+ * }} StoredImage `curated`: pinned or edited by an admin
+ * @typedef {{
+ *   inserts: { storeId: string, sourceUrl: string, position: number, pending: boolean }[],
  *   deletes: string[],
  *   adopted: { id: string, storeId: string }[]
  * }} ImagePlan
@@ -103,11 +109,16 @@ function shopOf(url) {
  * first: when the main image's shop swaps its photo, the replacement is still the
  * main image instead of another shop's picture moving up.
  *
+ * A photo an admin pinned or edited is never dropped: its files are ours, so it
+ * keeps working after the shop deletes its own copy. A locked (reviewed) sauce
+ * drops nothing, and its new photos arrive pending, for an admin to accept.
+ *
  * @param {StoredImage[]} stored
  * @param {Map<string, string[]>} listed store id -> image URLs, in the shop's order
+ * @param {boolean} [locked] the sauce has been reviewed
  * @returns {ImagePlan}
  */
-export function planImages(stored, listed) {
+export function planImages(stored, listed, locked = false) {
 	/** @type {ImagePlan} */
 	const plan = { inserts: [], deletes: [], adopted: [] };
 	let rows = [...stored];
@@ -118,7 +129,9 @@ export function planImages(stored, listed) {
 		const own = rows.filter(
 			(row) => row.storeId === storeId || (row.storeId === null && shops.has(shopOf(row.sourceUrl)))
 		);
-		const dropped = own.filter((row) => !urls.includes(row.sourceUrl));
+		const dropped = locked
+			? []
+			: own.filter((row) => !urls.includes(row.sourceUrl) && !row.curated);
 
 		for (const row of own) {
 			if (row.storeId === null && urls.includes(row.sourceUrl)) {
@@ -134,7 +147,7 @@ export function planImages(stored, listed) {
 			if (rows.some((row) => row.sourceUrl === sourceUrl)) continue;
 			const position =
 				freed.shift() ?? rows.reduce((max, row) => Math.max(max, row.position + 1), 0);
-			plan.inserts.push({ storeId, sourceUrl, position });
+			plan.inserts.push({ storeId, sourceUrl, position, pending: locked });
 			rows.push({ id: '', storeId, sourceUrl, position });
 		}
 	}
@@ -147,8 +160,9 @@ export function planImages(stored, listed) {
  *
  * @param {ReturnType<typeof import('@app/db').getDb>} db
  * @param {Map<string, Map<string, string[]>>} listedBySauce sauce id -> store id -> URLs
+ * @param {Set<string>} lockedSauceIds reviewed sauces
  */
-export async function writeSauceImages(db, listedBySauce) {
+export async function writeSauceImages(db, listedBySauce, lockedSauceIds) {
 	const sauceIds = [...listedBySauce.keys()];
 	/** @type {Map<string, StoredImage[]>} */
 	const storedBySauce = new Map();
@@ -159,13 +173,15 @@ export async function writeSauceImages(db, listedBySauce) {
 				sauceId: hotSauceImages.sauceId,
 				storeId: hotSauceImages.storeId,
 				sourceUrl: hotSauceImages.sourceUrl,
-				position: hotSauceImages.position
+				position: hotSauceImages.position,
+				pinned: hotSauceImages.pinned,
+				editedKey: hotSauceImages.editedKey
 			})
 			.from(hotSauceImages)
 			.where(inArray(hotSauceImages.sauceId, sauceIds.slice(start, start + WRITE_CHUNK)));
-		for (const { sauceId, ...row } of rows) {
+		for (const { sauceId, pinned, editedKey, ...row } of rows) {
 			if (!storedBySauce.has(sauceId)) storedBySauce.set(sauceId, []);
-			storedBySauce.get(sauceId)?.push(row);
+			storedBySauce.get(sauceId)?.push({ ...row, curated: pinned || editedKey !== null });
 		}
 	}
 
@@ -176,7 +192,7 @@ export async function writeSauceImages(db, listedBySauce) {
 	/** @type {{ id: string, storeId: string }[]} */
 	const adopted = [];
 	for (const [sauceId, listed] of listedBySauce) {
-		const plan = planImages(storedBySauce.get(sauceId) ?? [], listed);
+		const plan = planImages(storedBySauce.get(sauceId) ?? [], listed, lockedSauceIds.has(sauceId));
 		inserts.push(...plan.inserts.map((row) => ({ ...row, sauceId })));
 		deletes.push(...plan.deletes);
 		adopted.push(...plan.adopted);
@@ -198,7 +214,16 @@ export async function writeSauceImages(db, listedBySauce) {
 			.onConflictDoNothing();
 	}
 
-	console.info('Images:', inserts.length, 'new,', deletes.length, 'dropped by their shop');
+	const pending = inserts.filter((row) => row.pending).length;
+	console.info(
+		'Images:',
+		inserts.length,
+		'new,',
+		deletes.length,
+		'dropped by their shop;',
+		pending,
+		'waiting for review on reviewed sauces'
+	);
 }
 
 /**

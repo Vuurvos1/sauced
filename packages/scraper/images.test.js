@@ -96,9 +96,9 @@ describe('planImages', () => {
 			])
 		);
 		expect(plan.inserts).toEqual([
-			{ storeId: 'A', sourceUrl: `${a}/1.jpg`, position: 0 },
-			{ storeId: 'A', sourceUrl: `${a}/2.jpg`, position: 1 },
-			{ storeId: 'B', sourceUrl: `${b}/1.jpg`, position: 2 }
+			{ storeId: 'A', sourceUrl: `${a}/1.jpg`, position: 0, pending: false },
+			{ storeId: 'A', sourceUrl: `${a}/2.jpg`, position: 1, pending: false },
+			{ storeId: 'B', sourceUrl: `${b}/1.jpg`, position: 2, pending: false }
 		]);
 	});
 
@@ -108,13 +108,17 @@ describe('planImages', () => {
 			new Map([['A', [`${a}/new.jpg`]]])
 		);
 		expect(plan.deletes).toEqual(['1']);
-		expect(plan.inserts).toEqual([{ storeId: 'A', sourceUrl: `${a}/new.jpg`, position: 0 }]);
+		expect(plan.inserts).toEqual([
+			{ storeId: 'A', sourceUrl: `${a}/new.jpg`, position: 0, pending: false }
+		]);
 	});
 
 	it("leaves shops that weren't scraped alone", () => {
 		const plan = planImages([row('1', 'A', `${a}/1.jpg`, 0)], new Map([['B', [`${b}/1.jpg`]]]));
 		expect(plan.deletes).toEqual([]);
-		expect(plan.inserts).toEqual([{ storeId: 'B', sourceUrl: `${b}/1.jpg`, position: 1 }]);
+		expect(plan.inserts).toEqual([
+			{ storeId: 'B', sourceUrl: `${b}/1.jpg`, position: 1, pending: false }
+		]);
 	});
 
 	it('gives a carried-over photo to the shop that serves it', () => {
@@ -124,7 +128,32 @@ describe('planImages', () => {
 		);
 		expect(plan.adopted).toEqual([{ id: '1', storeId: 'A' }]);
 		expect(plan.deletes).toEqual(['2']);
-		expect(plan.inserts).toEqual([{ storeId: 'A', sourceUrl: `${a}/2.jpg`, position: 1 }]);
+		expect(plan.inserts).toEqual([
+			{ storeId: 'A', sourceUrl: `${a}/2.jpg`, position: 1, pending: false }
+		]);
+	});
+
+	it('keeps a photo an admin pinned or edited after its shop drops it', () => {
+		const plan = planImages(
+			[{ ...row('1', 'A', `${a}/old.jpg`, 0), curated: true }],
+			new Map([['A', [`${a}/new.jpg`]]])
+		);
+		expect(plan.deletes).toEqual([]);
+		expect(plan.inserts).toEqual([
+			{ storeId: 'A', sourceUrl: `${a}/new.jpg`, position: 1, pending: false }
+		]);
+	});
+
+	it('changes nothing visible on a reviewed sauce: new photos wait for review', () => {
+		const plan = planImages(
+			[row('1', 'A', `${a}/old.jpg`, 0)],
+			new Map([['A', [`${a}/new.jpg`]]]),
+			true
+		);
+		expect(plan.deletes).toEqual([]);
+		expect(plan.inserts).toEqual([
+			{ storeId: 'A', sourceUrl: `${a}/new.jpg`, position: 1, pending: true }
+		]);
 	});
 
 	it('does nothing when the photos are unchanged', () => {
