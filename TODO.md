@@ -65,16 +65,20 @@ Production is the source of truth for the catalogue and its images; local mirror
 - [x] Near-duplicate photos (another shop's copy of the same shot) hidden from the
       gallery by a 256-bit perceptual hash.
 - [x] Sauce names keep only the characters real names use (no ®, ™, emoji).
-- [ ] `pnpm db pull`: copy production's catalogue tables (not users or check-ins) into
+- [x] `pnpm db pull`: copy production's catalogue tables (not users or check-ins) into
       the local database, and its image files into the local bucket.
-- [ ] `pnpm scrapers diff`: run the old and new scraper over the cached catalogues and
+- [x] `pnpm scrapers diff`: run the old and new scraper over the cached catalogues and
       list what a change does to names, merges and photos.
-- [ ] Review status: a reviewed sauce is locked; the scraper keeps its links current but
+- [x] Review status: a reviewed sauce is locked; the scraper keeps its links current but
       no longer changes its name, description or photos. New photos for it wait as
       suggestions.
-- [ ] Admin review page: walk unreviewed sauces, hide or pin photos, accept suggestions.
-- [ ] Photo editor: white boxes over parts of a photo (later crop and rotate), rendered in
-      the browser and uploaded as new files; the original is kept.
+- [x] Admin review page: walk unreviewed sauces, hide or pin photos, accept suggestions.
+- [x] Photo editor: white boxes over parts of a photo, rendered in the browser and
+      uploaded as new files; the original is kept.
+- [ ] Photo editor: crop and rotate.
+- [ ] Heatonist titles put the brand after a `|`: "House Sauce | Hot Sauce",
+      "Cilantro Avocado | Co.". 163 stored names have a `|`; worth a look with
+      `pnpm scrapers diff`.
 - [ ] Bucket cleanup: delete files no row references any more.
 - [ ] Billing alerts in OpenTofu before anything usage-billed goes live.
 - [ ] Move the site to Workers (adapter-cloudflare, Hyperdrive binding, per-request
