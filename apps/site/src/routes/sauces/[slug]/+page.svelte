@@ -77,6 +77,17 @@
 		<div class="xl:col-span-2">
 			<h1 class="h1 mb-1">{sauce.name}</h1>
 
+			{#if user?.role === 'admin'}
+				<div class="mb-3">
+					<a
+						class="btn btn-outline px-3 py-1 text-sm"
+						href={resolve('/admin/sauces/[slug]', { slug: sauce.slug })}
+					>
+						Edit photos and details
+					</a>
+				</div>
+			{/if}
+
 			{#if maker}
 				<a
 					class="mb-3 inline-block font-medium text-gray-600 underline-offset-2 hover:underline"

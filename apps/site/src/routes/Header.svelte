@@ -10,7 +10,7 @@
 	import { skipViewTransition } from '#lib/view-transition.svelte.js';
 
 	let {
-		data: { session }
+		data: { session, user }
 	} = $derived(page);
 
 	let search = $state(page.url.searchParams.get('q') || '');
@@ -487,7 +487,12 @@
 				</Popover.Root>
 			</li>
 
-			<li class="md:ml-auto">
+			<li class="flex items-center justify-end gap-4 md:ml-auto">
+				<!-- The grid has a fixed cell for this corner, so the admin link shares it. On a
+				     phone the cell is icon-sized; sauce pages carry their own admin link. -->
+				{#if user?.role === 'admin'}
+					<a class="hidden hover:underline md:inline" href={resolve('/admin/review')}>Review</a>
+				{/if}
 				<a aria-label="profile" href={session ? resolve('/profile') : resolve('/login')}>
 					<UserRound size={24}></UserRound>
 				</a>
