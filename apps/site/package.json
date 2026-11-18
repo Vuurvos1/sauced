@@ -50,6 +50,7 @@
 		"@o7/icon": "^0.3.98",
 		"@tensorflow-models/toxicity": "^1.2.2",
 		"@tensorflow/tfjs": "^4.22.0",
+		"aws4fetch": "^1.0.20",
 		"better-auth": "^1.7.25",
 		"bits-ui": "^1.8.0",
 		"clsx": "^2.1.1",

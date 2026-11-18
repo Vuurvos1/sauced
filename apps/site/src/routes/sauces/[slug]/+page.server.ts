@@ -10,9 +10,14 @@ import {
 	makers
 } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
-import { and, asc, eq, isNull, not, sql } from 'drizzle-orm';
+import { and, eq, not } from 'drizzle-orm';
 import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
-import { withoutDuplicatePhotos } from '#lib/server/images.js';
+import {
+	imageOrder,
+	shownImageKey,
+	visibleImage,
+	withoutDuplicatePhotos
+} from '#lib/server/images.js';
 import { z } from 'zod/v4';
 
 export async function load({ params, locals: { user } }) {
@@ -72,13 +77,13 @@ export async function load({ params, locals: { user } }) {
 	// Same order as the main image, so the gallery opens on the photo the grid shows.
 	const imagesQuery = db
 		.select({
-			imageKey: hotSauceImages.imageKey,
+			imageKey: shownImageKey,
 			imageUrl: hotSauceImages.sourceUrl,
 			phash: hotSauceImages.phash
 		})
 		.from(hotSauceImages)
-		.where(eq(hotSauceImages.sauceId, sauceId))
-		.orderBy(sql`${isNull(hotSauceImages.imageKey)}`, asc(hotSauceImages.position));
+		.where(and(eq(hotSauceImages.sauceId, sauceId), visibleImage))
+		.orderBy(...imageOrder);
 
 	const wishlistQuery = user
 		? db

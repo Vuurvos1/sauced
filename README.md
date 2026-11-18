@@ -64,6 +64,19 @@ Start the site with the following command:
 pnpm site dev
 ```
 
+### Admin
+
+`/admin/review` walks through the catalogue: hide or pin photos, cover parts of a photo
+with white boxes, fix names, and mark a sauce reviewed, which locks it against the
+scraper. Admins are set in the database:
+
+```sql
+update "user" set role = 'admin' where email = 'you@example.com';
+```
+
+The photo editor writes to the bucket, so the site needs the `R2_*` settings from
+`apps/site/.env.example`.
+
 ## Testing
 
 Unit tests use [Vitest](https://vitest.dev/):
