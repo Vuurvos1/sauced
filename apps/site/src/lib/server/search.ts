@@ -1,4 +1,4 @@
-import { or, sql, type SQL } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { hotSauces, makers } from '@app/db/schema';
 import { WORD_SIMILARITY_THRESHOLD } from '@app/db';
@@ -83,24 +83,26 @@ export function withFuzzyMatching<T>(fn: (tx: Executor) => Promise<T>): Promise<
 }
 
 /**
- * The maker used to be part of the sauce name, so searching "queen majesty" hit
- * `hotSauces.name`. The scraper strips it now, so match the joined brand too.
- * A correlated EXISTS keeps this a drop-in `where` fragment — no call site has
- * to add a join — and the subquery still uses `makers_name_trgm_idx`.
+ * A sauce matches on its name, its description, or the brand that makes it.
+ *
+ * One lookup per field, unioned: as a single `name … or description … or exists
+ * (maker …)` filter the planner couldn't use any trigram index and ran `<%` over
+ * every description, ~150 ms per search on 2,000 sauces, which kept Neon's compute
+ * awake. Each arm here is served by its own `gin_trgm_ops` index (~25 ms).
+ *
+ * Still a drop-in `where` fragment: the subqueries' `hot_sauces` shadows the outer one.
+ * The maker arm matches the joined brand, since the scraper strips it from names.
  */
-function makerMatchesQuery(query: string): SQL {
-	return sql`exists (
-		select 1 from ${makers}
-		where ${makers.makerId} = ${hotSauces.makerId}
-		  and ${matchesQuery(makers.name, query)}
+export function sauceMatchesQuery(query: string): SQL {
+	return sql`${hotSauces.sauceId} in (
+		select ${hotSauces.sauceId} from ${hotSauces}
+		where ${matchesQuery(hotSauces.name, query)}
+		union
+		select ${hotSauces.sauceId} from ${hotSauces}
+		where ${matchesQuery(hotSauces.description, query)}
+		union
+		select ${hotSauces.sauceId} from ${hotSauces}
+		join ${makers} on ${makers.makerId} = ${hotSauces.makerId}
+		where ${matchesQuery(makers.name, query)}
 	)`;
-}
-
-/** A sauce matches on its name, its description, or the brand that makes it. */
-export function sauceMatchesQuery(query: string) {
-	return or(
-		matchesQuery(hotSauces.name, query),
-		matchesQuery(hotSauces.description, query),
-		makerMatchesQuery(query)
-	);
 }

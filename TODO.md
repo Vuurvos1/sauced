@@ -80,6 +80,14 @@ Production is the source of truth for the catalogue and its images; local mirror
       "Cilantro Avocado | Co.". 163 stored names have a `|`; worth a look with
       `pnpm scrapers diff`.
 - [ ] Bucket cleanup: delete files no row references any more.
+- [ ] Cut Neon compute hours (it bills for time awake, and any query wakes it):
+  - [x] Search as a union of indexed lookups: ~150 ms → ~25 ms per query.
+  - [ ] Hyperdrive query caching for catalogue reads, once on Workers.
+  - [ ] Cloudflare cache rule for public pages that bypasses the cache when a Better
+        Auth session cookie is present, so crawlers are served from the edge.
+        Not safe before that: pages render differently when logged in, and a
+        URL-keyed cache would mix the two.
+  - [ ] Check Neon's compute graph against the scrape schedule and crawler traffic.
 - [ ] Billing alerts in OpenTofu before anything usage-billed goes live.
 - [ ] Move the site to Workers (adapter-cloudflare, Hyperdrive binding, per-request
       database client, Workers AI in place of the TensorFlow toxicity model).
