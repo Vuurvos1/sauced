@@ -20,6 +20,8 @@ import {
 	slugifyName
 } from './utils/index.js';
 import { eq, inArray, notExists, sql } from 'drizzle-orm';
+import { imageBucketFromEnv, syncImages, writeSauceImages } from './images.js';
+import { IMAGES_PER_STORE } from './adapters/catalogue.js';
 
 const { values: flags, positionals } = parseArgs({
 	options: {
@@ -98,7 +100,6 @@ async function loadStoredSauces(storeKeysById, aliases) {
 			name: hotSauces.name,
 			slug: hotSauces.slug,
 			description: hotSauces.description,
-			imageUrl: hotSauces.imageUrl,
 			makerId: hotSauces.makerId,
 			makerName: makers.name
 		})
@@ -213,7 +214,6 @@ async function writeCatalogue(runs) {
 		const description = bestDescription(group.rows);
 		const keepDescription = Boolean(existing.description) && !description.english;
 		const makerId = makerIds.get(group.makerKey) ?? null;
-		const imageUrl = group.rows.find((row) => row.sauce.imageUrl)?.sauce.imageUrl;
 
 		/** Name and slug are identity: the slug is already a live URL, and another
 		 * shop's spelling of the name is not a reason to move it. */
@@ -223,7 +223,6 @@ async function writeCatalogue(runs) {
 			...(description.text && !keepDescription && description.text !== existing.description
 				? { description: description.text }
 				: {}),
-			...(imageUrl && !existing.imageUrl ? { imageUrl } : {}),
 			// Fill a missing brand, and repoint a legacy duplicate of the same brand
 			// at the canonical row — but never reattribute to a different brand.
 			...(makerId && makerId !== existing.makerId ? { makerId } : {})
@@ -253,7 +252,6 @@ async function writeCatalogue(runs) {
 				name,
 				slug: uniqueSlug(name, maker, takenSlugs),
 				description: description.text,
-				imageUrl: group.rows.find((row) => row.sauce.imageUrl)?.sauce.imageUrl ?? null,
 				makerId: makerIds.get(group.makerKey) ?? null
 			};
 		});
@@ -284,14 +282,22 @@ async function writeCatalogue(runs) {
 	// same ON CONFLICT. Last URL wins, as the per-row upsert did.
 	/** @type {Map<string, { sauceId: string, storeId: string, url: string }>} */
 	const links = new Map();
+	/** @type {Map<string, Map<string, string[]>>} sauce id -> store id -> image URLs */
+	const images = new Map();
 	for (const [key, group] of groups) {
 		const sauceId = sauceIds.get(key);
 		if (!sauceId) continue;
 
+		/** @type {Map<string, string[]>} */
+		const byStore = new Map();
 		for (const row of group.rows) {
-			const storeId = storeIds.get(row.storeKey);
+			const storeId = /** @type {string} */ (storeIds.get(row.storeKey));
 			links.set(`${sauceId}:${storeId}`, { sauceId, storeId, url: row.sauce.url });
+			// The same shop listing a sauce twice still gets one set of photos.
+			const urls = [...(byStore.get(storeId) ?? []), ...row.sauce.imageUrls];
+			byStore.set(storeId, [...new Set(urls)].slice(0, IMAGES_PER_STORE));
 		}
+		images.set(sauceId, byStore);
 	}
 
 	// One round trip per chunk, not per listing: a full run links ~3700 of them,
@@ -306,6 +312,8 @@ async function writeCatalogue(runs) {
 				set: { url: sql`excluded.url` }
 			});
 	}
+
+	await writeSauceImages(db, images);
 
 	return writeFailures;
 }
@@ -355,6 +363,17 @@ async function main() {
 	}
 
 	const key = command.toLowerCase();
+
+	// Uploads without scraping: the backfill, or a retry after a store's CDN refused.
+	if (key === 'images') {
+		const bucket = imageBucketFromEnv();
+		if (!bucket) {
+			console.error('Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET');
+			process.exit(1);
+		}
+		await syncImages(db, bucket);
+		process.exit(0);
+	}
 
 	if (key !== 'all' && !scrapers[key]) {
 		console.error('No scraper found for', command);
@@ -410,6 +429,10 @@ async function main() {
 				.returning({ id: makers.makerId });
 			if (orphaned.length > 0) console.info('Removed', orphaned.length, 'makers with no sauces');
 		}
+
+		const bucket = imageBucketFromEnv();
+		if (bucket) await syncImages(db, bucket);
+		else console.info('R2 not configured, skipping image upload');
 
 		if (writeFailures > 0) {
 			console.error(writeFailures, 'listings failed to save');

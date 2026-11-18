@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sauceImageSrc } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
@@ -366,7 +367,11 @@
 			class="flex items-center gap-2"
 			href={resolve('/sauces/[slug]', { slug: sauce.slug })}
 		>
-			<img class="aspect-square size-12 object-contain" src={sauce.imageUrl} alt={sauce.name} />
+			<img
+				class="aspect-square size-12 object-contain"
+				src={sauceImageSrc(sauce, 400)}
+				alt={sauce.name}
+			/>
 			<div>
 				<div class="font-medium">{sauce.name}</div>
 				<div class="text-sm text-gray-500">

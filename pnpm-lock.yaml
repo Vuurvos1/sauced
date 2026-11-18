@@ -244,9 +244,15 @@ importers:
       '@app/db':
         specifier: workspace:^
         version: link:../db
+      aws4fetch:
+        specifier: ^1.0.20
+        version: 1.0.20
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@cloudflare/workers-types@5.20261117.1)(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.11)(@types/pg@8.23.1)(better-sqlite3@11.1.2)(gel@2.1.0)(kysely@0.29.9)(pg@8.12.0)(postgres@3.4.9)
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@26.6.6)
     devDependencies:
       vitest:
         specifier: ^5.0.3
@@ -1991,6 +1997,9 @@ packages:
     hasBin: true
     peerDependencies:
       postcss: ^8.1.0
+
+  aws4fetch@1.0.20:
+    resolution: {integrity: sha512-/djoAN709iY65ETD6LKCtyyEI04XIBP5xVvfmNxsEP0uJB5tyaGBztSryRr4HqMStr9R06PisQE7m9zDTXKu6g==}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -5417,6 +5426,8 @@ snapshots:
       picocolors: 1.1.1
       postcss: 8.5.33
       postcss-value-parser: 4.2.0
+
+  aws4fetch@1.0.20: {}
 
   axobject-query@4.1.0: {}
 

@@ -28,6 +28,19 @@ pnpm scrapers scrape trex --noCache --dbInsert
 `all` runs every store before it fails, so one broken adapter does not hide the
 state of the others; it exits non-zero listing whichever stores failed.
 
+### Images
+
+With `--dbInsert`, every sauce image not yet in R2 is downloaded, resized to 400 and
+800px WebP and uploaded under a hash of its content, cached as `immutable`. A failed
+image is left for the next run; the site shows the shop's URL meanwhile. Needs
+`R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; without
+them the step is skipped.
+
+```bash
+# upload without scraping: the backfill, or a retry
+pnpm scrapers scrape images
+```
+
 ### Flags
 
 - `--noCache`: Re-fetch all products

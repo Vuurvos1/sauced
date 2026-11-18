@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sauceImageAttrs, sauceImageSrc } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { BeamAvatar } from '@app/boring-avatars';
@@ -14,7 +15,12 @@
 
 	let { data } = $props();
 
-	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
+	let { sauce, images, maker, session, user, wishlisted, stores } = $derived(data);
+
+	// Keyed to the sauce, so navigating to another one starts on its main image.
+	let selection = $state<{ sauceId: string; index: number }>();
+	const selected = $derived(selection?.sauceId === sauce.sauceId ? selection.index : 0);
+	const shown = $derived(images[selected] ?? images[0] ?? { imageKey: null, imageUrl: null });
 	let checkins = $derived(data.checkins);
 	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
@@ -27,17 +33,46 @@
 	title={sauce.name}
 	description={sauce.description ||
 		`Ratings, reviews and where to buy ${sauce.name}${byMaker} on Sauced.`}
-	image={sauce.imageUrl}
+	image={images[0] ? sauceImageSrc(images[0]) : undefined}
 	imageAlt={sauce.name}
 />
 
 <div class="container">
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-		<img
-			class="sauce-hero aspect-square object-contain xl:col-span-3"
-			src={sauce.imageUrl}
-			alt={sauce.name}
-		/>
+		<div class="xl:col-span-3">
+			<img
+				class="sauce-hero aspect-square w-full object-contain"
+				{...sauceImageAttrs(shown)}
+				sizes="(min-width: 1280px) 60vw, (min-width: 768px) 50vw, 100vw"
+				alt={sauce.name}
+			/>
+
+			{#if images.length > 1}
+				<ul class="mt-3 flex gap-2 overflow-x-auto" aria-label="Photos">
+					{#each images as image, index (image.imageKey ?? image.imageUrl)}
+						<li class="shrink-0">
+							<button
+								type="button"
+								class={[
+									'block size-16 rounded-md border-2 p-0.5 transition-colors',
+									index === selected ? 'border-black' : 'border-transparent hover:border-gray-300'
+								]}
+								aria-label={`Photo ${index + 1} of ${images.length}`}
+								aria-pressed={index === selected}
+								onclick={() => (selection = { sauceId: sauce.sauceId, index })}
+							>
+								<img
+									class="size-full object-contain"
+									src={sauceImageSrc(image, 400)}
+									alt=""
+									loading="lazy"
+								/>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
 
 		<div class="xl:col-span-2">
 			<h1 class="h1 mb-1">{sauce.name}</h1>

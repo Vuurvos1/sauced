@@ -5,7 +5,9 @@ type HotSauce = InferSelectModel<typeof hotSauces>;
 type Store = InferSelectModel<typeof stores>;
 type Maker = InferSelectModel<typeof makers>;
 
-type SearchSauce = Pick<HotSauce, 'sauceId' | 'name' | 'description' | 'slug' | 'imageUrl'> & {
+type SearchSauce = Pick<HotSauce, 'sauceId' | 'name' | 'description' | 'slug'> & {
+	imageUrl: string | null;
+	imageKey: string | null;
 	avgRating: number | null;
 	ratingCount: number;
 };

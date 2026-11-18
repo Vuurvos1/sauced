@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { sauceImageAttrs } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import type { HotSauce } from '@app/db/types';
 	import StarRating from './StarRating.svelte';
 	import { claimOnNavigate, sauceImageName } from '#lib/view-transition.svelte.js';
 
 	type SauceRating = HotSauce & {
+		imageKey: string | null;
+		imageUrl: string | null;
 		avgRating?: string | number | null;
 		makerName?: string | null;
 	};
@@ -30,7 +33,8 @@
 			<img
 				class="mx-auto mb-3 aspect-square max-w-full object-contain"
 				style:view-transition-name={sauceImageName(section, sauce.slug)}
-				src={sauce.imageUrl}
+				{...sauceImageAttrs(sauce)}
+				sizes="(min-width: 768px) 300px, 50vw"
 				alt={sauce.name}
 			/>
 			<h2 class="mb-1 text-xl font-semibold">{sauce.name}</h2>

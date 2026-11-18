@@ -35,7 +35,9 @@ available to the app.
 ## Development
 
 Start the databases using [Docker](https://www.docker.com/) with the following command.
-This starts the dev database on port 5433 and the test database on port 5434:
+This starts the dev database on port 5433, the test database on port 5434 and a local
+S3-compatible image bucket ([SeaweedFS](https://github.com/seaweedfs/seaweedfs), standing
+in for Cloudflare R2) on port 8333:
 
 ```bash
 pnpm docker:up

@@ -14,11 +14,15 @@ import {
  * @param {string} storeKey
  * @param {string} name
  * @param {string | null} [maker]
- * @param {{ description?: string, english?: boolean, imageUrl?: string }} [extra]
+ * @param {{ description?: string, english?: boolean }} [extra]
  */
 function row(storeKey, name, maker = null, extra = {}) {
 	const { english = true, ...sauce } = extra;
-	return { storeKey, english, sauce: { name, maker, url: `${storeKey}/${name}`, ...sauce } };
+	return {
+		storeKey,
+		english,
+		sauce: { name, maker, url: `${storeKey}/${name}`, imageUrls: [], ...sauce }
+	};
 }
 
 describe('buildMakerRegistry', () => {

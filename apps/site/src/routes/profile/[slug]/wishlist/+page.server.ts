@@ -2,6 +2,7 @@ import { db } from '#lib/server/db.js';
 import { hotSauces, makers, user as userTable, wishlist } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
 
 export async function load({ params }) {
 	const username = params.slug;
@@ -25,6 +26,7 @@ export async function load({ params }) {
 	const dbRes = await db
 		.select({
 			hotSauces: hotSauces,
+			...mainImage,
 			makerName: makers.name
 		})
 		.from(wishlist)
@@ -33,7 +35,16 @@ export async function load({ params }) {
 		.where(eq(wishlist.userId, user.id));
 
 	const sauces = dbRes.flatMap((row) =>
-		row.hotSauces ? [{ ...row.hotSauces, makerName: row.makerName }] : []
+		row.hotSauces
+			? [
+					{
+						...row.hotSauces,
+						imageKey: row.imageKey,
+						imageUrl: row.imageUrl,
+						makerName: row.makerName
+					}
+				]
+			: []
 	);
 
 	return { username: user.username, sauces };

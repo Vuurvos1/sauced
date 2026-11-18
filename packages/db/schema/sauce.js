@@ -47,7 +47,6 @@ export const hotSauces = pgTable(
 		name: text('name').notNull(),
 		slug: text('slug').notNull().unique(),
 		description: text('description').default(''),
-		imageUrl: text('image_url'),
 		makerId: uuid('maker_id').references(() => makers.makerId, {
 			onDelete: 'set null'
 		}),
@@ -91,6 +90,36 @@ export const stores = pgTable(
 	},
 	(table) => [
 		index('stores_name_trgm_idx').using('gin', sql`immutable_unaccent(${table.name}) gin_trgm_ops`)
+	]
+);
+
+/**
+ * Every photo of a sauce, from each shop that sells it. The lowest position is the
+ * main image; a shop that swaps a photo takes over its old position, so the main
+ * image doesn't jump to another shop's picture.
+ */
+export const hotSauceImages = pgTable(
+	'hot_sauce_images',
+	{
+		imageId: uuid('id').primaryKey().defaultRandom(),
+		sauceId: uuid('hot_sauce_id')
+			.notNull()
+			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }),
+		// Null for images carried over from before shops were recorded.
+		storeId: uuid('store_id').references(() => stores.storeId, { onDelete: 'set null' }),
+		// Where the shop serves it. Kept so a failed upload can be retried.
+		sourceUrl: text('source_url').notNull(),
+		// Content-hash prefix of the resized copies in R2; null until uploaded.
+		imageKey: text('image_key'),
+		// 256-bit difference hash, as hex: two shops' copies of one photo land within
+		// a few bits, so the gallery can show one of them.
+		phash: text('phash'),
+		position: integer('position').notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [
+		unique('hot_sauce_images_sauce_source_unique').on(t.sauceId, t.sourceUrl),
+		index('hot_sauce_images_sauce_position_idx').on(t.sauceId, t.position)
 	]
 );
 
