@@ -28,6 +28,27 @@ pnpm scrapers scrape trex --noCache --dbInsert
 `all` runs every store before it fails, so one broken adapter does not hide the
 state of the others; it exits non-zero listing whichever stores failed.
 
+## Changing the scraper
+
+1. Mirror production locally: `pnpm db pull` copies its catalogue (no users) into the
+   local database and its photos into the local bucket. See `packages/db/.env.example`.
+2. Change the code, with unit tests next to it (`pnpm scrapers test`).
+3. See what the change does before anything is written:
+
+   ```bash
+   pnpm scrapers diff             # working tree against HEAD
+   pnpm scrapers diff origin/dev  # or any other ref
+   pnpm scrapers diff HEAD --all  # every difference, not a sample
+   ```
+
+   It runs both versions over the cached catalogues in `./cache` and lists renamed
+   listings, changed makers and photos, and sauces that merge or split.
+
+4. Run it for real against the local database, and look at the result on the local site:
+   `pnpm scrapers scrape <store> --dbInsert`.
+5. Push; merging to `dev` scrapes into the dev database and bucket, `main` into
+   production. Reviewed sauces are locked, so a change can't undo manual work on them.
+
 ### Images
 
 With `--dbInsert`, every sauce image not yet in R2 is downloaded, resized to 400 and

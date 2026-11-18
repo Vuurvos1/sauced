@@ -5,6 +5,7 @@
 	"scripts": {
 		"scrape": "node --env-file-if-exists=.env index.js",
 		"merge-legacy": "node --env-file-if-exists=.env merge-legacy.js",
+		"diff": "node diff.js",
 		"dev": "node --env-file-if-exists=.env --watch index.js",
 		"test": "vitest"
 	},
