@@ -31,7 +31,7 @@
 			onclick={(e) => claimOnNavigate(e, section, sauce.slug)}
 		>
 			<img
-				class="mx-auto mb-3 aspect-square max-w-full object-contain"
+				class="mb-3 aspect-square w-full object-contain"
 				style:view-transition-name={sauceImageName(section, sauce.slug)}
 				{...sauceImageAttrs(sauce)}
 				sizes="(min-width: 768px) 300px, 50vw"
