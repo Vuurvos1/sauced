@@ -59,6 +59,11 @@ jobs:
           pnpm scrapers scrape "$store" --dbInsert $dev_flag
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Unset, images aren't uploaded and the site keeps the shops' URLs.
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
       # Not run on every scrape: once the legacy rows are gone, a reviewed sauce
       # sharing a store and handle with an unreviewed one would get merged.
