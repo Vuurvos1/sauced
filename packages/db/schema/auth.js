@@ -12,7 +12,10 @@ export const user = pgTable('user', {
 		.defaultNow()
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
-	username: text('username').notNull().unique()
+	username: text('username').notNull().unique(),
+	// 'admin' can review sauces and edit their photos. Set by hand in the database;
+	// Better Auth won't take it from a sign-up form.
+	role: text('role').notNull().default('user')
 });
 
 export const session = pgTable(

@@ -33,5 +33,31 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
 
+  # S3-compatible stand-in for the R2 image bucket. Auth is off, so any key works
+  # for uploads and the site can read objects anonymously, as it does from R2.
+  s3:
+    image: chrislusf/seaweedfs:4.54
+    container_name: sauced_s3
+    command: server -s3 -dir=/data -ip.bind=0.0.0.0
+    ports:
+      - '8333:8333'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8333/']
+      interval: 1s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - s3data:/data
+
+  s3-init:
+    image: curlimages/curl:8.23.0
+    depends_on:
+      s3:
+        condition: service_healthy
+    # An existing bucket answers 409, which is fine.
+    command: ['-s', '-o', '/dev/null', '-X', 'PUT', 'http://s3:8333/sauced-images']
+    restart: 'no'
+
 volumes:
   pgdata:
+  s3data:

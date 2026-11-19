@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sauceImageSrc, showPlaceholder } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
@@ -7,9 +8,10 @@
 	import { debounce } from '#lib/utils/debounce.svelte.js';
 	import type { SearchResponse } from '#lib/types/api.js';
 	import { skipViewTransition } from '#lib/view-transition.svelte.js';
+	import { isTyping } from '#lib/utils/keyboard.js';
 
 	let {
-		data: { session }
+		data: { session, isAdmin }
 	} = $derived(page);
 
 	let search = $state(page.url.searchParams.get('q') || '');
@@ -154,15 +156,11 @@
 
 	/** `/` and ⌘K reach the search box from anywhere on the page. */
 	function handleShortcut(event: KeyboardEvent) {
-		const target = event.target as HTMLElement | null;
-		const isTyping =
-			target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
-
 		if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
 			event.preventDefault();
 		} else if (
 			event.key === '/' &&
-			!isTyping &&
+			!isTyping(event) &&
 			!event.metaKey &&
 			!event.ctrlKey &&
 			!event.altKey
@@ -366,7 +364,12 @@
 			class="flex items-center gap-2"
 			href={resolve('/sauces/[slug]', { slug: sauce.slug })}
 		>
-			<img class="aspect-square size-12 object-contain" src={sauce.imageUrl} alt={sauce.name} />
+			<img
+				class="aspect-square size-12 object-contain"
+				src={sauceImageSrc(sauce, 400)}
+				onerror={showPlaceholder}
+				alt={sauce.name}
+			/>
 			<div>
 				<div class="font-medium">{sauce.name}</div>
 				<div class="text-sm text-gray-500">
@@ -482,7 +485,12 @@
 				</Popover.Root>
 			</li>
 
-			<li class="md:ml-auto">
+			<li class="flex items-center justify-end gap-4 md:ml-auto">
+				<!-- The grid has a fixed cell for this corner, so the admin link shares it. On a
+				     phone the cell is icon-sized; sauce pages carry their own admin link. -->
+				{#if isAdmin}
+					<a class="hidden hover:underline md:inline" href={resolve('/admin/review')}>Review</a>
+				{/if}
 				<a aria-label="profile" href={session ? resolve('/profile') : resolve('/login')}>
 					<UserRound size={24}></UserRound>
 				</a>

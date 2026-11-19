@@ -53,6 +53,58 @@ Grouped by urgency: **Bugs** are wrong today, **Now** unblocks other work,
 
 ---
 
+## Cloudflare and images (`feat/cloudflare`)
+
+Production is the source of truth for the catalogue and its images; local mirrors it.
+
+- [x] OpenTofu in `infra/`: an R2 image bucket per environment (`img.hotsauced.app`,
+      `img-dev.hotsauced.app`) and a Hyperdrive config per Neon database.
+- [x] Images resized to 400/800px WebP during the scrape, uploaded under a content hash
+      with immutable cache headers. Up to 5 photos per shop per sauce in
+      `hot_sauce_images`; the sauce page shows them as a gallery.
+- [x] Near-duplicate photos (another shop's copy of the same shot) hidden from the
+      gallery by a 256-bit perceptual hash.
+- [x] Sauce names keep only the characters real names use (no ®, ™, emoji).
+- [x] `pnpm db pull`: copy production's catalogue tables (not users or check-ins) into
+      the local database, and its image files into the local bucket.
+- [x] `pnpm scrapers diff`: run the old and new scraper over the cached catalogues and
+      list what a change does to names, merges and photos.
+- [x] Review status: a reviewed sauce is locked; the scraper keeps its links current but
+      no longer changes its name, description or photos. New photos for it wait as
+      suggestions.
+- [x] Admin review page: walk unreviewed sauces, hide or pin photos, accept suggestions.
+- [x] Photo editor: white boxes over parts of a photo, rendered in the browser and
+      uploaded as new files; the original is kept.
+- [ ] Photo editor: crop and rotate.
+- [ ] Heatonist titles put the brand after a `|`: "House Sauce | Hot Sauce",
+      "Cilantro Avocado | Co.". 163 stored names have a `|`; worth a look with
+      `pnpm scrapers diff`.
+- [ ] Bucket cleanup: delete files no row references any more.
+- [ ] Public queries filter hidden sauces by hand (`visibleSauce`); a
+      `visible_hot_sauces` view would make it impossible to forget in a new query.
+- [ ] Cut Neon compute hours (it bills for time awake, and any query wakes it):
+  - [x] Search as a union of indexed lookups: ~150 ms → ~25 ms per query.
+  - [x] Front page lists cached in memory for 5 minutes (`cached()` in
+        `lib/server/cache.ts`); admin actions clear it. Per server instance, so it
+        cuts queries without guaranteeing none. Other public, visitor-independent
+        lists can use it too.
+  - [x] Search API responses cached at the CDN for 5 minutes (same for everyone).
+  - [x] Sitemap down to ~8 ms of CPU (was ~12), under Workers Free's 10 ms.
+  - [ ] Hyperdrive query caching for catalogue reads, once on Workers.
+  - [ ] Cloudflare cache rule for public pages that bypasses the cache when a Better
+        Auth session cookie is present, so crawlers are served from the edge.
+        Not safe before that: pages render differently when logged in, and a
+        URL-keyed cache would mix the two.
+  - [ ] Check Neon's compute graph against the scrape schedule and crawler traffic.
+- [ ] Billing alerts in OpenTofu before anything usage-billed goes live.
+- [ ] Move the site to Workers (adapter-cloudflare, Hyperdrive binding, per-request
+      database client). Add an `AI` binding: review moderation (`lib/server/moderation.ts`,
+      Llama Guard) only runs where it exists, and saves reviews unflagged elsewhere.
+- [ ] Duplicate Tabasco Scorpion Pepper Sauce: the cleaned name collides with an
+      existing row, so the old "® Brand" row needs merging by hand.
+
+---
+
 ## Now
 
 ### Generic scraper adapters (unblocks every store below)

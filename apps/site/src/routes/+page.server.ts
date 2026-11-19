@@ -4,13 +4,20 @@ import { auth } from '#lib/server/auth.js';
 import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
+import { cached, HOME_CACHE_KEY } from '#lib/server/cache.js';
+import { visibleSauce } from '#lib/server/sauces.js';
+
+/** How stale the front page's lists may get: a new sauce or rating shows within this. */
+const HOME_TTL_MS = 5 * 60 * 1000;
 
 export const load: PageServerLoad = async () => {
-	const hotSauceColumns = getTableColumns(hotSauces);
+	const hotSauceColumns = { ...getTableColumns(hotSauces), ...mainImage };
 	const recentSaucesQuery = db
 		.select({ ...hotSauceColumns, makerName: makers.name })
 		.from(hotSauces)
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+		.where(visibleSauce)
 		.orderBy(desc(hotSauces.createdAt))
 		.limit(12);
 
@@ -24,11 +31,15 @@ export const load: PageServerLoad = async () => {
 		.from(hotSauces)
 		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
+		.where(visibleSauce)
 		.groupBy(hotSauces.sauceId, makers.name)
 		.orderBy(desc(count(checkins.rating)), desc(avg(checkins.rating)))
 		.limit(8);
 
-	const [recentSauces, topSauces] = await Promise.all([recentSaucesQuery, topSaucesQuery]);
+	// The same for everyone, and fine a few minutes stale.
+	const [recentSauces, topSauces] = await cached(HOME_CACHE_KEY, HOME_TTL_MS, () =>
+		Promise.all([recentSaucesQuery, topSaucesQuery])
+	);
 
 	return {
 		recentSauces,

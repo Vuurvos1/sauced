@@ -1,6 +1,7 @@
 import { db } from '#lib/server/db.js';
 import {
 	checkins,
+	hotSauceImages,
 	hotSauces,
 	user as userTable,
 	wishlist,
@@ -10,9 +11,19 @@ import {
 } from '@app/db/schema';
 import { error, fail } from '@sveltejs/kit';
 import { and, eq, not } from 'drizzle-orm';
+import { PUBLIC_IMAGE_BASE_URL } from '$app/env/public';
+import { loadSauceEditor, nextToReview } from '#lib/server/sauce-editor.js';
+import { isAdmin } from '#lib/server/admin.js';
+import { sauceAdminActions } from '#lib/server/sauce-admin.js';
+import {
+	imageOrder,
+	shownImageKey,
+	visibleImage,
+	withoutDuplicatePhotos
+} from '#lib/server/images.js';
 import { z } from 'zod/v4';
 
-export async function load({ params, locals: { user } }) {
+export async function load({ params, url, locals: { user } }) {
 	const slug = params.slug;
 
 	if (!slug) {
@@ -21,7 +32,9 @@ export async function load({ params, locals: { user } }) {
 
 	const dbSauce = await db.select().from(hotSauces).where(eq(hotSauces.slug, slug)).limit(1);
 
-	if (dbSauce.length === 0) {
+	// A hidden sauce stays reachable for admins, so they can bring it back.
+	const admin = await isAdmin(user);
+	if (dbSauce.length === 0 || (dbSauce[0].hiddenAt && !admin)) {
 		error(404, 'Sauce not found');
 	}
 
@@ -66,6 +79,17 @@ export async function load({ params, locals: { user } }) {
 		)
 		.limit(24);
 
+	// Same order as the main image, so the gallery opens on the photo the grid shows.
+	const imagesQuery = db
+		.select({
+			imageKey: shownImageKey,
+			imageUrl: hotSauceImages.sourceUrl,
+			phash: hotSauceImages.phash
+		})
+		.from(hotSauceImages)
+		.where(and(eq(hotSauceImages.sauceId, sauceId), visibleImage))
+		.orderBy(...imageOrder);
+
 	const wishlistQuery = user
 		? db
 				.select({})
@@ -73,15 +97,33 @@ export async function load({ params, locals: { user } }) {
 				.where(and(eq(wishlist.hotSauceId, sauceId), eq(wishlist.userId, user.id)))
 		: [];
 
-	const [dbMaker, dbStores, dbCheckins, dbWishlist] = await Promise.all([
+	// Admins edit the sauce right here (?edit); nobody else gets the hidden photos.
+	const editorQuery =
+		admin && url.searchParams.has('edit')
+			? Promise.all([loadSauceEditor(sauceId), nextToReview(sauce)]).then(([editor, next]) => ({
+					...editor,
+					next
+				}))
+			: null;
+
+	const [dbMaker, dbStores, dbCheckins, dbWishlist, dbImages, editor] = await Promise.all([
 		makerQuery,
 		storesQuery,
 		checkinsQuery,
-		wishlistQuery
+		wishlistQuery,
+		imagesQuery,
+		editorQuery
 	]);
+
+	// With a bucket configured, a photo that never uploaded is usually a dead link.
+	const images = withoutDuplicatePhotos(
+		PUBLIC_IMAGE_BASE_URL ? dbImages.filter((image) => image.imageKey) : dbImages
+	).map(({ imageKey, imageUrl }) => ({ imageKey, imageUrl }));
 
 	return {
 		sauce,
+		images,
+		editor,
 		maker: dbMaker.length > 0 ? dbMaker[0] : null,
 		checkins: dbCheckins,
 		stores: dbStores,
@@ -90,6 +132,7 @@ export async function load({ params, locals: { user } }) {
 }
 
 export const actions = {
+	...sauceAdminActions,
 	wishlist: async ({ request, locals: { session, user } }) => {
 		if (!session || !user) {
 			return fail(401, { error: 'Unauthorized' });

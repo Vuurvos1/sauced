@@ -10,10 +10,16 @@ import {
 	boolean,
 	pgEnum,
 	uuid,
-	index
+	index,
+	jsonb
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.js';
+
+/**
+ * @typedef {{ x: number, y: number, width: number, height: number }} ImageMask
+ * @typedef {{ masks: ImageMask[] }} ImageEdits
+ */
 
 export const roleEnum = pgEnum('role', ['admin', 'moderator', 'user']);
 
@@ -47,10 +53,15 @@ export const hotSauces = pgTable(
 		name: text('name').notNull(),
 		slug: text('slug').notNull().unique(),
 		description: text('description').default(''),
-		imageUrl: text('image_url'),
 		makerId: uuid('maker_id').references(() => makers.makerId, {
 			onDelete: 'set null'
 		}),
+		// Set once an admin has gone through the sauce. From then on the scraper keeps
+		// its store links current but leaves its name, description and photos alone.
+		reviewedAt: timestamp('reviewed_at'),
+		// Set when an admin takes the sauce off the site: not a sauce, a junk listing.
+		// Deleting it would only bring it back with the next scrape.
+		hiddenAt: timestamp('hidden_at'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at')
 			.notNull()
@@ -91,6 +102,49 @@ export const stores = pgTable(
 	},
 	(table) => [
 		index('stores_name_trgm_idx').using('gin', sql`immutable_unaccent(${table.name}) gin_trgm_ops`)
+	]
+);
+
+/**
+ * Every photo of a sauce, from each shop that sells it. The lowest position is the
+ * main image; a shop that swaps a photo takes over its old position, so the main
+ * image doesn't jump to another shop's picture.
+ */
+export const hotSauceImages = pgTable(
+	'hot_sauce_images',
+	{
+		imageId: uuid('id').primaryKey().defaultRandom(),
+		sauceId: uuid('hot_sauce_id')
+			.notNull()
+			.references(() => hotSauces.sauceId, { onDelete: 'cascade' }),
+		// Null for images carried over from before shops were recorded.
+		storeId: uuid('store_id').references(() => stores.storeId, { onDelete: 'set null' }),
+		// Where the shop serves it. Kept so a failed upload can be retried.
+		sourceUrl: text('source_url').notNull(),
+		// Content-hash prefix of the resized copies in R2; null until uploaded.
+		imageKey: text('image_key'),
+		// 256-bit difference hash, as hex: two shops' copies of one photo land within
+		// a few bits, so the gallery can show one of them.
+		phash: text('phash'),
+		position: integer('position').notNull(),
+		// Rejected by an admin. The row stays so the scraper doesn't add it back.
+		hidden: boolean('hidden').notNull().default(false),
+		// Chosen by an admin as the main image, ahead of position.
+		pinned: boolean('pinned').notNull().default(false),
+		// Found for a reviewed sauce; shown only once an admin accepts it.
+		pending: boolean('pending').notNull().default(false),
+		// Boxes painted over the photo, as fractions of its width and height.
+		edits:
+			/** @type {import('drizzle-orm').$Type<ReturnType<typeof jsonb<'edits'>>, ImageEdits>} */ (
+				jsonb('edits')
+			),
+		// Content-hash prefix of the edited copies; shown instead of `image_key`.
+		editedKey: text('edited_key'),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [
+		unique('hot_sauce_images_sauce_source_unique').on(t.sauceId, t.sourceUrl),
+		index('hot_sauce_images_sauce_position_idx').on(t.sauceId, t.position)
 	]
 );
 

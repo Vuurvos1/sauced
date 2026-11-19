@@ -1,5 +1,5 @@
 import { checkins, hotSauces, makers, stores } from '@app/db/schema';
-import { avg, desc, eq, count } from 'drizzle-orm';
+import { avg, desc, eq, count, and } from 'drizzle-orm';
 import {
 	MIN_SEARCH_LENGTH,
 	matchSimilarity,
@@ -10,16 +10,27 @@ import {
 	withFuzzyMatching
 } from '#lib/server/search.js';
 import type { SearchResponse } from '#lib/types/api.js';
+import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
 const RESULT_LIMIT = 8;
 
+/**
+ * The results don't depend on who asks, so the CDN can answer repeats: the header
+ * searches as people type, and every miss wakes Neon. A sauce an admin hides can
+ * linger in results for up to five minutes. Failures aren't cached.
+ */
+const CACHED = {
+	'cache-control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600'
+};
+
 export async function GET({ url }) {
 	const query = normalizeQuery(url.searchParams.get('q'));
 
 	if (query.length < MIN_SEARCH_LENGTH) {
-		return Response.json(EMPTY satisfies SearchResponse);
+		return Response.json(EMPTY satisfies SearchResponse, { headers: CACHED });
 	}
 
 	try {
@@ -30,12 +41,12 @@ export async function GET({ url }) {
 					name: hotSauces.name,
 					description: hotSauces.description,
 					slug: hotSauces.slug,
-					imageUrl: hotSauces.imageUrl,
+					...mainImage,
 					avgRating: avg(checkins.rating).mapWith(Number),
 					ratingCount: count(checkins.rating)
 				})
 				.from(hotSauces)
-				.where(sauceMatchesQuery(query))
+				.where(and(sauceMatchesQuery(query), visibleSauce))
 				.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))
 				.groupBy(hotSauces.sauceId)
 				.orderBy(
@@ -67,7 +78,7 @@ export async function GET({ url }) {
 				})
 				.from(makers)
 				.where(matchesQuery(makers.name, query))
-				.leftJoin(hotSauces, eq(hotSauces.makerId, makers.makerId))
+				.leftJoin(hotSauces, and(eq(hotSauces.makerId, makers.makerId), visibleSauce))
 				.groupBy(makers.makerId)
 				.orderBy(desc(matchTier(makers.name, query)), desc(count(hotSauces.sauceId)))
 				.limit(RESULT_LIMIT);
@@ -75,11 +86,14 @@ export async function GET({ url }) {
 			return Promise.all([sauceQuery, storeQuery, makerQuery]);
 		});
 
-		return Response.json({
-			makers: makerResults,
-			stores: storeResults,
-			sauces: sauceResults
-		} satisfies SearchResponse);
+		return Response.json(
+			{
+				makers: makerResults,
+				stores: storeResults,
+				sauces: sauceResults
+			} satisfies SearchResponse,
+			{ headers: CACHED }
+		);
 	} catch (error) {
 		console.error('Search error:', error);
 		return Response.json(EMPTY satisfies SearchResponse, { status: 500 });

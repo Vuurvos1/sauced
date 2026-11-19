@@ -6,7 +6,13 @@ import {
 	stripHtml,
 	stripMakerFromName
 } from '../utils/index.js';
-import { cleanTitle, createCatalogueScraper, trimTrailingSlash } from './catalogue.js';
+import {
+	cleanTitle,
+	createCatalogueScraper,
+	imageList,
+	IMAGES_PER_STORE,
+	trimTrailingSlash
+} from './catalogue.js';
 
 /** Shopify caps products.json at 250 per page. */
 const PAGE_SIZE = 250;
@@ -111,7 +117,10 @@ export function createShopifyScraper(config) {
 				slug: slugifyName(sauceName),
 				description,
 				url: `${trimTrailingSlash(storeUrl)}/products/${product.handle}`,
-				imageUrl: product.images?.[0]?.src ?? null,
+				imageUrls: imageList(
+					(product.images ?? []).map((image) => image?.src),
+					IMAGES_PER_STORE
+				),
 				maker: vendor
 			};
 		}

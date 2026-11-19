@@ -115,7 +115,7 @@ describe('createSitemapScraper', () => {
 			slug: 'wing',
 			description: 'Red lentils as the base.\n\nHabanero & cayenne.',
 			url: wing,
-			imageUrl: 'https://cdn.test/wing.webp',
+			imageUrls: ['https://cdn.test/wing.webp'],
 			maker: 'Happy Hatter Hot Sauce'
 		});
 	});
@@ -130,7 +130,7 @@ describe('createSitemapScraper', () => {
 	it('uses houseBrand when the page names no brand', async () => {
 		const sauce = await create({ houseBrand: 'Sitemap Shop' }).scrapeSauce(own, options);
 		expect(sauce?.maker).toBe('Sitemap Shop');
-		expect(sauce?.imageUrl).toBe('https://cdn.test/own.webp');
+		expect(sauce?.imageUrls).toEqual(['https://cdn.test/own.webp']);
 	});
 
 	it('follows a sitemap index one level down', async () => {

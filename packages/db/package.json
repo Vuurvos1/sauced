@@ -9,20 +9,25 @@
 		"generate": "drizzle-kit generate",
 		"diagram": "node dbml.js && pnpm dbml-renderer -i schema.dbml -o erd.svg",
 		"studio": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs studio",
-		"migrate": "drizzle-kit migrate"
+		"migrate": "drizzle-kit migrate",
+		"pull": "node --env-file-if-exists=.env pull.js"
 	},
 	"type": "module",
 	"exports": {
 		".": "./index.js",
 		"./schema": "./schema/index.js",
 		"./types": "./types.ts",
-		"./testing": "./testing.js"
+		"./testing": "./testing.js",
+		"./images": "./images.js",
+		"./bucket": "./bucket.js",
+		"./local": "./local.js"
 	},
 	"peerDependencies": {
 		"drizzle-orm": "catalog:",
 		"drizzle-zod": "catalog:"
 	},
 	"dependencies": {
+		"aws4fetch": "^1.0.20",
 		"postgres": "catalog:"
 	},
 	"devDependencies": {

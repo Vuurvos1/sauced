@@ -53,12 +53,29 @@ const PROMO = [
 	/[([]\s*heat\s*level[^)\]]*[)\]]/gi
 ];
 
+/**
+ * What a sauce name may hold: letters of any script with their accents, digits,
+ * and the punctuation real names use. The rest is shop decoration — ® and ™
+ * glued to a brand, emoji after a flavour ("Heartbeat - Blueberry 🫐") — and
+ * none of the 1945 stored names needed it. Joiners and variation selectors are
+ * listed because they count as marks but only ever build emoji.
+ */
+const DISALLOWED = /[^\p{L}\p{M}\p{N}\s\-–—|&'’‘.,;"“”„«»()%:+!?#/*]|[\uFE00-\uFE0F\u200D]/gu;
+
+/**
+ * @param {string} name
+ */
+function allowedCharacters(name) {
+	// A prime typed for an apostrophe: "Vintage 69′".
+	return name.replace(/′/g, '’').replace(DISALLOWED, ' ');
+}
+
 /** Separators and punctuation left stranded once a fragment is removed. */
 function tidySeparators(name) {
 	return name
-		.replace(/\s*([|:,–—-])\s*\1+/g, ' $1 ')
-		.replace(/^[\s|:,–—-]+/, '')
-		.replace(/[\s|:,–—-]+$/, '')
+		.replace(/\s*([|:;,–—-])\s*\1+/g, ' $1 ')
+		.replace(/^[\s|:;,–—-]+/, '')
+		.replace(/[\s|:;,–—-]+$/, '')
 		.replace(/\(\s*\)/g, '')
 		.replace(/\s{2,}/g, ' ')
 		.trim();
@@ -74,6 +91,7 @@ export function cleanProductName(name) {
 	let cleaned = String(name ?? '');
 	// Leading marker some shops use to flag a range, e.g. "*PSYCHO JUICE".
 	cleaned = cleaned.replace(/^\s*\*(?!\*)/, '');
+	cleaned = allowedCharacters(cleaned);
 	for (const pattern of PROMO) cleaned = cleaned.replace(pattern, ' ');
 	cleaned = cleaned.replace(SIZE, ' ');
 	const tidied = tidySeparators(cleaned);
@@ -143,8 +161,9 @@ function escapeRegExp(value) {
  * @param {string | null | undefined} maker
  */
 export function stripMakerFromName(name, maker) {
-	const title = String(name ?? '').trim();
-	const brand = String(maker ?? '').trim();
+	// A mark glues itself to the brand, so "Tabasco®" wouldn't match "Tabasco".
+	const title = tidySeparators(allowedCharacters(String(name ?? '')));
+	const brand = allowedCharacters(String(maker ?? '')).trim();
 	if (!brand || !title) return title;
 
 	// Shops punctuate a brand however they like — "Da Bomb", "Da' Bomb",
@@ -161,8 +180,9 @@ export function stripMakerFromName(name, maker) {
 		if (!b) return haystack;
 		return (
 			haystack
-				.replace(new RegExp(`^\\s*${b}\\s*(?:[-–—:|,]\\s*)?`, 'iu'), '')
-				.replace(new RegExp(`\\s*(?:[-–—:|,]\\s*)?${b}\\s*$`, 'iu'), '')
+				// "Tabasco Brand Scorpion…": the word is the maker's styling, not the sauce's.
+				.replace(new RegExp(`^\\s*${b}(?:\\s+brand\\b)?\\s*(?:[-–—:;|,]\\s*)?`, 'iu'), '')
+				.replace(new RegExp(`\\s*(?:[-–—:;|,]\\s*)?${b}\\s*$`, 'iu'), '')
 				// Some shops bury the brand mid-title: "Sauce Da'Bomb Beyond Insanity".
 				.replace(new RegExp(`\\s+${b}\\s+`, 'iu'), ' ')
 				.trim()
@@ -189,8 +209,7 @@ export function stripMakerFromName(name, maker) {
 	}
 
 	// A sauce named only after its maker keeps its name — as does one left with
-	// nothing but punctuation or an emoji ("Valentina ❤️" minus "Valentina"),
-	// which would otherwise slugify to an empty string.
+	// nothing but punctuation, which would otherwise slugify to an empty string.
 	return /[a-z0-9]/i.test(foldAccents(stripped)) ? stripped : title;
 }
 

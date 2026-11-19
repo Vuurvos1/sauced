@@ -35,7 +35,9 @@ available to the app.
 ## Development
 
 Start the databases using [Docker](https://www.docker.com/) with the following command.
-This starts the dev database on port 5433 and the test database on port 5434:
+This starts the dev database on port 5433, the test database on port 5434 and a local
+S3-compatible image bucket ([SeaweedFS](https://github.com/seaweedfs/seaweedfs), standing
+in for Cloudflare R2) on port 8333:
 
 ```bash
 pnpm docker:up
@@ -61,6 +63,29 @@ Start the site with the following command:
 ```bash
 pnpm site dev
 ```
+
+### Admin
+
+`/admin/review` walks through the catalogue: hide or pin photos, cover parts of a photo
+with white boxes, fix names, hide a sauce that isn't one, and mark a sauce reviewed,
+which locks it against the scraper. The same editor opens in place on any sauce page
+for an admin ("Edit photos and details").
+
+Locally, seed an admin and log in as `admin@sauced.local` / `sauced-admin`. Running it
+again puts the password back; it refuses any database that isn't on localhost:
+
+```bash
+pnpm site seed:admin
+```
+
+Anywhere else, promote a real account:
+
+```sql
+update "user" set role = 'admin' where email = 'you@example.com';
+```
+
+The photo editor writes to the bucket, so the site needs the `R2_*` settings from
+`apps/site/.env.example`.
 
 ## Testing
 

@@ -10,7 +10,7 @@ export async function load({ locals }) {
 		redirect(302, '/');
 	}
 
-	return { user: locals.user };
+	return { user: { username: locals.user.username } };
 }
 
 export const actions: Actions = {

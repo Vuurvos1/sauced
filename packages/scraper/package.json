@@ -5,13 +5,16 @@
 	"scripts": {
 		"scrape": "node --env-file-if-exists=.env index.js",
 		"merge-legacy": "node --env-file-if-exists=.env merge-legacy.js",
+		"diff": "node diff.js",
 		"dev": "node --env-file-if-exists=.env --watch index.js",
 		"test": "vitest"
 	},
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"drizzle-orm": "catalog:"
+		"aws4fetch": "^1.0.20",
+		"drizzle-orm": "catalog:",
+		"sharp": "^0.35.5"
 	},
 	"devDependencies": {
 		"vitest": "^5.1.0"

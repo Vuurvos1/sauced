@@ -1,7 +1,9 @@
 import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
 import { error, redirect } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { eq, getTableColumns, and } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
+import { visibleSauce } from '#lib/server/sauces.js';
 
 export async function load({ params }) {
 	const slug = params.slug;
@@ -26,14 +28,14 @@ export async function load({ params }) {
 	// get 24 most recent sauces
 	const dbStoreSauces = await db
 		.select({
-			sauce: hotSauces,
+			sauce: { ...getTableColumns(hotSauces), ...mainImage },
 			storeInfo: storeHotSauces,
 			makerName: makers.name
 		})
 		.from(hotSauces)
 		.innerJoin(storeHotSauces, eq(hotSauces.sauceId, storeHotSauces.sauceId))
 		.leftJoin(makers, eq(makers.makerId, hotSauces.makerId))
-		.where(eq(storeHotSauces.storeId, dbStore[0].storeId))
+		.where(and(eq(storeHotSauces.storeId, dbStore[0].storeId), visibleSauce))
 		// .orderBy(storeHotSauces.createdAt.desc())
 		.limit(52);
 

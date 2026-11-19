@@ -12,7 +12,7 @@ export type ScrapeSauceOptions = {
  * store_hot_sauces link; `maker` is the brand the store reports, ready for the
  * makers table once that ingest lands.
  */
-export type Sauce = HotSauceInsert & { url: string; maker?: string };
+export type Sauce = HotSauceInsert & { url: string; maker?: string; imageUrls: string[] };
 
 /** One scraped listing, tagged with the shop it came from. */
 export type ScrapedRow = {
@@ -48,9 +48,9 @@ export type StoredSauce = {
 	name: string;
 	slug: string;
 	description: string | null;
-	imageUrl: string | null;
 	makerId: string | null;
 	makerName: string | null;
+	reviewedAt: Date | null;
 };
 
 export type GetSauceUrls = (url: string, options: ScrapeSauceOptions) => Promise<string[]>;

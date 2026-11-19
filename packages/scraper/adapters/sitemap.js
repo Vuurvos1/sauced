@@ -10,7 +10,7 @@ import {
 	stripMakerFromName,
 	writeFile
 } from '../utils/index.js';
-import { cleanTitle, trimTrailingSlash } from './catalogue.js';
+import { cleanTitle, imageList, IMAGES_PER_STORE, trimTrailingSlash } from './catalogue.js';
 
 /** One request per product page, so pace it like a person browsing. */
 const DEFAULT_REQUEST_DELAY_MS = 1000;
@@ -183,7 +183,12 @@ export function createSitemapScraper(config) {
 			slug: slugifyName(sauceName),
 			description: sauceDescription,
 			url: productUrl,
-			imageUrl: firstString(product.image, 'url'),
+			imageUrls: imageList(
+				(Array.isArray(product.image) ? product.image : [product.image]).map((image) =>
+					image && typeof image === 'object' ? image.url : image
+				),
+				IMAGES_PER_STORE
+			),
 			maker
 		};
 	}
