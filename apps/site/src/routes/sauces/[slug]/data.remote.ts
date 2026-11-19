@@ -6,9 +6,7 @@ import { checkins } from '@app/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
-// TODO: fix tensorflow issues
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as tf from '@tensorflow/tfjs';
+import { isFlagged } from '#lib/server/moderation.js';
 
 export const getUserCheckin = query(z.uuid(), async (sauceId) => {
 	const {
@@ -29,21 +27,18 @@ export const upsertReview = form(reviewSchema, async ({ id, rating, content }) =
 	} = getRequestEvent();
 	if (!user) error(401, 'Unauthorized');
 
-	let flagged = false;
-	if (content) {
-		// loading this model takes around 4-5 seconds, so only load if needed
-		const toxicity = await import('@tensorflow-models/toxicity');
-		const model = await toxicity.load(0.9, ['toxicity']);
-
-		const predictions = await model.classify(content);
-
-		for (const prediction of predictions) {
-			if (prediction.results[0].match) {
-				flagged = true;
-				break;
-			}
-		}
-	}
+	// Unchanged text keeps its verdict: changing only the rating shouldn't pay for
+	// another moderation call.
+	const [previous] = await db
+		.select({ review: checkins.review, flagged: checkins.flagged })
+		.from(checkins)
+		.where(and(eq(checkins.hotSauceId, id), eq(checkins.userId, user.id)))
+		.limit(1);
+	const flagged = !content
+		? false
+		: previous && previous.review === content
+			? Boolean(previous.flagged)
+			: await isFlagged(content);
 
 	await db
 		.insert(checkins)

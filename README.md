@@ -35,7 +35,9 @@ available to the app.
 ## Development
 
 Start the databases using [Docker](https://www.docker.com/) with the following command.
-This starts the dev database on port 5433 and the test database on port 5434:
+This starts the dev database on port 5433, the test database on port 5434, and a
+stand-in for Workers AI on port 8788 that review moderation talks to (`docker/ai`; it
+flags a few test words instead of running the model):
 
 ```bash
 pnpm docker:up
