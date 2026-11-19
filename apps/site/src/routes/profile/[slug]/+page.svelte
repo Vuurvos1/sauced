@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sauceImageAttrs } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { BeamAvatar } from '@app/boring-avatars';
 	import { Trash2, Settings, Trophy } from '@o7/icon/lucide';
@@ -114,7 +115,8 @@
 									<img
 										class="aspect-square w-full object-contain"
 										style:view-transition-name={sauceImageName('checkins', sauce.slug)}
-										src={sauce?.imageUrl}
+										{...sauceImageAttrs(sauce)}
+										sizes="(min-width: 768px) 300px, 50vw"
 										alt={sauce.name}
 									/>
 

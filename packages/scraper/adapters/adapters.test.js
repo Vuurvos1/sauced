@@ -67,7 +67,7 @@ describe('createShopifyScraper', () => {
 			slug: 'ghost-pepper-sauce',
 			description: 'Smoky & hot',
 			url: 'https://shop.test/products/ghost-pepper',
-			imageUrl: 'https://cdn.test/ghost.png',
+			imageUrls: ['https://cdn.test/ghost.png'],
 			maker: 'Test Maker'
 		});
 	});
@@ -179,7 +179,7 @@ describe('createWooScraper', () => {
 			slug: 'de-sambal-per-de-man',
 			description: 'Pittige sambal',
 			url: 'https://woo.test/product/de-sambal/',
-			imageUrl: 'https://woo.test/sambal.jpg',
+			imageUrls: ['https://woo.test/sambal.jpg'],
 			maker: 'Feroz'
 		});
 	});

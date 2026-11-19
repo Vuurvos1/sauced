@@ -10,6 +10,7 @@ import {
 	sauceMatchesQuery,
 	withFuzzyMatching
 } from '#lib/server/search.js';
+import { mainImage } from '#lib/server/images.js';
 
 export async function load({ url }) {
 	const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
@@ -27,7 +28,7 @@ export async function load({ url }) {
 			]
 		: [desc(hotSauces.createdAt)];
 
-	const hotSauceColumns = getTableColumns(hotSauces);
+	const hotSauceColumns = { ...getTableColumns(hotSauces), ...mainImage };
 	const run = (executor: Executor) => {
 		const sauceCountQuery = executor.select({ count: count() }).from(hotSauces).where(filter);
 

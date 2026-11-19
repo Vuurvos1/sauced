@@ -2,6 +2,7 @@ import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { avg, desc, eq, getTableColumns } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
 
 export async function load({ params }) {
 	const slug = params.slug;
@@ -19,7 +20,7 @@ export async function load({ params }) {
 	const maker = dbMaker[0];
 
 	const sauces = await db
-		.select({ ...getTableColumns(hotSauces), avgRating: avg(checkins.rating) })
+		.select({ ...getTableColumns(hotSauces), ...mainImage, avgRating: avg(checkins.rating) })
 		.from(hotSauces)
 		.where(eq(hotSauces.makerId, maker.makerId))
 		.leftJoin(checkins, eq(hotSauces.sauceId, checkins.hotSauceId))

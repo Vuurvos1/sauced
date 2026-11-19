@@ -35,7 +35,9 @@ available to the app.
 ## Development
 
 Start the databases using [Docker](https://www.docker.com/) with the following command.
-This starts the dev database on port 5433 and the test database on port 5434:
+This starts the dev database on port 5433, the test database on port 5434 and a local
+S3-compatible image bucket ([SeaweedFS](https://github.com/seaweedfs/seaweedfs), standing
+in for Cloudflare R2) on port 8333:
 
 ```bash
 pnpm docker:up
@@ -48,6 +50,10 @@ pnpm db migrate
 ```
 
 See the [db README](./packages/db/README.md) for details on generating new migrations after schema changes.
+
+To mirror live instead, `pnpm db pull` copies a database's catalogue (no users,
+check-ins or wishlists) and its photos to your machine; it refuses any target that
+isn't localhost. See `packages/db/.env.example`.
 
 Seed the database by running a scraper with the following command.
 More information about scrapers can be found in the [scrapers README](./packages/scraper/README.md).

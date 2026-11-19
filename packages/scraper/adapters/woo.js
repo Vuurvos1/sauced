@@ -6,7 +6,7 @@ import {
 	stripHtml,
 	stripMakerFromName
 } from '../utils/index.js';
-import { cleanTitle, createCatalogueScraper } from './catalogue.js';
+import { cleanTitle, createCatalogueScraper, imageList, IMAGES_PER_STORE } from './catalogue.js';
 
 /** wc/store/v1 rejects per_page above 100. */
 const PAGE_SIZE = 100;
@@ -130,7 +130,10 @@ export function createWooScraper(config) {
 				slug: slugifyName(sauceName),
 				description,
 				url: product.permalink,
-				imageUrl: product.images?.[0]?.src ?? null,
+				imageUrls: imageList(
+					(product.images ?? []).map((image) => image?.src),
+					IMAGES_PER_STORE
+				),
 				maker
 			};
 		}

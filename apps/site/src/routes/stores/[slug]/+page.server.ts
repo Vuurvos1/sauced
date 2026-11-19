@@ -1,7 +1,8 @@
 import { db } from '#lib/server/db.js';
 import { hotSauces, makers, stores, storeHotSauces } from '@app/db/schema';
 import { error, redirect } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { eq, getTableColumns } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
 
 export async function load({ params }) {
 	const slug = params.slug;
@@ -26,7 +27,7 @@ export async function load({ params }) {
 	// get 24 most recent sauces
 	const dbStoreSauces = await db
 		.select({
-			sauce: hotSauces,
+			sauce: { ...getTableColumns(hotSauces), ...mainImage },
 			storeInfo: storeHotSauces,
 			makerName: makers.name
 		})

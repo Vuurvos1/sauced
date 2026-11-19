@@ -11,10 +11,47 @@
 	import { toast } from 'svelte-sonner';
 	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
 	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
+	import { ChevronRight } from '@o7/icon/lucide';
+	import { sauceImageAttrs, sauceImageSrc, showPlaceholder } from '#lib/images.js';
+	import { dialogOpen, isTyping } from '#lib/utils/keyboard.js';
 
 	let { data } = $props();
 
-	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
+	let { sauce, images, maker, session, user, wishlisted, stores } = $derived(data);
+
+	// Keyed to the sauce, so navigating to another one starts on its main image.
+	let selection = $state<{ sauceId: string; index: number }>();
+	const selected = $derived(selection?.sauceId === sauce.sauceId ? selection.index : 0);
+	const shown = $derived(images[selected] ?? { imageKey: null, imageUrl: null });
+
+	function select(index: number) {
+		const count = images.length;
+		if (count === 0) return;
+		selection = { sauceId: sauce.sauceId, index: (index + count) % count };
+	}
+
+	function arrowKeys(event: KeyboardEvent) {
+		if (event.metaKey || event.ctrlKey || event.altKey || images.length < 2) return;
+		if (isTyping(event) || dialogOpen()) return;
+		if (event.key === 'ArrowLeft') select(selected - 1);
+		if (event.key === 'ArrowRight') select(selected + 1);
+	}
+
+	/** A horizontal swipe on the main photo steps through the gallery. */
+	let swipeStart: { x: number; y: number } | null = null;
+	function swipeDown(event: PointerEvent) {
+		// The arrows handle their own taps.
+		if ((event.target as HTMLElement).closest('button')) return;
+		swipeStart = { x: event.clientX, y: event.clientY };
+	}
+	function swipeUp(event: PointerEvent) {
+		if (!swipeStart) return;
+		const dx = event.clientX - swipeStart.x;
+		const dy = event.clientY - swipeStart.y;
+		swipeStart = null;
+		// Far enough to be meant, and more sideways than down, so scrolling still works.
+		if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) select(selected + (dx < 0 ? 1 : -1));
+	}
 	let checkins = $derived(data.checkins);
 	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
@@ -27,17 +64,79 @@
 	title={sauce.name}
 	description={sauce.description ||
 		`Ratings, reviews and where to buy ${sauce.name}${byMaker} on Sauced.`}
-	image={sauce.imageUrl}
+	image={images[0] ? sauceImageSrc(images[0]) : undefined}
 	imageAlt={sauce.name}
 />
 
+<svelte:window onkeydown={arrowKeys} />
+
 <div class="container">
 	<section class="mb-12 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-		<img
-			class="sauce-hero aspect-square object-contain xl:col-span-3"
-			src={sauce.imageUrl}
-			alt={sauce.name}
-		/>
+		<div class="xl:col-span-3">
+			<div
+				class="relative touch-pan-y select-none"
+				role="group"
+				aria-roledescription="carousel"
+				aria-label="Photos of {sauce.name}"
+				onpointerdown={swipeDown}
+				onpointerup={swipeUp}
+				onpointercancel={() => (swipeStart = null)}
+			>
+				<img
+					draggable="false"
+					class="sauce-hero aspect-square w-full object-contain"
+					{...sauceImageAttrs(shown)}
+					sizes="(min-width: 1280px) 60vw, (min-width: 768px) 50vw, 100vw"
+					alt={sauce.name}
+				/>
+
+				{#if images.length > 1}
+					<button
+						type="button"
+						class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow transition hover:bg-white"
+						aria-label="Previous photo"
+						onclick={() => select(selected - 1)}
+					>
+						<ChevronRight class="rotate-180" size={24}></ChevronRight>
+					</button>
+					<button
+						type="button"
+						class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow transition hover:bg-white"
+						aria-label="Next photo"
+						onclick={() => select(selected + 1)}
+					>
+						<ChevronRight size={24}></ChevronRight>
+					</button>
+				{/if}
+			</div>
+
+			{#if images.length > 1}
+				<ul class="mt-3 flex gap-2 overflow-x-auto pt-1" aria-label="Photos">
+					{#each images as photo, index (photo.imageKey ?? photo.imageUrl)}
+						<li class="shrink-0">
+							<button
+								type="button"
+								class={[
+									'block size-16 rounded-md border-2 p-0.5 transition-colors',
+									index === selected ? 'border-black' : 'border-transparent hover:border-gray-300'
+								]}
+								aria-label={`Photo ${index + 1} of ${images.length}`}
+								aria-pressed={index === selected}
+								onclick={() => select(index)}
+							>
+								<img
+									class="size-full object-contain"
+									src={sauceImageSrc(photo, 400)}
+									onerror={showPlaceholder}
+									alt=""
+									loading="lazy"
+								/>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
 
 		<div class="xl:col-span-2">
 			<h1 class="h1 mb-1">{sauce.name}</h1>
