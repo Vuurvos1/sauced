@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { sauceImageSrc } from '#lib/images.js';
+	import { sauceImageSrc, showPlaceholder } from '#lib/images.js';
 	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
@@ -48,6 +48,7 @@
 						<img
 							class="mb-2 aspect-square w-full object-contain"
 							src={sauceImageSrc(sauce, 400)}
+							onerror={showPlaceholder}
 							alt=""
 							loading="lazy"
 						/>

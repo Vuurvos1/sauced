@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sauceImageSrc } from '#lib/images.js';
+	import { sauceImageSrc, showPlaceholder } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Search, UserRound, Flame, Store, Factory, LoaderCircle } from '@o7/icon/lucide';
@@ -367,6 +367,7 @@
 			<img
 				class="aspect-square size-12 object-contain"
 				src={sauceImageSrc(sauce, 400)}
+				onerror={showPlaceholder}
 				alt={sauce.name}
 			/>
 			<div>

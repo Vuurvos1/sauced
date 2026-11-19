@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sauceImageAttrs, sauceImageSrc } from '#lib/images.js';
+	import { sauceImageAttrs, sauceImageSrc, showPlaceholder } from '#lib/images.js';
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { BeamAvatar } from '@app/boring-avatars';
@@ -189,6 +189,7 @@
 								<img
 									class="size-full object-contain"
 									src={sauceImageSrc(photo, 400)}
+									onerror={showPlaceholder}
 									alt=""
 									loading="lazy"
 								/>
@@ -405,6 +406,7 @@
 								<img
 									class="aspect-square w-full object-contain"
 									src={sauceImageSrc(photo, 400)}
+									onerror={showPlaceholder}
 									alt=""
 									loading="lazy"
 								/>

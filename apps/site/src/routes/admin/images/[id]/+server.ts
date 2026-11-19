@@ -22,7 +22,7 @@ export async function GET({ locals, params }) {
 	if (!image) error(404, 'Not found');
 
 	const response = await fetch(
-		sauceImageSrc({ imageKey: image.imageKey, imageUrl: image.sourceUrl }, 800)!
+		sauceImageSrc({ imageKey: image.imageKey, imageUrl: image.sourceUrl }, 800)
 	);
 	if (!response.ok) error(502, `The photo responded ${response.status}`);
 
