@@ -10,6 +10,7 @@ import {
 	withFuzzyMatching
 } from '#lib/server/search.js';
 import type { SearchResponse } from '#lib/types/api.js';
+import { mainImage } from '#lib/server/images.js';
 
 const EMPTY: SearchResponse = { makers: [], stores: [], sauces: [] };
 
@@ -30,7 +31,7 @@ export async function GET({ url }) {
 					name: hotSauces.name,
 					description: hotSauces.description,
 					slug: hotSauces.slug,
-					imageUrl: hotSauces.imageUrl,
+					...mainImage,
 					avgRating: avg(checkins.rating).mapWith(Number),
 					ratingCount: count(checkins.rating)
 				})

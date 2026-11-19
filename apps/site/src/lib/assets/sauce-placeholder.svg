@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none" stroke="#d4d4d8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+	<!-- A generic hot sauce bottle, for sauces without a photo. -->
+	<rect x="178" y="48" width="44" height="34" rx="6" fill="#f4f4f5"/>
+	<path d="M184 82h32v44c0 18 34 30 34 62v150c0 12-9 20-20 20h-60c-11 0-20-8-20-20V188c0-32 34-44 34-62z" fill="#fafafa"/>
+	<rect x="166" y="222" width="68" height="70" rx="6" fill="#f4f4f5"/>
+	<path d="M182 248h36M182 266h24"/>
+</svg>

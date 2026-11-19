@@ -4,9 +4,10 @@ import { auth } from '#lib/server/auth.js';
 import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { avg, desc, getTableColumns, eq, count } from 'drizzle-orm';
+import { mainImage } from '#lib/server/images.js';
 
 export const load: PageServerLoad = async () => {
-	const hotSauceColumns = getTableColumns(hotSauces);
+	const hotSauceColumns = { ...getTableColumns(hotSauces), ...mainImage };
 	const recentSaucesQuery = db
 		.select({ ...hotSauceColumns, makerName: makers.name })
 		.from(hotSauces)
