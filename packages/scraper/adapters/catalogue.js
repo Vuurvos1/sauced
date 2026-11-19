@@ -21,6 +21,21 @@ export function trimTrailingSlash(url) {
 	return url.replace(/\/+$/, '');
 }
 
+/** Photos kept per shop per sauce; past this they're mostly lifestyle shots. */
+export const IMAGES_PER_STORE = 5;
+
+/**
+ * A product's photo URLs, in the shop's order, without repeats.
+ *
+ * @param {unknown[]} urls
+ * @param {number} limit
+ * @returns {string[]}
+ */
+export function imageList(urls, limit) {
+	const strings = urls.filter((url) => typeof url === 'string').map((url) => url.trim());
+	return [...new Set(strings.filter(Boolean))].slice(0, limit);
+}
+
 /**
  * Some stores bake the brand into the product title ("Garlic Habanero | The
  * Pepper Ninja"). Left in, the same sauce from two stores never dedupes.
