@@ -13,13 +13,14 @@ Nothing here is applied automatically yet.
 ## Applying
 
 State lives in an R2 bucket, `sauced-tfstate`, which has to exist before the first
-`init`; create it once in the dashboard. Then, with a `CLOUDFLARE_API_TOKEN` that can
-edit R2, Hyperdrive and DNS, and R2 S3 credentials for the state bucket in
-`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`:
+`init`; create it once in the dashboard. The credentials go in `infra/.env`
+(git-ignored); `.env.example` says which token is which.
 
 ```bash
+cp .env.example .env                 # fill in the three tokens
+cp example.tfvars terraform.tfvars   # account id and the Neon URLs
+set -a; . ./.env; set +a             # load them into this shell
 tofu init -backend-config='endpoints={s3="https://<account_id>.r2.cloudflarestorage.com"}'
-cp example.tfvars terraform.tfvars   # fill in; *.tfvars is git-ignored
 tofu plan
 tofu apply
 ```
