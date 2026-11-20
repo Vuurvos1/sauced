@@ -53,6 +53,12 @@ resource "cloudflare_hyperdrive_config" "db" {
   account_id = var.account_id
   name       = "sauced-${var.name}"
 
+  # Repeated reads are answered from Hyperdrive's cache without waking Neon, which
+  # bills for time awake. Cloudflare's default too; stated so plans don't drift.
+  caching = {
+    disabled = false
+  }
+
   origin = {
     scheme   = "postgres"
     host     = local.db.host

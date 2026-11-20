@@ -1,6 +1,12 @@
 variable "account_id" {
   type        = string
   description = "Cloudflare account id."
+
+  # Empty, every resource fails mid-apply with "missing required account_id".
+  validation {
+    condition     = can(regex("^[0-9a-f]{32}$", var.account_id))
+    error_message = "account_id must be the 32-character Cloudflare account id."
+  }
 }
 
 variable "zone_name" {
