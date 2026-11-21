@@ -1,0 +1,33 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// The top level is what `vite dev` and `vite preview` emulate locally. It binds
+	// nothing: locally the site uses DATABASE_URL and the Workers AI stand-in, so it
+	// needs neither a Cloudflare login nor network access.
+	"name": "sauced-local",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"observability": { "enabled": true },
+
+	// Bindings are not inherited from the top level, so each environment lists all
+	// of its own. Hyperdrive ids are `tofu output` in infra/.
+	"env": {
+		"dev": {
+			"name": "sauced-dev",
+			"workers_dev": true,
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "dc3e9bcf70d84ccc96dac4fa06d8d310" }],
+			"ai": { "binding": "AI" }
+		},
+		"production": {
+			"name": "sauced",
+			// Until hotsauced.app moves over from Vercel, this is how to reach it.
+			"workers_dev": true,
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "2a58d8626e1f4e3aa4f0fd128515780e" }],
+			"ai": { "binding": "AI" }
+		}
+	}
+}
