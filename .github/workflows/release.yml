@@ -1,0 +1,104 @@
+name: Release
+
+# One pipeline per environment, in order: migrate the database, then deploy the site.
+# dev → Development (sauced-dev), main → Production (sauced).
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - '.github/workflows/release.yml'
+      - 'apps/site/**'
+      - 'packages/db/**'
+      - 'packages/boring-avatars/**'
+      - 'pnpm-lock.yaml'
+  # Runs the migrations unconditionally, then deploys.
+  workflow_dispatch:
+
+# Queued, never cancelled: stopping a run halfway through a migration is worse than
+# deploying twice.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
+    env:
+      WRANGLER_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
+      HYPERDRIVE_NAME: ${{ github.ref == 'refs/heads/main' && 'sauced-prod' || 'sauced-dev' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Enough history to see which migrations this push brought in.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Connecting wakes Neon, which bills for time awake, so only when there is
+      # something to apply. A new branch has no `before` to compare against.
+      - name: Check for new migrations
+        id: migrations
+        run: |
+          before='${{ github.event.before }}'
+          if [ '${{ github.event_name }}' != push ] || [ -z "$before" ] || [ "$before" = 0000000000000000000000000000000000000000 ] \
+            || ! git diff --quiet "$before" '${{ github.sha }}' -- packages/db/drizzle; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Migrate the database
+        if: steps.migrations.outputs.run == 'true'
+        run: pnpm db migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Only public, build-time values here. The build loads the server to analyse
+      # routes, so the runtime variables must exist, but they are not inlined: the
+      # real values are Worker secrets (see README.md). Better Auth refuses an empty
+      # secret even then, hence the placeholder.
+      - name: Build the site
+        run: pnpm --filter @app/site build
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          BETTER_AUTH_SECRET: build-placeholder-not-used-at-runtime
+          GOOGLE_CLIENT_ID: ''
+          GOOGLE_CLIENT_SECRET: ''
+          RESEND_API_KEY: ''
+
+      # wrangler.jsonc names the Hyperdrive config; OpenTofu (infra/) owns it and its
+      # id. Looked up here so the id is never copied by hand.
+      - name: Resolve the Hyperdrive id
+        working-directory: apps/site
+        run: |
+          id=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/hyperdrive/configs" \
+            | jq -er --arg name "$HYPERDRIVE_NAME" '.result[] | select(.name == $name) | .id')
+          sed -i "s/\"id\": \"$HYPERDRIVE_NAME\"/\"id\": \"$id\"/" wrangler.jsonc
+          grep -q "\"id\": \"$id\"" wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy the site
+        working-directory: apps/site
+        run: pnpm wrangler deploy --env "$WRANGLER_ENV"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'

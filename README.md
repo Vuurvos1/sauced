@@ -105,14 +105,17 @@ pnpm format
 
 The site runs on Cloudflare Workers, configured in
 [`apps/site/wrangler.jsonc`](./apps/site/wrangler.jsonc): `sauced-dev` for `dev`,
-`sauced` for `main`. `.github/workflows/deploy-site.yml` builds and deploys on every push
-to either. Each Worker reaches Neon through its Hyperdrive config and moderates reviews
+`sauced` for `main`. `.github/workflows/release.yml` runs on every push to either: it
+applies any new migrations, then builds and deploys, so the code never goes live
+before its schema. Each Worker reaches Neon through its Hyperdrive config and moderates reviews
 through the Workers AI binding; both are defined in [`infra/`](./infra/README.md).
 Locally neither is bound: the site uses `DATABASE_URL` and the Workers AI stand-in.
 
 Each GitHub environment (Development, Production) needs:
 
-- secret `CLOUDFLARE_API_TOKEN`: an account token with Workers Scripts Edit
+- secret `DATABASE_URL`: the direct (unpooled) Neon URL, for migrations
+- secret `CLOUDFLARE_API_TOKEN`: an account token with Workers Scripts Edit and
+  Hyperdrive Read (the workflow looks up the Hyperdrive id by name)
 - variable `CLOUDFLARE_ACCOUNT_ID`
 - variable `PUBLIC_BASE_URL`: the address the site is served on
 

@@ -14,19 +14,20 @@
 	"observability": { "enabled": true },
 
 	// Bindings are not inherited from the top level, so each environment lists all
-	// of its own. Hyperdrive ids are `tofu output` in infra/.
+	// of its own. Hyperdrive is given by the name OpenTofu (infra/) creates it under;
+	// the release workflow swaps in its id before deploying.
 	"env": {
 		"dev": {
 			"name": "sauced-dev",
 			"workers_dev": true,
-			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "dc3e9bcf70d84ccc96dac4fa06d8d310" }],
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "sauced-dev" }],
 			"ai": { "binding": "AI" }
 		},
 		"production": {
 			"name": "sauced",
 			// Until hotsauced.app moves over from Vercel, this is how to reach it.
 			"workers_dev": true,
-			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "2a58d8626e1f4e3aa4f0fd128515780e" }],
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "sauced-prod" }],
 			"ai": { "binding": "AI" }
 		}
 	}
