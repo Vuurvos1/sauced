@@ -3,27 +3,17 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"scrape": "node index.js",
-		"merge-legacy": "node merge-legacy.js",
-		"dev": "node --watch index.js",
+		"scrape": "node --env-file-if-exists=.env index.js",
+		"merge-legacy": "node --env-file-if-exists=.env merge-legacy.js",
+		"dev": "node --env-file-if-exists=.env --watch index.js",
 		"test": "vitest"
 	},
 	"type": "module",
 	"dependencies": {
 		"@app/db": "workspace:^",
-		"dotenv": "^16.6.1",
-		"drizzle-orm": "catalog:",
-		"jsdom": "^26.1.0",
-		"puppeteer": "^22.15.0",
-		"puppeteer-core": "^22.15.0",
-		"puppeteer-extra": "^3.3.6",
-		"puppeteer-extra-plugin-adblocker": "^2.13.6",
-		"puppeteer-extra-plugin-stealth": "^2.11.2",
-		"yargs-parser": "^21.1.1"
+		"drizzle-orm": "catalog:"
 	},
 	"devDependencies": {
-		"@types/jsdom": "^21.1.7",
-		"@types/yargs-parser": "^21.0.3",
-		"vitest": "^3.2.7"
+		"vitest": "^5.1.0"
 	}
 }

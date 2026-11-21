@@ -32,3 +32,20 @@ export const passwordSchema = z
 // Permissive schema — used for LOGIN so users with pre-existing weaker
 // passwords can still sign in. Strength enforcement happens at creation time.
 export const loginPasswordSchema = z.string().min(1, 'Password is required');
+
+export const REVIEW_MAX_LENGTH = 2000;
+
+const ratingError = 'Please enter a valid rating';
+
+export const reviewSchema = z.object({
+	id: z.uuid(),
+	rating: z.coerce
+		.number<string>(ratingError)
+		.int(ratingError)
+		.min(1, ratingError)
+		.max(5, ratingError),
+	content: z
+		.string()
+		.trim()
+		.max(REVIEW_MAX_LENGTH, `Review cannot exceed ${REVIEW_MAX_LENGTH} characters`)
+});

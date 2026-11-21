@@ -1,0 +1,23 @@
+diff --git a/dist/i.js b/dist/i.js
+index 596177dc92b177263c2ed8d040944aa66511b79a..4418c3e3ed6efb1ac03407b396a893953871720a 100644
+--- a/dist/i.js
++++ b/dist/i.js
+@@ -1,4 +1,4 @@
+-import { browser } from '$app/environment';
++import { browser } from '$app/env';
+ import { getContext } from 'svelte';
+ let included_icons;
+ if (browser) {
+@@ -13,9 +13,11 @@ const ICON_SET = Symbol();
+ export function get_included_icons() {
+     if (browser)
+         return included_icons;
++    // SvelteKit 3 no longer exposes its root `__svelte__` context, so dedupe
++    // per component during SSR; icons may repeat their <svg> defs in the HTML
+     const context = getContext('__svelte__');
+     if (!context)
+-        throw new Error('SvelteKit global context not found');
++        return new Set();
+     if (!context[ICON_SET])
+         context[ICON_SET] = new Set();
+     return context[ICON_SET];

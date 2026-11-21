@@ -1,10 +1,11 @@
 <script lang="ts">
-	import TextInput from '$lib/components/form/TextInput.svelte';
-	import PasswordRequirements from '$lib/components/form/PasswordRequirements.svelte';
+	import { resolve } from '$app/paths';
+	import TextInput from '#lib/components/form/TextInput.svelte';
+	import PasswordRequirements from '#lib/components/form/PasswordRequirements.svelte';
 	import { Google } from '@o7/icon/remix/solid';
 	import { superForm } from 'sveltekit-superforms';
-	import { authClient } from '$lib/auth-client';
-	import Meta from '$lib/components/Meta.svelte';
+	import { authClient } from '#lib/auth-client.js';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -90,7 +91,10 @@
 		</div>
 
 		<p class="mt-8 text-center">
-			Already have an account? <a class="font-medium text-blue-700 hover:underline" href="/login">
+			Already have an account? <a
+				class="font-medium text-blue-700 hover:underline"
+				href={resolve('/login')}
+			>
 				Login
 			</a>
 		</p>

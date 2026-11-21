@@ -242,15 +242,6 @@ export const wooStores = [
 		lang: 'en'
 	},
 	{
-		key: 'chilisausbe',
-		name: 'Chilisaus.be',
-		url: 'https://chilisaus.be',
-		description: `We work with the Best Producers, to bring you The Best Chili Products
- Only products with Top Quality Ingredients pass the Chilisaus.be Acceptance Test
-NEVER Products with Additives, Artificial Flavours or Colours
-You will NOT find our Products in ANY Supermarkets!`
-	},
-	{
 		key: 'dekkerpepper',
 		language: 'nl',
 		// Dutch on every judged listing, and all 34 are sold nowhere else.
@@ -344,5 +335,31 @@ You will NOT find our Products in ANY Supermarkets!`
 		// blends. `condiment` is chilli oils, purées and mustards — kept, on the
 		// same basis as mayo and BBQ.
 		includeCategories: ['toutes-nos-sauces-pimentee', 'sauce-piment-douce', 'condiment']
+	}
+];
+
+/** @type {import('./').SitemapScraperConfig[]} */
+export const sitemapStores = [
+	{
+		key: 'chilisausbe',
+		name: 'Chilisaus.be',
+		url: 'https://chilisaus.be',
+		// Moved to Next.js around October 2026; /wp-json now answers 403, so the old
+		// WooCommerce Store API is gone. Its sitemap lists every product page.
+		productPath: /^\/en\/shop\/[^/]+$/,
+		// The page's schema.org brand, which titles repeat in a shorter form.
+		renameMakers: {
+			'Chilisaus.be - Our Own Range': 'Chilisaus.be',
+			'Firelli - Italian Hot Sauce': 'Firelli',
+			SWET: 'SWET Hot Sauce Co'
+		},
+		// Country of origin, as in "Dave's Insanity Sauce (USA) The Original".
+		stripFromName: /\s*\([A-Z]{2,3}\)(\s*-)?/g,
+		// Gift sets the bundle filter misses: no "box" or "pack" in the name.
+		exclude: [/\bour own \d+ hot sauces\b/i, /\bessentials kit\b/i],
+		description: `We work with the Best Producers, to bring you The Best Chili Products
+ Only products with Top Quality Ingredients pass the Chilisaus.be Acceptance Test
+NEVER Products with Additives, Artificial Flavours or Colours
+You will NOT find our Products in ANY Supermarkets!`
 	}
 ];

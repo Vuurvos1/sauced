@@ -1,4 +1,4 @@
-import parser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import fs from 'node:fs';
 import scrapers, { enabledKeys } from './scrapers.js';
 import { sauceAliases } from './stores.js';
@@ -21,11 +21,13 @@ import {
 } from './utils/index.js';
 import { eq, inArray, notExists, sql } from 'drizzle-orm';
 
-import 'dotenv/config';
-
-const [, , ...args] = process.argv;
-const flags = parser(args, {
-	boolean: ['noCache', 'dbInsert']
+const { values: flags, positionals } = parseArgs({
+	options: {
+		noCache: { type: 'boolean', default: false },
+		dbInsert: { type: 'boolean', default: false },
+		dev: { type: 'boolean', default: false }
+	},
+	allowPositionals: true
 });
 
 const db = getDb(process.env.DATABASE_URL);
@@ -165,10 +167,15 @@ async function writeCatalogue(runs) {
 	console.info('Upserting stores');
 	/** @type {Map<string, string>} config key -> store id */
 	const storeIds = new Map();
+	const existingStores = await db.select({ name: stores.name, slug: stores.slug }).from(stores);
+	const storeSlugs = new Map(existingStores.map((row) => [row.name, row.slug]));
+	const takenStoreSlugs = new Set(storeSlugs.values());
 	for (const run of runs) {
+		const slug =
+			storeSlugs.get(run.scraper.name) ?? uniqueSlug(run.scraper.name, null, takenStoreSlugs);
 		const [store] = await db
 			.insert(stores)
-			.values({ name: run.scraper.name, url: run.scraper.url })
+			.values({ name: run.scraper.name, slug, url: run.scraper.url })
 			.onConflictDoUpdate({ target: stores.name, set: { url: run.scraper.url } })
 			.returning();
 		storeIds.set(run.storeKey, store.storeId);
@@ -340,14 +347,14 @@ async function scrapeStore(storeKey, scraper, options) {
 
 async function main() {
 	const startTime = performance.now();
-	const command = flags['_'].shift();
+	const command = positionals[0];
 
 	if (!command) {
 		console.error('No command provided');
 		process.exit(1);
 	}
 
-	const key = command.toString().toLowerCase();
+	const key = command.toLowerCase();
 
 	if (key !== 'all' && !scrapers[key]) {
 		console.error('No scraper found for', command);

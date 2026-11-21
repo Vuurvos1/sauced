@@ -1,4 +1,4 @@
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { PUBLIC_BASE_URL } from '$app/env/public';
 
 export const prerender = true;
 

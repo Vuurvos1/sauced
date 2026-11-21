@@ -3,7 +3,10 @@ packages:
   - 'apps/*'
 
 catalog:
-  drizzle-orm: ^0.45.2
+  # Both @app/db and @app/site list it, so drizzle-orm resolves with the same peers
+  # in each and their types stay compatible.
+  '@electric-sql/pglite': ^0.5.16
+  drizzle-kit: ^0.31.11
+  drizzle-orm: ^0.45.4
   drizzle-zod: ^0.8.3
-  drizzle-kit: ^0.31.10
   postgres: ^3.4.9

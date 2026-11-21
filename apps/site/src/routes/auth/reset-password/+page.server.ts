@@ -1,6 +1,6 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
+import { auth } from '#lib/server/auth.js';
 import { APIError } from 'better-auth/api';
 
 export const load: PageServerLoad = async ({ url }) => {

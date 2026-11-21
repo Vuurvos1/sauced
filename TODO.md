@@ -7,23 +7,34 @@ Grouped by urgency: **Bugs** are wrong today, **Now** unblocks other work,
 
 ## Bugs
 
-- [ ] **`created_at` is rewritten on every update.** `hotSauces.createdAt` has a
+- [x] **`created_at` is rewritten on every update.** `hotSauces.createdAt` has a
       `.$onUpdate()` (`packages/db/schema/sauce.js:51-54`). Every scraper run touches
       existing rows, so "newest first" on `/` and `/sauces` is really "most recently
       scraped". Drop `$onUpdate` from `createdAt`.
 - [x] **Missing profiles return 500 instead of 404.** `error(404)` is thrown inside a
       `try` whose `catch` swallows it and re-throws `error(500)`
       (`apps/site/src/routes/profile/[slug]/+page.server.ts:16-77`).
-- [ ] **Flagged reviews stay flagged forever.** The review upsert's
+- [x] **Flagged reviews stay flagged forever.** The review upsert's
       `onConflictDoUpdate` sets `review`/`rating` but not `flagged`
       (`apps/site/src/routes/sauces/[slug]/+page.server.ts:153-160`), so the freshly
-      computed value is discarded on edit.
-- [ ] **Store URLs use raw names.** `/stores/${store.name}` is unencoded
-      (`Header.svelte:108`) and the lookup matches on `stores.name`. Any store with a
-      space, `&` or `/` breaks. Add a `slug` column like `hotSauces` has.
-- [ ] **Unvalidated IDs reach Postgres.** `data.get('id')` goes straight into a `uuid`
-      comparison in the review / wishlist / removeCheckIn actions; a malformed value is
-      a driver throw, not a 400.
+      computed value is discarded on edit. The remote `upsertReview`
+      (`sauces/[slug]/data.remote.ts`) now writes `flagged` on conflict too.
+- [x] **Store URLs use raw names.** `/stores/${store.name}` is unencoded
+      (`Header.svelte:309`, `stores/+page.svelte:42`) and the lookup matches on
+      `stores.name`. Any store with a space, `&` or `/` breaks. Add a `slug` column
+      like `hotSauces` has. Migration 0010; old name URLs 301 to the slug.
+- [x] **Unvalidated IDs reach Postgres.** Raw `formData` values go straight into a
+      `uuid` comparison in the wishlist (`sauces/[slug]/+page.server.ts:99`) and
+      removeCheckIn (`profile/[slug]/+page.server.ts:82`) actions; a malformed value
+      is a driver throw, not a 400. The review form is a remote function and already
+      validates with `z.uuid()`. Both actions now `z.uuid().safeParse` the id.
+- [x] **Settings page calls `redirect()` in the component**
+      (`settings/+page.svelte:18`). `redirect` only works in server code and does
+      nothing useful in the browser; the load function already handles the
+      logged-out case, so the block can go.
+- [ ] **Wishlisting a sauce that doesn't exist is a 500.** A well-formed but unknown
+      id passes validation and hits the `wishlist` foreign key. Check the sauce exists,
+      or map the FK violation to a 400.
 - [x] **Failed sauce writes are swallowed and the run still exits 0.** The update is
       wrapped in a `try`/`catch` that only logs (`packages/scraper/index.js:105`). A
       full 27-store run lost 5 sauces to `hot_sauces_slug_unique` and still exited 0,
@@ -64,14 +75,30 @@ Shipped in #28. 27 stores registered, all verified live: 5424 products, no failu
 
 ### CI
 
-- [ ] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
+- [x] **No CI runs lint, `svelte-check`, build or tests** — only `migrate.yml` and
       `scrape.yml` exist. A PR workflow running `turbo lint build` + vitest + Playwright
-      is the single highest-value addition to this repo.
-- [ ] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
+      is the single highest-value addition to this repo. `ci.yml`: lint, `svelte-check`,
+      both Vitest suites, and Playwright against a production build and a `postgres:16`
+      service.
+- [x] Replace the `1 + 2 === 3` placeholder in `src/index.test.ts`. Real unit targets:
       `lib/server/search.ts`, `lib/validation`, `utils/name.ts`, `scraper/utils/format.js`.
-- [ ] Playwright covers login only — add review submission, wishlist toggle, search and
+      `search.test.ts` runs against in-memory Postgres (`@app/db/testing`, PGlite).
+- [ ] Unit tests for `lib/validation` and `utils/name.ts`. Anything else that needs a
+      database can reuse `createTestDb()` from `@app/db/testing`.
+- [ ] Playwright covers login and check-ins — add wishlist toggle, search and
       pagination.
+- [x] **The first logged-in e2e test is flaky on a cold dev server.** Login and the
+      check-in test take 23–30s on their first run (Vite compiling routes on first
+      request) against Playwright's 30s default, so one of them intermittently times out.
+      The symptom is `page.goto: net::ERR_ABORTED; maybe frame was detached?` on the first
+      navigation; against an already-running dev server the suite passes in ~15s.
+      Warm the server in `global-setup` or run e2e against `vite preview`. Playwright now
+      builds and runs `vite preview`.
 - [ ] Wire `lint` / `test` turbo tasks for `packages/db` and `packages/scraper`.
+- [x] Clear the 9 existing lint errors in `apps/site` (unused vars, `state_referenced_locally`,
+      `.svelte.ts` parse errors) so CI can enforce lint.
+- [x] Playwright: no test exercises the check-in form, which the SvelteKit 3 upgrade
+      rewired (`StarRater` now binds to the remote form field). `tests/checkin.test.ts`.
 
 ---
 
@@ -101,19 +128,19 @@ Confirmed live, with platform and catalogue size measured directly.
 
 ### WooCommerce — `/wp-json/wc/store/v1/products`
 
-| Store                  | Region | Products | Status                        |
-| ---------------------- | ------ | -------- | ----------------------------- |
-| heatsupply.nl          | NL     | 360      | done (HTML — port to adapter) |
-| chilisaus.be           | BE     | 130      | stub — revive                 |
-| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)            |
-| chardys.nl             | NL     | 12       | also a maker                  |
-| hotta.eu               | EU     | 25       |                               |
-| hotsauceemporium.co.uk | UK     | 906      |                               |
-| flowercityflavor.com   | US     | 524      | disabled (images 403)         |
-| hotsaucedepot.com      | US     | 122      |                               |
-| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm         |
-| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)            |
-| maisonpiquante.com     | FR     | 295      | disabled                      |
+| Store                  | Region | Products | Status                |
+| ---------------------- | ------ | -------- | --------------------- |
+| heatsupply.nl          | NL     | 360      | done                  |
+| chilisaus.be           | BE     | 130      | stub — revive         |
+| dekkerpepper.nl        | NL     | 81       | disabled (NL copy)    |
+| chardys.nl             | NL     | 12       | also a maker          |
+| hotta.eu               | EU     | 25       |                       |
+| hotsauceemporium.co.uk | UK     | 906      |                       |
+| flowercityflavor.com   | US     | 524      | disabled (images 403) |
+| hotsaucedepot.com      | US     | 122      |                       |
+| justchillies.co.uk     | UK     | 74       | Wiltshire Chilli Farm |
+| shop.chilirezept.de    | DE     | 117      | disabled (DE copy)    |
+| maisonpiquante.com     | FR     | 295      | disabled              |
 
 ### Needs bespoke work — lower priority
 
@@ -173,9 +200,9 @@ imports — dead, and safe to delete. The registry is derived from the feeds now
       Red Hot Foods DE, One Stop Chilli Shop, Condimaniac.
 - [ ] Shopify's default placeholder vendor (`Mijn winkel` on Raijmakers) must fall back
       to the store's house brand.
-- [ ] Build `/makers/[slug]` and `/makers/[slug]/sauces` — both are currently stubs
-      returning `{}`.
-- [ ] `/api/v1/search` hardcodes `makers: []` despite the trigram index on
+- [ ] Build `/makers/[slug]/sauces`. `/makers/[slug]` itself is built; the
+      `/sauces` subroute doesn't exist yet.
+- [x] `/api/v1/search` hardcodes `makers: []` despite the trigram index on
       `makers.name` already existing. Wire it up.
 
 ### Dutch / Belgian makers
@@ -251,21 +278,21 @@ Measured on the first full 27-store run: **4278 sauces, 5004 store links**. Roug
       rows of junk gone.** It is a chilli farm with a sauce line, not a sauce shop:
       28 collections including `chilli-seeds`, `plants-seedlings`,
       `growing-equipment`, `chocolate`, `alcohol`, `private-tours` and `vouchers`.
-      We ingest the whole farm shop — `Propagator`, `Chilli & Pepper Focus Plant
-Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
+      We ingest the whole farm shop — `Propagator`, `Chilli & Pepper Focus Plant Food`,
+      `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
       Measured against the live API:
 
-      | | products |
-                                                                                  | --- | --- |
-                                                                                  | whole catalogue (scraped today) | 421 |
-                                                                                  | `collections/sauces` | 25 |
-                                                                                  | non-sauce left in that collection | 0 |
-                                                                                  | real sauces lost by scoping | 0 |
+  |                                   | products |
+  | --------------------------------- | -------- |
+  | whole catalogue (scraped today)   | 421      |
+  | `collections/sauces`              | 25       |
+  | non-sauce left in that collection | 0        |
+  | real sauces lost by scoping       | 0        |
 
-                                                                                  Verified the last row directly: 20 titles in the full catalogue contain
-                                                                                  "sauce" and all 20 are already inside the collection. So
-                                                                                  `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
-                                                                                  most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
+  Verified the last row directly: 20 titles in the full catalogue contain
+  "sauce" and all 20 are already inside the collection. So
+  `collection: 'sauces'` in `stores.js` is safe. This single entry accounts for
+  most of the 249 plants/seeds rows and 51 of the 52 pre-order rows.
 
 - [ ] **Remaining plants and seeds elsewhere — ~50 rows** once South Devon is scoped
       (One Stop Chilli Shop, Heat Hot Sauce Shop). Small enough for the shared
@@ -371,7 +398,7 @@ Food`, `Fresh Facing Heaven Chillies`, six separate habanero seed listings.
       treating one bottle as one sauce. The second is much cheaper and probably right
       for a catalogue people browse rather than buy from.
 - [x] **Checkout line items listed as products** — `Nouvelle Livraison
-(Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
+  (Expédition)`, a Maison Piquante shipping fee. Covered by `FEE_PATTERNS`.
 - [x] **1195 sauces (42%) list a shop as their maker.** `houseBrand` defaults to
       the store name, so any product whose feed reports no vendor is attributed to
       the retailer: Hot Sauce Emporium "makes" 485 sauces, Heat Hot Sauce Shop 65,
@@ -495,11 +522,13 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 
 ### Performance
 
-- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs-node` plus
-      the toxicity model loads inline when posting a review (4-5s cold) and bloats the
-      Vercel function. Background job or a hosted moderation API. Kills the
+- [ ] **Move TensorFlow moderation off the request path.** `@tensorflow/tfjs` plus
+      the toxicity model loads inline when posting a review (4-6s cold) and bloats the
+      Vercel function. (`@tensorflow/tfjs-node` was installed but never imported, so it
+      never ran; it was dropped for the `tar`/`adm-zip` advisories it pulled in.) Background job or a hosted moderation API. Kills the
       `// TODO: fix tensorflow issues` eslint-disabled import.
-- [ ] Parallelise the sauce detail load — sauce, stores and check-ins run sequentially.
+- [x] Parallelise the sauce detail load — sauce, stores and check-ins run sequentially.
+      Maker, stores, check-ins and wishlist now load in one `Promise.all`.
 - [ ] Self-host images (S3-compatible bucket). Currently hotlinked from store CDNs with
       no resizing, caching, `loading="lazy"` or dimensions, so every grid shifts layout.
       Consider `@sveltejs/enhanced-img`.
@@ -517,7 +546,8 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 - [ ] `+layout.server.ts` ships the whole session and user object to the client,
       including email and `emailVerified`. The `// Is this a good idea?` comment answers
       itself — return a picked subset.
-- [ ] No review length cap — `String(data.get('content'))` goes unbounded into `text`.
+- [x] No review length cap — `String(data.get('content'))` goes unbounded into `text`.
+      `reviewSchema` caps it at `REVIEW_MAX_LENGTH` (2000).
 - [ ] Username update writes `db.update(user)` directly
       (`settings/+page.server.ts:36-42`); a duplicate surfaces as a raw unique-violation
       500 rather than a field error.
@@ -578,7 +608,23 @@ Heatsupply's WooCommerce already exposes structured attributes for two of these:
 ## Repo hygiene
 
 - [x] Finish the prettier -> oxfmt migration.
-- [ ] Three SvelteKit adapters in devDependencies (vercel + two cloudflare), two
-      commented out in `svelte.config.js`. Pick one.
-- [ ] README doesn't mention how to run tests or that `.env.test` is required.
+- [ ] Three SvelteKit adapters in devDependencies (vercel, auto, cloudflare), two
+      commented out in `vite.config.ts`. Pick one — dropping `adapter-cloudflare` also
+      drops the `wrangler` devDependency it needs.
+- [x] README doesn't mention how to run tests or that `.env.test` is required.
 - [ ] No Dependabot / Renovate config.
+- [ ] **Move pnpm settings to `pnpm-workspace.yaml` before switching to pnpm 11.** It
+      ignores the `pnpm` field in `package.json`, so `overrides` and the `@o7/icon`
+      `patchedDependencies` entry would silently stop applying. `/usr/bin/pnpm` is
+      already 11 and only hands off to 10.18 because of `packageManager`.
+- [ ] **Drop the `@o7/icon` patch** (`patches/@o7__icon@0.3.98.patch`) once upstream
+      fixes SvelteKit 3 SSR (ottomated/o7-icon#4). Remove the `patchedDependencies`
+      entry in the root `package.json` in the same change as the version bump.
+- [x] better-auth only declares `@sveltejs/kit ^2` as a peer, so installs warn. Bump
+      it once a release lists Kit 3. 1.7.25 lists `^2 || ^3`.
+- [x] Upgrade `eslint-plugin-svelte` 2 → 3. Its new recommended rules add 21 findings
+      (mostly missing `{#each}` keys) and it needs a `**/*.svelte.ts` parser block.
+      3.24 also adds `no-navigation-without-resolve`: internal links now go through
+      `resolve()`, external ones carry `rel="external"`, and the five query-string links
+      (header search, `/sauces` pagination) pass it to `resolve()`, which takes one
+      since Kit 3.3.

@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
-	import TextInput from '$lib/components/form/TextInput.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import TextInput from '#lib/components/form/TextInput.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data, form } = $props();
 </script>
@@ -16,7 +17,7 @@
 		{#if !data.hasToken}
 			<p>
 				The reset link is missing a token. Please request a new password reset from the <a
-					href="/auth/forgot-password">forgot password</a
+					href={resolve('/auth/forgot-password')}>forgot password</a
 				> page.
 			</p>
 		{:else}

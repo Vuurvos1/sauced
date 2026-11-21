@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 import { checkins, hotSauces, makers } from '@app/db/schema';
 import { error } from '@sveltejs/kit';
 import { avg, desc, eq, getTableColumns } from 'drizzle-orm';

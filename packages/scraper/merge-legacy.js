@@ -12,16 +12,16 @@
  * so the URLs people already shared keep working — unless the old scraper wrote
  * it with spaces or punctuation, which no one could have shared cleanly anyway.
  */
-import parser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import { getDb } from '@app/db';
 import { sql } from 'drizzle-orm';
-
-import 'dotenv/config';
 
 /** The shape slugifyName() produces; the old scrapers did not always. */
 const CLEAN_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-const flags = parser(process.argv.slice(2), { boolean: ['apply'] });
+const { values: flags } = parseArgs({
+	options: { apply: { type: 'boolean', default: false } }
+});
 const db = getDb(process.env.DATABASE_URL);
 
 /** @type {{ legacy_id: string, legacy_name: string, legacy_slug: string, store: string, handle: string, matches: { id: string, name: string, slug: string }[] }[]} */

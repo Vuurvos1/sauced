@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -35,11 +36,14 @@
 		{/if}
 
 		<ul class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each stores as store}
+			{#each stores as store (store.slug)}
 				<li
 					class="group relative flex flex-col items-center gap-4 rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
 				>
-					<a href={`/stores/${store.name}`} class="flex w-full flex-col items-center gap-4">
+					<a
+						href={resolve('/stores/[slug]', { slug: store.slug })}
+						class="flex w-full flex-col items-center gap-4"
+					>
 						<div class="flex h-32 items-center justify-center rounded-md p-4">
 							<img
 								src={`/assets/stores/${store.name.toLowerCase().replaceAll(' ', '-')}.png`}
@@ -54,7 +58,7 @@
 					<a
 						href={store.url}
 						target="_blank"
-						rel="noopener noreferrer"
+						rel="external noopener noreferrer"
 						class="hover:text-primary-600 inline-flex items-center gap-1.5 text-sm text-gray-600"
 					>
 						<Globe size={16} />

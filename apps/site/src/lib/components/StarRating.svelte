@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { clamp } from '$lib/utils/index';
+	import { clamp } from '#lib/utils/index.js';
 
 	interface Props {
 		rating: number;
@@ -23,7 +23,7 @@
 </script>
 
 <div class="flex flex-row gap-2">
-	{#each { length: 5 } as _, i}
+	{#each { length: 5 }, i (i)}
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			width="24"

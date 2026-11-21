@@ -6,13 +6,15 @@
 	import { onNavigate } from '$app/navigation';
 	import Header from './Header.svelte';
 	import { Toaster } from 'svelte-sonner';
-	import { sharedSauce, takeSkip } from '$lib/view-transition.svelte';
+	import { sharedSauce, takeSkip } from '#lib/view-transition.svelte.js';
 
 	let { children } = $props();
 
 	const isSaucePage = (url: URL | undefined, slug: string) => url?.pathname === `/sauces/${slug}`;
 
 	onNavigate((navigation) => {
+		if (navigation.shallow) return;
+
 		// Cleared unconditionally so a click that never navigated can't swallow the
 		// next transition.
 		const skip = takeSkip();
@@ -42,11 +44,8 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<Header></Header>
-
-	<main class="flex flex-1 flex-col py-8">
-		{@render children()}
-	</main>
+	<Header />
+	<main class="flex flex-1 flex-col py-8">{@render children()}</main>
 </div>
 
 <Toaster richColors position="top-right" />

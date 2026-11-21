@@ -1,9 +1,13 @@
 <script lang="ts">
+	import type { RemoteFormField } from '$app/server';
+
 	interface Props {
-		rating?: number;
+		field: RemoteFormField<string>;
 	}
 
-	let { rating = $bindable(0) }: Props = $props();
+	let { field }: Props = $props();
+
+	const rating = $derived(Number(field.value()) || 0);
 
 	let hoverRating = $state(0);
 </script>
@@ -15,13 +19,13 @@
 		onmouseleave={() => (hoverRating = 0)}
 		class="flex flex-row gap-2 text-gray-300"
 	>
-		{#each { length: 5 } as _, i}
+		{#each { length: 5 }, i (i)}
 			<label
 				onmouseenter={() => (hoverRating = i + 1)}
 				class:text-yellow-500={i < hoverRating || (i < rating && hoverRating === 0)}
 				class="cursor-pointer"
 			>
-				<input bind:group={rating} class="sr-only" type="radio" name="rating" value={i + 1} />
+				<input {...field.as('radio', String(i + 1))} class="sr-only" />
 
 				<span class="sr-only">{i + 1}</span>
 

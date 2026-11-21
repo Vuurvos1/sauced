@@ -1,20 +1,22 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { BeamAvatar } from '@app/boring-avatars';
-	import dayjs from '$lib/dayjs';
-	import StarRating from '$lib/components/StarRating.svelte';
-	import StarRater from '$lib/components/StarRater.svelte';
+	import dayjs from '#lib/dayjs.js';
+	import StarRating from '#lib/components/StarRating.svelte';
+	import StarRater from '#lib/components/StarRater.svelte';
 	import { ListPlus, ListMinus, Check, ArrowUpRight, Trash2 } from '@o7/icon/lucide';
-	import { Dialog } from '$lib/components/dialog/index.js';
-	import Meta from '$lib/components/Meta.svelte';
+	import { Dialog } from '#lib/components/dialog/index.js';
+	import Meta from '#lib/components/Meta.svelte';
 	import { toast } from 'svelte-sonner';
+	import { reviewSchema, REVIEW_MAX_LENGTH } from '#lib/validation/index.js';
+	import { getUserCheckin, removeCheckin, upsertReview } from './data.remote';
 
 	let { data } = $props();
 
 	let { sauce, maker, session, user, wishlisted, stores } = $derived(data);
-	let checkins = $state(data.checkins);
-	let userCheckin = $state(data.userCheckin);
-	let error = $state<string | null>(null);
+	let checkins = $derived(data.checkins);
+	let userCheckin = $derived(await getUserCheckin(sauce.sauceId));
 
 	let open = $state(false);
 
@@ -43,7 +45,7 @@
 			{#if maker}
 				<a
 					class="mb-3 inline-block font-medium text-gray-600 underline-offset-2 hover:underline"
-					href="/makers/{maker.slug}"
+					href={resolve('/makers/[slug]', { slug: maker.slug })}
 				>
 					{maker.name}
 				</a>
@@ -70,74 +72,65 @@
 					</form>
 
 					<!-- TODO: add shallow routing/non js option -->
-					<button onclick={() => (open = !open)} type="submit" class="btn">
+					<button
+						onclick={() => {
+							upsertReview.fields.set({
+								id: sauce.sauceId,
+								rating: userCheckin ? String(userCheckin.rating) : '',
+								content: userCheckin?.review ?? ''
+							});
+							open = true;
+						}}
+						type="button"
+						class="btn"
+					>
 						<Check class={`${userCheckin ? 'text-green-500' : ''}`} size={20}></Check>
 						{userCheckin ? 'Checked-in' : 'Check-in'}
 					</button>
 
 					<Dialog title="Check-in" bind:open>
 						<form
-							method="post"
-							action="?/review"
-							use:enhance={({ formData }) => {
-								if (!user) return () => {};
-
-								const baseCheckin = { ...userCheckin };
-
-								const newRating = Number(formData.get('rating'));
-								const newReview = formData.get('content') as string;
-
-								if (newRating < 1 || newRating > 5) {
-									error = 'Please enter a valid rating';
-									return;
-								}
-
-								if (!userCheckin) {
-									// @ts-expect-error - only needed fields
-									userCheckin = {
-										rating: newRating,
-										review: newReview,
-										updatedAt: new Date()
-									};
-								} else {
-									userCheckin.rating = newRating;
-									userCheckin.review = newReview;
-								}
-
-								// open = false;
-
-								return ({ result }) => {
-									if (result.type === 'success') {
-										error = null;
-										toast.success('Check-in submitted successfully');
+							{...upsertReview.preflight(reviewSchema).enhance(async ({ fields, submit }) => {
+								const { rating, content } = fields.value();
+								try {
+									const ok = await submit().updates(
+										getUserCheckin(sauce.sauceId).withOverride((current) => ({
+											// A first check-in has no row yet; the page only reads these fields
+											...current!,
+											rating: Number(rating),
+											review: content ?? '',
+											updatedAt: new Date()
+										}))
+									);
+									if (ok) {
 										open = false;
-									} else if (result.type === 'failure') {
-										// @ts-expect-error - copy of userCheckin
-										userCheckin = baseCheckin;
-										error = (result.data as { error: string })?.error ?? 'An error occurred';
+										toast.success('Check-in submitted successfully');
 									}
-								};
-							}}
+								} catch {
+									toast.error('Failed to save check-in');
+								}
+							})}
 						>
-							<input type="hidden" name="id" value={sauce.sauceId} />
+							<input {...upsertReview.fields.id.as('hidden', sauce.sauceId)} />
 
 							<div class="mb-5 flex flex-col gap-4">
-								<StarRater rating={userCheckin?.rating ?? 0}></StarRater>
+								<StarRater field={upsertReview.fields.rating}></StarRater>
 
 								<label for="content">Review</label>
 								<textarea
+									{...upsertReview.fields.content.as('text')}
+									id="content"
 									class="resize-none rounded border p-2"
-									name="content"
 									placeholder="What do you think about this sauce?"
 									rows="4"
-									value={userCheckin?.review ?? ''}></textarea>
+									maxlength={REVIEW_MAX_LENGTH}></textarea>
 							</div>
 
-							{#if error}
+							{#each upsertReview.fields.allIssues() ?? [] as issue, i (i)}
 								<div class="mb-6 rounded bg-red-50 p-3 text-sm text-red-600">
-									{error}
+									{issue.message}
 								</div>
-							{/if}
+							{/each}
 
 							<div class="flex flex-row-reverse gap-4">
 								<button type="submit" class="btn">Check-in</button>
@@ -158,12 +151,12 @@
 				<h2 class="mb-2 text-xl font-semibold">Where to get</h2>
 				{#if stores.length > 0}
 					<ul class="flex flex-wrap gap-2">
-						{#each stores as store}
+						{#each stores as store (store.store.storeId)}
 							<li>
 								<a
 									class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors hover:bg-gray-50"
 									target="_blank"
-									rel="noopener noreferrer"
+									rel="external noopener noreferrer"
 									href={store.url}
 								>
 									<span>{store.store.name}</span>
@@ -190,25 +183,24 @@
 							{dayjs(checkin.checkins.updatedAt).format('MMMM D, YYYY')}
 						</time>
 						{#if checkin.username}
-							<a href={`/profile/${checkin.username}`}>{checkin.username}</a>
+							<a href={resolve('/profile/[slug]', { slug: checkin.username })}>{checkin.username}</a
+							>
 						{/if}
 					</div>
 				</div>
 
 				{#if user && checkin.username === user.username}
 					<form
-						method="post"
-						action="?/removeCheckIn"
-						use:enhance={() => {
-							return ({ result }) => {
-								if (result.type === 'success') {
-									userCheckin = null;
-									toast.success('Check-in removed successfully');
-								}
-							};
-						}}
+						{...removeCheckin.enhance(async ({ submit }) => {
+							try {
+								await submit().updates(getUserCheckin(sauce.sauceId).withOverride(() => null));
+								toast.success('Check-in removed successfully');
+							} catch {
+								toast.error('Failed to remove check-in');
+							}
+						})}
 					>
-						<input type="hidden" name="sauceId" value={sauce.sauceId} />
+						<input {...removeCheckin.fields.id.as('hidden', sauce.sauceId)} />
 						<button
 							type="submit"
 							class="text-gray-400 transition-colors hover:text-red-600"
@@ -241,7 +233,7 @@
 					{@render checkinSnippet({ username: user.username, checkins: userCheckin })}
 				{/if}
 
-				{#each checkins as checkin}
+				{#each checkins as checkin (checkin.checkins.userId)}
 					{@render checkinSnippet(checkin)}
 				{/each}
 			</ul>

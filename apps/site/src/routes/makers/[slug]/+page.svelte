@@ -1,6 +1,6 @@
 <script lang="ts">
-	import SauceGrid from '$lib/components/SauceGrid.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import SauceGrid from '#lib/components/SauceGrid.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 	import { Globe, ArrowUpRight } from '@o7/icon/lucide';
 
 	let { data } = $props();
@@ -26,7 +26,7 @@
 			<a
 				href={maker.website}
 				target="_blank"
-				rel="noopener noreferrer"
+				rel="external noopener noreferrer"
 				class="hover:text-primary-600 inline-flex items-center gap-1.5 text-sm text-gray-600"
 			>
 				<Globe size={16} />

@@ -1,7 +1,7 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
 
-import type { auth } from '$lib/server/auth';
+import type { auth } from '#lib/server/auth.js';
 
 declare global {
 	namespace App {

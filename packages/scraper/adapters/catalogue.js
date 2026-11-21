@@ -66,8 +66,9 @@ export function createCatalogueScraper(config) {
 	/**
 	 * @param {string} pageUrl
 	 * @param {import('../').ScrapeSauceOptions} options
+	 * @param {boolean} [clearCache] drop the store's cache before writing this page
 	 */
-	async function fetchJsonPage(pageUrl, options) {
+	async function fetchJsonPage(pageUrl, options, clearCache = false) {
 		const cachePath = getCachePath(key, pageUrl, 'json');
 
 		if (!options.cache || !fs.existsSync(cachePath)) {
@@ -75,7 +76,10 @@ export function createCatalogueScraper(config) {
 			if (!response.ok) {
 				throw new Error(`${pageUrl} responded ${response.status}`);
 			}
-			writeFile(cachePath, await response.text());
+			const body = await response.text();
+			// Only once the store has answered, so a failed refresh keeps the old cache.
+			if (clearCache) fs.rmSync(`./cache/${key}`, { recursive: true, force: true });
+			writeFile(cachePath, body);
 
 			// Only pause after a real request — replaying the cache shouldn't crawl.
 			await sleep(requestDelayMs);
@@ -88,10 +92,6 @@ export function createCatalogueScraper(config) {
 	async function getSauceUrls(storeUrl, options) {
 		saucesByUrl.clear();
 
-		if (!options.cache) {
-			fs.rmSync(`./cache/${key}`, { recursive: true, force: true });
-		}
-
 		let exhausted = false;
 
 		for (let page = 1; page <= maxPages; page++) {
@@ -100,7 +100,7 @@ export function createCatalogueScraper(config) {
 			/** @type {unknown[]} */
 			let products;
 			try {
-				products = readPage(await fetchJsonPage(pageUrl, options));
+				products = readPage(await fetchJsonPage(pageUrl, options, !options.cache && page === 1));
 			} catch (error) {
 				// A first-page failure means a broken config or a store that's down, and
 				// should be loud. Later pages failing just truncates the catalogue, and a

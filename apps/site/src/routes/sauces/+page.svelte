@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import SauceGrid from '$lib/components/SauceGrid.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import SauceGrid from '#lib/components/SauceGrid.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data } = $props();
 
@@ -9,17 +10,10 @@
 
 	const currentPage = $derived(Math.max(Number(page.url.searchParams.get('page')) || 1, 1));
 
-	const previousUrl = $derived.by(() => {
-		const url = new URL(page.url);
-		url.searchParams.set('page', String(currentPage - 1));
-		return url.toString();
-	});
-
-	const nextUrl = $derived.by(() => {
-		const url = new URL(page.url);
-		url.searchParams.set('page', String(currentPage + 1));
-		return url.toString();
-	});
+	function pageQuery(pageNumber: number) {
+		const params = { ...Object.fromEntries(page.url.searchParams), page: String(pageNumber) };
+		return new URLSearchParams(params).toString();
+	}
 
 	const title = $derived(search ? `Results for "${search}"` : 'All hot sauces');
 
@@ -53,7 +47,7 @@
 
 	<div class="flex flex-row justify-end gap-6 py-4">
 		<a
-			href={previousUrl}
+			href={resolve(`/sauces?${pageQuery(currentPage - 1)}`)}
 			class={currentPage < 2 ? 'pointer-events-none cursor-not-allowed opacity-70' : ''}
 		>
 			Prev
@@ -64,7 +58,7 @@
 		</span>
 
 		<a
-			href={nextUrl}
+			href={resolve(`/sauces?${pageQuery(currentPage + 1)}`)}
 			class={currentPage > Math.ceil(sauceCount / pageSize) - 1
 				? 'pointer-events-none cursor-not-allowed opacity-70'
 				: ''}

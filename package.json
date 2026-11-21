@@ -13,17 +13,21 @@
 		"format:check": "oxfmt --check"
 	},
 	"devDependencies": {
-		"oxfmt": "^0.68.0",
-		"turbo": "^2.11.2"
+		"oxfmt": "^0.79.0",
+		"turbo": "^2.11.11"
 	},
 	"type": "module",
 	"packageManager": "pnpm@10.18.0",
 	"engines": {
-		"node": ">=24"
+		"node": ">=26"
 	},
 	"pnpm": {
 		"overrides": {
-			"vitest": "^3.2.2"
+			"vitest": "^5.0.3",
+			"yaml@>=2.0.0 <2.8.3": "^2.8.3"
+		},
+		"patchedDependencies": {
+			"@o7/icon@0.3.98": "patches/@o7__icon@0.3.98.patch"
 		}
 	}
 }

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { passwordRules } from '$lib/validation';
+	import { passwordRules } from '#lib/validation/index.js';
 
 	let { password = '' }: { password?: string } = $props();
 </script>
 
 <ul class="space-y-0.5 text-sm">
-	{#each passwordRules as rule}
+	{#each passwordRules as rule (rule.label)}
 		{@const met = rule.test(password)}
 		<li
 			class={met ? 'text-green-700' : 'text-gray-500'}

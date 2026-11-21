@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	const headings: Record<number, string> = {
 		400: 'Bad request',
@@ -33,8 +34,8 @@
 		{/if}
 
 		<div class="flex flex-row flex-wrap justify-center gap-4 pt-2">
-			<a class="btn" href="/sauces">Browse sauces</a>
-			<a class="btn btn-outline" href="/">Go home</a>
+			<a class="btn" href={resolve('/sauces')}>Browse sauces</a>
+			<a class="btn btn-outline" href={resolve('/')}>Go home</a>
 		</div>
 	</div>
 </section>

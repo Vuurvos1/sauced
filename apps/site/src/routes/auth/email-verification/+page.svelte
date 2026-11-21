@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 
 	let { data, form } = $props();
 </script>

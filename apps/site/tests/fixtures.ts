@@ -5,6 +5,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { user, schema } from '@app/db';
 import { randomUUID } from 'node:crypto';
+import { expect, type Page } from '@playwright/test';
 
 export interface TestUser {
 	email: string;
@@ -64,4 +65,12 @@ export async function createTestUser(opts: { verified: boolean }): Promise<TestU
 	} finally {
 		await client.end();
 	}
+}
+
+export async function login(page: Page, testUser: Pick<TestUser, 'email' | 'password'>) {
+	await page.goto('/login');
+	await page.getByLabel('Email').fill(testUser.email);
+	await page.getByLabel('Password').fill(testUser.password);
+	await page.getByRole('button', { name: 'Continue' }).click();
+	await expect(page).toHaveURL('/');
 }

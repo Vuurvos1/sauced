@@ -1,9 +1,9 @@
 <script lang="ts">
-	import TextInput from '$lib/components/form/TextInput.svelte';
+	import { resolve } from '$app/paths';
+	import TextInput from '#lib/components/form/TextInput.svelte';
 	import DeleteAccountDialog from './DeleteAcountDialog.svelte';
-	import Meta from '$lib/components/Meta.svelte';
+	import Meta from '#lib/components/Meta.svelte';
 	import { enhance } from '$app/forms';
-	import { redirect } from '@sveltejs/kit';
 	import { z } from 'zod/v4';
 
 	let { data } = $props();
@@ -12,11 +12,6 @@
 
 	let formErrors: string[] = $state([]);
 	let isSuccess = $state(false);
-
-	// svelte-ignore state_referenced_locally
-	if (!user) {
-		redirect(302, '/');
-	}
 </script>
 
 <Meta title="Edit profile" noindex />
@@ -70,7 +65,7 @@
 									</h3>
 									<div class="mt-2 text-sm text-red-700">
 										<ul class="list-disc space-y-1 pl-5">
-											{#each formErrors as error}
+											{#each formErrors as error, i (i)}
 												<li>{error}</li>
 											{/each}
 										</ul>
@@ -99,7 +94,10 @@
 
 				<div class="mt-8 border-t border-gray-200 pt-6">
 					<div class="flex flex-col gap-4">
-						<a href="/auth/forgot-password" class="font-medium text-blue-600 hover:text-blue-800">
+						<a
+							href={resolve('/auth/forgot-password')}
+							class="font-medium text-blue-600 hover:text-blue-800"
+						>
 							Reset Password
 						</a>
 

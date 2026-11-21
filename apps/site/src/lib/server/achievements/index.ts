@@ -5,11 +5,11 @@ import { reviewAchievement } from './review';
 import { daBombAchievement } from './daBomb';
 import { lastDabAchievement } from './lastDab';
 
-import FirstBurn from '$lib/assets/achievements/first-burn.svg';
-import ScorchedEarth from '$lib/assets/achievements/scorched-earth.svg';
-import CapsaicinConnoisseur from '$lib/assets/achievements/capsaicin-connoisseur.svg';
-import DaBomb from '$lib/assets/achievements/da-bomb.svg';
-import TheLastDab from '$lib/assets/achievements/the-last-dab.svg';
+import FirstBurn from '#lib/assets/achievements/first-burn.svg';
+import ScorchedEarth from '#lib/assets/achievements/scorched-earth.svg';
+import CapsaicinConnoisseur from '#lib/assets/achievements/capsaicin-connoisseur.svg';
+import DaBomb from '#lib/assets/achievements/da-bomb.svg';
+import TheLastDab from '#lib/assets/achievements/the-last-dab.svg';
 
 type User = {
 	id: string;

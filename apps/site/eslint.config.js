@@ -7,7 +7,7 @@ import globals from 'globals';
 export default [
 	js.configs.recommended,
 	...ts.configs.recommended,
-	...svelte.configs['flat/recommended'],
+	...svelte.configs.recommended,
 	{
 		languageOptions: {
 			globals: {
@@ -17,14 +17,15 @@ export default [
 		}
 	},
 	{
-		files: ['**/*.svelte'],
+		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {
+				extraFileExtensions: ['.svelte'],
 				parser: ts.parser
 			}
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/']
+		ignores: ['build/', '.svelte-kit/', '.vercel/', 'dist/']
 	}
 ];

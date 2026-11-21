@@ -112,6 +112,15 @@ export type WooScraperConfig = BaseScraperConfig & {
 	lang?: string;
 };
 
+export type SitemapScraperConfig = Omit<BaseScraperConfig, 'excludeCategories' | 'maxPages'> & {
+	/** Language the shop publishes in, e.g. `fr`. Defaults to `en`. */
+	language?: string;
+	/** Defaults to `<url>/sitemap.xml`. A sitemap index is followed one level down. */
+	sitemapUrl?: string;
+	/** Pathnames that are product pages, e.g. `/^\/en\/shop\/[^/]+$/`. */
+	productPath: RegExp;
+};
+
 export type CatalogueScraperConfig = BaseScraperConfig & {
 	pageSize: number;
 	buildPageUrl: (storeUrl: string, page: number, pageSize: number) => string;

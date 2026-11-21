@@ -80,6 +80,7 @@ export const stores = pgTable(
 	{
 		storeId: uuid('store_id').primaryKey().defaultRandom(),
 		name: varchar('name', { length: 256 }).notNull().unique(),
+		slug: text('slug').notNull().unique(),
 		description: text('description').default(''),
 		url: varchar('url', { length: 256 }).notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow(),

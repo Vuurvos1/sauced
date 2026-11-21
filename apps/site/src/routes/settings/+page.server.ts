@@ -1,14 +1,16 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
+import { auth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { user } from '@app/db/schema';
 import { eq } from 'drizzle-orm';
-import { usernameSchema } from '$lib/validation/index.js';
+import { usernameSchema } from '#lib/validation/index.js';
 
 export async function load({ locals }) {
 	if (!locals.user) {
 		redirect(302, '/');
 	}
+
+	return { user: locals.user };
 }
 
 export const actions: Actions = {
@@ -32,7 +34,7 @@ export const actions: Actions = {
 		const username = usernameResult.data;
 
 		try {
-			await db.update(user).set({ username }).where(eq(user.id, locals.session.userId));
+			await auth.api.updateUser({ body: { username }, headers: request.headers });
 		} catch (error) {
 			console.error(error);
 			return fail(500, { messages: ['Failed to update username'] });

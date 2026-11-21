@@ -10,7 +10,7 @@ type SearchSauce = Pick<HotSauce, 'sauceId' | 'name' | 'description' | 'slug' | 
 	ratingCount: number;
 };
 
-type SearchStore = Pick<Store, 'name' | 'description'> & {
+type SearchStore = Pick<Store, 'name' | 'slug' | 'description'> & {
 	id: Store['storeId'];
 };
 
