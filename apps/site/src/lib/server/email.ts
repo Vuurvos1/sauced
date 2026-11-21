@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 import { RESEND_API_KEY } from '$app/env/private';
 
-const resend = new Resend(RESEND_API_KEY);
+// Created on first send: the constructor throws without a key, and the build loads
+// this module with the key left empty.
+let resend: Resend | undefined;
 
 type EmailParams = {
 	email: string;
@@ -49,7 +51,7 @@ export const sendPasswordResetEmail = async (email: string, url: string) => {
 };
 
 export async function sendEmail({ email, subject, htmlContent }: EmailParams) {
-	const { error } = await resend.emails.send({
+	const { error } = await (resend ??= new Resend(RESEND_API_KEY)).emails.send({
 		from: 'Sauced <onboarding@resend.dev>',
 		to: [email],
 		subject,

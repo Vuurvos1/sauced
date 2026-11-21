@@ -85,7 +85,8 @@ pnpm --filter @app/site exec playwright install chromium # first run only
 pnpm site test:integration
 ```
 
-Playwright builds the site and serves it with `vite preview`. While writing tests, start
+Playwright builds the site and serves it with `wrangler dev`, on workerd like production.
+While writing tests, start
 `pnpm --filter @app/site exec vite dev --mode test --port 4173` yourself and Playwright
 reuses it instead of rebuilding.
 
@@ -99,3 +100,35 @@ pnpm site check
 pnpm lint
 pnpm format
 ```
+
+## Deploying the site
+
+The site runs on Cloudflare Workers, configured in
+[`apps/site/wrangler.jsonc`](./apps/site/wrangler.jsonc): `sauced-dev` for `dev`,
+`sauced` for `main`. `.github/workflows/release.yml` runs on every push to either: it
+applies any new migrations, then builds and deploys, so the code never goes live
+before its schema. Each Worker reaches Neon through its Hyperdrive config and moderates reviews
+through the Workers AI binding; both are defined in [`infra/`](./infra/README.md).
+Locally neither is bound: the site uses `DATABASE_URL` and the Workers AI stand-in.
+
+Each GitHub environment (Development, Production) needs:
+
+- secret `DATABASE_URL`: the direct (unpooled) Neon URL, for migrations
+- secret `CLOUDFLARE_API_TOKEN`: an account token with Workers Scripts Edit and
+  Hyperdrive Read (the workflow looks up the Hyperdrive id by name)
+- variable `CLOUDFLARE_ACCOUNT_ID`
+- variable `PUBLIC_BASE_URL`: the address the site is served on
+
+The runtime secrets live on the Workers themselves, not in GitHub. Set them once per
+Worker; the site refuses to start while one is missing:
+
+```bash
+cd apps/site
+pnpm wrangler secret put BETTER_AUTH_SECRET --env dev   # and --env production
+pnpm wrangler secret put GOOGLE_CLIENT_ID --env dev
+pnpm wrangler secret put GOOGLE_CLIENT_SECRET --env dev
+pnpm wrangler secret put RESEND_API_KEY --env dev
+```
+
+After changing `wrangler.jsonc`, `pnpm site types` regenerates the binding types
+(`pnpm site check` does it too).

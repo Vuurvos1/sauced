@@ -26,6 +26,13 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', '.vercel/', 'dist/']
+		ignores: [
+			'build/',
+			'.svelte-kit/',
+			'.vercel/',
+			'.wrangler/',
+			'dist/',
+			'worker-configuration.d.ts'
+		]
 	}
 ];
