@@ -95,6 +95,11 @@ resource "cloudflare_worker" "site" {
   observability = {
     enabled = true
   }
+
+  # wrangler tags the Worker with its environment on every deploy.
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 # Cloudflare creates the DNS record and certificate for it.
