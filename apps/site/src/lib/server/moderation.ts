@@ -1,4 +1,4 @@
-import { getRequestEvent } from '$app/server';
+import { env } from 'cloudflare:workers';
 import {
 	CLOUDFLARE_ACCOUNT_ID,
 	CLOUDFLARE_AI_TOKEN,
@@ -42,8 +42,9 @@ export async function isFlagged(text: string, ai = aiBinding()): Promise<boolean
 }
 
 function aiBinding(): AiBinding | undefined {
-	const platform = getRequestEvent().platform as { env?: { AI?: AiBinding } } | undefined;
-	if (platform?.env?.AI) return platform.env.AI;
+	// Bound on the deployed Workers only; locally this falls through to the stand-in.
+	const binding = env.AI as AiBinding | undefined;
+	if (binding) return binding;
 	if (CLOUDFLARE_ACCOUNT_ID && CLOUDFLARE_AI_TOKEN) {
 		return workersAiRest(CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_AI_TOKEN, CLOUDFLARE_API_BASE_URL);
 	}

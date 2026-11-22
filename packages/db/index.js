@@ -21,13 +21,13 @@ export const WORD_SIMILARITY_THRESHOLD = 0.45;
 
 /**
  * @param {string | undefined} dbUrl
- * @returns
+ * @param {import('postgres').Options<{}>} [options]
  */
-export function getDb(dbUrl) {
+export function getDb(dbUrl, options) {
 	if (!dbUrl) {
 		throw new Error('Database URL is required');
 	}
 
-	const client = postgres(dbUrl);
+	const client = postgres(dbUrl, options);
 	return drizzle(client, { schema });
 }
