@@ -95,10 +95,22 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
+      # GitHub is the one place secrets are kept; each deploy uploads them with the new
+      # version, so a changed secret goes live on the next release (or a manual run).
       - name: Deploy the site
         working-directory: apps/site
-        run: pnpm wrangler deploy --env "$WRANGLER_ENV"
+        run: |
+          secrets="$RUNNER_TEMP/worker-secrets.json"
+          jq -n '{BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID,
+            GOOGLE_CLIENT_SECRET: env.GOOGLE_CLIENT_SECRET, RESEND_API_KEY: env.RESEND_API_KEY}
+            | if any(.[]; . == "") then error("a Worker secret is missing from the GitHub environment") end' > "$secrets"
+          pnpm wrangler deploy --env "$WRANGLER_ENV" --secrets-file "$secrets"
+          rm "$secrets"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           WRANGLER_SEND_METRICS: 'false'
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

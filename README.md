@@ -120,15 +120,15 @@ Each GitHub environment (Development, Production) needs:
 - variable `CLOUDFLARE_ACCOUNT_ID`
 - variable `PUBLIC_BASE_URL`: the address the site is served on
 
-The runtime secrets live on the Workers themselves, not in GitHub. Set them once per
-Worker; the site refuses to start while one is missing:
+and the secrets the running site reads, which the workflow uploads to the Worker with
+every deploy (it fails while one is missing):
+
+- `BETTER_AUTH_SECRET`: `openssl rand -base64 32`, different per environment
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `RESEND_API_KEY`
 
 ```bash
-cd apps/site
-pnpm wrangler secret put BETTER_AUTH_SECRET --env dev   # and --env production
-pnpm wrangler secret put GOOGLE_CLIENT_ID --env dev
-pnpm wrangler secret put GOOGLE_CLIENT_SECRET --env dev
-pnpm wrangler secret put RESEND_API_KEY --env dev
+gh secret set BETTER_AUTH_SECRET --env Development   # prompts for the value
 ```
 
 After changing `wrangler.jsonc`, `pnpm site types` regenerates the binding types
