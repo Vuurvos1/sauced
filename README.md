@@ -104,8 +104,8 @@ pnpm format
 ## Deploying the site
 
 The site runs on Cloudflare Workers, configured in
-[`apps/site/wrangler.jsonc`](./apps/site/wrangler.jsonc): `sauced-dev` for `dev`,
-`sauced` for `main`. `.github/workflows/release.yml` runs on every push to either: it
+[`apps/site/wrangler.jsonc`](./apps/site/wrangler.jsonc): `sauced-dev` for `dev`, served
+on dev.hotsauced.app, and `sauced` for `main`. `.github/workflows/release.yml` runs on every push to either: it
 applies any new migrations, then builds and deploys, so the code never goes live
 before its schema. Each Worker reaches Neon through its Hyperdrive config and moderates reviews
 through the Workers AI binding; both are defined in [`infra/`](./infra/README.md).
@@ -114,8 +114,9 @@ Locally neither is bound: the site uses `DATABASE_URL` and the Workers AI stand-
 Each GitHub environment (Development, Production) needs:
 
 - secret `DATABASE_URL`: the direct (unpooled) Neon URL, for migrations
-- secret `CLOUDFLARE_API_TOKEN`: an account token with Workers Scripts Edit and
-  Hyperdrive Read (the workflow looks up the Hyperdrive id by name)
+- secret `CLOUDFLARE_API_TOKEN`: a token with Workers Scripts Edit, Hyperdrive Read and
+  Account Settings Read on the account, and Workers Routes Edit and Zone Read on
+  hotsauced.app (for the custom domain)
 - variable `CLOUDFLARE_ACCOUNT_ID`
 - variable `PUBLIC_BASE_URL`: the address the site is served on
 

@@ -19,7 +19,9 @@
 	"env": {
 		"dev": {
 			"name": "sauced-dev",
-			"workers_dev": true,
+			// A custom domain: Cloudflare creates its DNS record and certificate on deploy.
+			"routes": [{ "pattern": "dev.hotsauced.app", "custom_domain": true }],
+			"workers_dev": false,
 			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "sauced-dev" }],
 			"ai": { "binding": "AI" }
 		},
