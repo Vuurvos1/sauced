@@ -131,5 +131,10 @@ every deploy (it fails while one is missing):
 gh secret set BETTER_AUTH_SECRET --env Development   # prompts for the value
 ```
 
+The Workers run on the free plan, which allows 10 ms of CPU per request; pages measured
+around 22 ms (median) on dev without being cut off. Cloudflare tolerates that for now. If
+**Metrics → Errors by invocation status → Exceeded CPU Time Limits** goes above zero
+(visitors get error 1102), switch to Workers Paid ($5/month); it applies without a redeploy.
+
 After changing `wrangler.jsonc`, `pnpm site types` regenerates the binding types
 (`pnpm site check` does it too).

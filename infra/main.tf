@@ -25,6 +25,7 @@ module "prod" {
   image_domain = "img.${var.zone_name}"
   database_url = var.prod_database_url
   worker_name  = "sauced"
-  # hotsauced.app still points at Vercel. Moving it here is the cutover.
+  # hotsauced.app still points at Vercel. Moving it here is the cutover; keep Vercel a
+  # few weeks after it, and watch the CPU limit (README.md, "Deploying the site").
   site_domain = null
 }
