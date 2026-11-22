@@ -7,6 +7,10 @@ manages both environments through the `modules/environment` module:
 | --------------------------- | ---------------------------------------------- | ------------------------------------------- |
 | R2 image bucket             | `sauced-images-dev` on `img-dev.hotsauced.app` | `sauced-images-prod` on `img.hotsauced.app` |
 | Hyperdrive in front of Neon | `sauced-dev`                                   | `sauced-prod`                               |
+| Site Worker                 | `sauced-dev` on `dev.hotsauced.app`            | `sauced`, on workers.dev until the cutover  |
+
+The Workers are created here, empty; their code and bindings are deployed into them
+by `wrangler` from `apps/site/wrangler.jsonc` (see the root README).
 
 Nothing here is applied automatically yet.
 
