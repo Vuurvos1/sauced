@@ -85,7 +85,8 @@ pnpm --filter @app/site exec playwright install chromium # first run only
 pnpm site test:integration
 ```
 
-Playwright builds the site and serves it with `vite preview`. While writing tests, start
+Playwright builds the site and serves it with `wrangler dev`, on workerd like production.
+While writing tests, start
 `pnpm --filter @app/site exec vite dev --mode test --port 4173` yourself and Playwright
 reuses it instead of rebuilding.
 
@@ -99,3 +100,41 @@ pnpm site check
 pnpm lint
 pnpm format
 ```
+
+## Deploying the site
+
+The site runs on Cloudflare Workers, configured in
+[`apps/site/wrangler.jsonc`](./apps/site/wrangler.jsonc): `sauced-dev` for `dev`, served
+on dev.hotsauced.app, and `sauced` for `main`. The Workers and their domains are created
+by OpenTofu in `infra/`; wrangler deploys the code into them. `.github/workflows/release.yml` runs on every push to either: it
+applies any new migrations, then builds and deploys, so the code never goes live
+before its schema. Each Worker reaches Neon through its Hyperdrive config and moderates reviews
+through the Workers AI binding; both are defined in [`infra/`](./infra/README.md).
+Locally neither is bound: the site uses `DATABASE_URL` and the Workers AI stand-in.
+
+Each GitHub environment (Development, Production) needs:
+
+- secret `DATABASE_URL`: the direct (unpooled) Neon URL, for migrations
+- secret `CLOUDFLARE_API_TOKEN`: an account token with Workers Scripts Edit, Hyperdrive
+  Read (the workflow looks up the Hyperdrive id by name) and Account Settings Read
+- variable `CLOUDFLARE_ACCOUNT_ID`
+- variable `PUBLIC_BASE_URL`: the address the site is served on
+
+and the secrets the running site reads, which the workflow uploads to the Worker with
+every deploy (it fails while one is missing):
+
+- `BETTER_AUTH_SECRET`: `openssl rand -base64 32`, different per environment
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `RESEND_API_KEY`
+
+```bash
+gh secret set BETTER_AUTH_SECRET --env Development   # prompts for the value
+```
+
+The Workers run on the free plan, which allows 10 ms of CPU per request; pages measured
+around 22 ms (median) on dev without being cut off. Cloudflare tolerates that for now. If
+**Metrics → Errors by invocation status → Exceeded CPU Time Limits** goes above zero
+(visitors get error 1102), switch to Workers Paid ($5/month); it applies without a redeploy.
+
+After changing `wrangler.jsonc`, `pnpm site types` regenerates the binding types
+(`pnpm site check` does it too).

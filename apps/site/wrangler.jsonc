@@ -1,0 +1,41 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// The top level is what `vite dev` and `vite preview` emulate locally. It binds
+	// nothing: locally the site uses DATABASE_URL and the Workers AI stand-in, so it
+	// needs neither a Cloudflare login nor network access.
+	"name": "sauced-local",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"observability": { "enabled": true },
+
+	// The Workers and their domains are OpenTofu's (infra/); this file deploys code and
+	// bindings into them. workers_dev, preview_urls and observability are applied by
+	// both, so keep them equal to infra/modules/environment.
+	//
+	// Bindings are not inherited from the top level, so each environment lists all
+	// of its own. Hyperdrive is given by the name OpenTofu (infra/) creates it under;
+	// the release workflow swaps in its id before deploying.
+	"env": {
+		"dev": {
+			"name": "sauced-dev",
+			// Served on dev.hotsauced.app, a custom domain defined in infra/.
+			"workers_dev": false,
+			"preview_urls": false,
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "sauced-dev" }],
+			"ai": { "binding": "AI" }
+		},
+		"production": {
+			"name": "sauced",
+			// Until hotsauced.app moves over from Vercel, this is how to reach it.
+			"workers_dev": true,
+			"preview_urls": false,
+			"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "sauced-prod" }],
+			"ai": { "binding": "AI" }
+		}
+	}
+}

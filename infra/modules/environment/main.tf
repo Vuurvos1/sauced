@@ -27,6 +27,16 @@ variable "database_url" {
   sensitive = true
 }
 
+variable "worker_name" {
+  type = string
+}
+
+variable "site_domain" {
+  type        = string
+  default     = null
+  description = "Custom domain the site Worker serves on. Without one it is reachable on workers.dev."
+}
+
 locals {
   # postgres[ql]://user:password@host[:port]/database[?params]
   db = regex(
@@ -69,6 +79,39 @@ resource "cloudflare_hyperdrive_config" "db" {
   }
 }
 
+# The site Worker itself; its code and bindings are deployed by wrangler from
+# apps/site/wrangler.jsonc. wrangler applies workers.dev, preview URLs and
+# observability on every deploy too, so keep those in step with that file or each
+# deploy and apply undo the other.
+resource "cloudflare_worker" "site" {
+  account_id = var.account_id
+  name       = var.worker_name
+
+  subdomain = {
+    enabled          = var.site_domain == null
+    previews_enabled = false
+  }
+
+  observability = {
+    enabled = true
+  }
+
+  # wrangler tags the Worker with its environment on every deploy.
+  lifecycle {
+    ignore_changes = [tags]
+  }
+}
+
+# Cloudflare creates the DNS record and certificate for it.
+resource "cloudflare_workers_custom_domain" "site" {
+  count = var.site_domain == null ? 0 : 1
+
+  account_id = var.account_id
+  zone_id    = var.zone_id
+  hostname   = var.site_domain
+  service    = cloudflare_worker.site.name
+}
+
 output "image_bucket" {
   value = cloudflare_r2_bucket.images.name
 }
@@ -79,4 +122,8 @@ output "image_base_url" {
 
 output "hyperdrive_id" {
   value = cloudflare_hyperdrive_config.db.id
+}
+
+output "site_url" {
+  value = var.site_domain != null ? "https://${var.site_domain}" : cloudflare_worker.site.subdomain.url
 }

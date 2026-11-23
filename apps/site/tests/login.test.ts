@@ -51,7 +51,8 @@ test.describe('login', () => {
 	});
 
 	test('blank password shows "password is required"', async ({ page }) => {
-		await page.goto('/login');
+		// Hydration would put back the `required` attribute removed below.
+		await page.goto('/login', { waitUntil: 'networkidle' });
 
 		await page.getByLabel('Email').fill(CANONICAL_USER.email);
 		// Leave password empty. The HTML `required` attribute would normally block
